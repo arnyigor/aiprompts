@@ -1,14 +1,19 @@
 import json
 import logging
+import string
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
+from uuid import uuid4
 
 from models import Prompt
+from src.models import Prompt
 from storage import LocalStorage
 
 
 class PromptManager:
+    prompts: dict[string, Prompt]
+
     def __init__(self, storage_path="prompts"):
         self.logger = logging.getLogger(__name__)
         self.storage = LocalStorage(storage_path)
@@ -17,8 +22,7 @@ class PromptManager:
 
     def list_prompts(self) -> list[Prompt]:
         """Возвращает список всех промптов"""
-        self.prompts = self.storage.list_prompts()
-        return self.prompts
+        return self.storage.list_prompts()
 
     def get_prompt(self, prompt_id: str) -> Optional[Prompt]:
         """Интерфейсный метод для получения промпта"""
@@ -39,6 +43,9 @@ class PromptManager:
     def add_prompt(self, prompt_data: dict):
         # Автоматически добавляем временные метки, если их нет
         self.logger.debug("Добавление промпта: %s", prompt_data)
+        # Генерируем id, если его нет
+        if 'id' not in prompt_data:
+            prompt_data['id'] = str(uuid4())
         prompt_data.setdefault('created_at', datetime.utcnow())
         prompt_data.setdefault('updated_at', datetime.utcnow())
         prompt = Prompt(**prompt_data)
@@ -60,11 +67,10 @@ class PromptManager:
 
     def delete_prompt(self, prompt_id: str):
         self.logger.warning(f"Удаление промпта {prompt_id}")
-        if prompt_id in self.prompts:
-            del self.prompts[prompt_id]
-            file_path = self.storage_path / f"{prompt_id}.json"
-            if file_path.exists():
-                file_path.unlink()
+        # Используйте self.storage.path вместо base_path
+        file_path = self.storage.storage_path / f"{prompt_id}.json"
+        if file_path.exists():
+            file_path.unlink()
 
     def get_prompt_history(self, prompt_id: str):
         """Получение истории версий промпта"""

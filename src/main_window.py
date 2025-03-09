@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import QMainWindow, QListWidget, QVBoxLayout, QWidget, QPus
 
 from prompt_editor import PromptEditor
 from prompt_manager import PromptManager
+from src.preview import PromptPreview
 
 
 class MainWindow(QMainWindow):
@@ -20,6 +21,7 @@ class MainWindow(QMainWindow):
         self.prompt_list = QListWidget()
         self.search_field = QLineEdit()
         self.add_button = QPushButton("Добавить промпт")
+        self.preview_button = QPushButton("Просмотр")
         self.edit_button = QPushButton("Редактировать")
         self.delete_button = QPushButton("Удалить")
 
@@ -35,6 +37,7 @@ class MainWindow(QMainWindow):
         # Right panel (buttons)
         button_layout = QVBoxLayout()
         button_layout.addWidget(self.add_button)
+        button_layout.addWidget(self.preview_button)
         button_layout.addWidget(self.edit_button)
         button_layout.addWidget(self.delete_button)
         button_layout.addStretch()
@@ -52,6 +55,7 @@ class MainWindow(QMainWindow):
         self.delete_button.clicked.connect(self.delete_selected)
         self.search_field.textChanged.connect(self.filter_prompts)
         self.prompt_list.itemDoubleClicked.connect(self.edit_selected)
+        self.preview_button.clicked.connect(self.preview_selected)
 
         # Load initial data
         self.load_prompts()
@@ -59,8 +63,28 @@ class MainWindow(QMainWindow):
     def load_prompts(self):
         """Загрузка промптов в список"""
         self.prompt_list.clear()
-        for prompt in self.prompt_manager.list_prompts():
+        prompts = self.prompt_manager.list_prompts()
+        for prompt in prompts:
             self.prompt_list.addItem(f"{prompt.title} ({prompt.id})")
+
+    def preview_selected(self):
+        """Открытие предпросмотра"""
+        selected_item = self.prompt_list.currentItem()
+        if not selected_item:
+            QMessageBox.warning(self, "Ошибка", "Выберите промпт для просмотра")
+            return
+
+        try:
+            prompt_id = selected_item.text().split('(')[-1].rstrip(')')
+            prompt = self.prompt_manager.get_prompt(prompt_id)
+            if prompt:
+                preview = PromptPreview(prompt)
+                preview.exec()
+            else:
+                QMessageBox.warning(self, "Ошибка", "Промпт не найден")
+        except Exception as e:
+            self.logger.error(f"Ошибка предпросмотра: {str(e)}", exc_info=True)
+            QMessageBox.critical(self, "Ошибка", "Не удалось открыть предпросмотр")
 
     def filter_prompts(self):
         """Фильтрация промптов по поисковому запросу"""
