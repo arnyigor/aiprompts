@@ -120,5 +120,5 @@ CC BY-SA 4.0 - Свободное использование с указание
 
 ## Контакты
 Автор: [arnyigor](https://github.com/arnyigor)
-Контакты:[email](mailto:arnyigor@gmail.com)
+Контакты:[Telegram](https://t.me/arnyigor)
 Последнее обновление: 09-03-2025
