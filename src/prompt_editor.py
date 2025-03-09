@@ -5,7 +5,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QDialog, QTextEdit, QVBoxLayout, QLabel, QLineEdit, QPushButton, \
     QHBoxLayout, QListWidget, QListWidgetItem, QTabWidget, QMessageBox, QInputDialog
 
-from models import Variable
+from src.models import Variable
 from src.prompt_manager import PromptManager
 
 

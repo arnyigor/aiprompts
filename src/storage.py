@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 from typing import List, Optional
 
-from models import Prompt
+from src.models import Prompt
 
 
 class LocalStorage:

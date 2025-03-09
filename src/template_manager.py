@@ -1,6 +1,7 @@
 # template_manager.py
-from models import Prompt
-from typing import Dict, Optional, List
+from typing import Dict, List
+
+from src.models import Prompt
 
 
 class TemplateManager:

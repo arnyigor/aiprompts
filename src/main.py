@@ -2,9 +2,9 @@
 import sys
 import logging
 from PyQt6.QtWidgets import QApplication
-from prompt_manager import PromptManager
-from template_manager import TemplateManager
-from main_window import MainWindow
+from src.prompt_manager import PromptManager
+from src.template_manager import TemplateManager
+from src.main_window import MainWindow
 
 
 def main():

@@ -4,8 +4,8 @@ import logging
 from PyQt6.QtWidgets import QMainWindow, QListWidget, QVBoxLayout, QWidget, QPushButton, \
     QHBoxLayout, QLineEdit, QLabel, QMessageBox
 
-from prompt_editor import PromptEditor
-from prompt_manager import PromptManager
+from src.prompt_editor import PromptEditor
+from src.prompt_manager import PromptManager
 from src.preview import PromptPreview
 
 

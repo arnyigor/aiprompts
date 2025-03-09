@@ -3,12 +3,11 @@ import logging
 import string
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Any
+from typing import Optional
 from uuid import uuid4
 
-from models import Prompt
 from src.models import Prompt
-from storage import LocalStorage
+from src.storage import LocalStorage
 
 
 class PromptManager:
@@ -106,4 +105,3 @@ class PromptManager:
                 if not category or prompt.category == category:
                     results.append(prompt)
         return results
-
