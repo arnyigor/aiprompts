@@ -1,23 +1,33 @@
 import json
 import logging
+import os
+import random
+import re
 import time
 from pathlib import Path
-from random import random
+from typing import Dict, Any
 from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 
-# Настройка логирования
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('parsing.log'),
+# Используем отдельный логгер для парсера
+logger = logging.getLogger('SiteParser')
+logger.setLevel(logging.DEBUG)
+
+
+# Конфигурация логирования с уровнем из конфига
+def configure_logging(config):
+    handlers = [
+        logging.FileHandler(config.get('log_file', 'parsing.log')),
         logging.StreamHandler()
     ]
-)
+    logging.basicConfig(
+        level=config.get('log_level', 'DEBUG'),
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=handlers
+    )
 
 
 class SiteParser:
@@ -33,199 +43,321 @@ class SiteParser:
     def __init__(self, config_file='parser_config.json'):
         self.script_dir = Path(__file__).parent.absolute()
         self.config_path = self.script_dir / config_file
-        self.output_dir = self.script_dir
-        self.output_dir.mkdir(parents=True, exist_ok=True)
         self.config = self.load_config()
-        self.data = []
+        configure_logging(self.config.get('logging', {}))
+
+        self.output_dir = self.script_dir / self.config.get('output_dir', 'output')
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
         self.user_agent = UserAgent()
+        self.session = requests.Session()
+        self.data = []
+        self.retry_attempts = self.config.get('retry_attempts', 3)
+        self.retry_delay = self.config.get('retry_delay', 1)
 
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s',
-            handlers=[
-                logging.FileHandler(self.output_dir / 'parsing.log'),
-                logging.StreamHandler()
-            ]
-        )
+        logger.info(f"Инициализация парсера с конфигом: {self.config_path}")
 
-        logging.info(f"Инициализация парсера с конфигом: {self.config_path}")
-
-    def load_config(self):
-        """Загрузка конфигурации с проверкой"""
+    def load_config(self) -> Dict[str, Any]:
         try:
             if not self.config_path.exists():
-                error_msg = f"Файл конфигурации не найден: {self.config_path}"
-                logging.error(error_msg)
-                raise FileNotFoundError(error_msg)
+                raise FileNotFoundError(f"Файл конфига не найден: {self.config_path}")
 
             config = json.loads(self.config_path.read_text(encoding='utf-8'))
 
-            # Фильтрация активных сайтов
-            active_sites = []
-            for site in config.get('sites', []):
-                if site.get('enabled', True):
-                    active_sites.append(site)
-                else:
-                    logging.debug(f"Шаблон {site.get('name')} пропущен (enabled=False)")
+            # Валидация обязательных полей
+            required = ['logging', 'output_dir', 'sites']
+            for field in required:
+                if field not in config:
+                    raise ValueError(f"Отсутствует обязательное поле в конфиге: {field}")
 
-            config['sites'] = active_sites
+            # Фильтрация активных сайтов
+            config['sites'] = [
+                site for site in config['sites']
+                if site.get('enabled', True)
+            ]
+
             return config
         except Exception as e:
-            error_msg = f"Ошибка при загрузке конфига: {str(e)}"
-            logging.error(error_msg)
-            raise ValueError(error_msg)
+            logger.error(f"Ошибка загрузки конфига: {str(e)}", exc_info=True)
+            raise
 
-    def get_random_headers(self, custom_headers=None):
-        """Генерация случайных заголовков"""
+    def get_random_headers(self, custom_headers: Dict = None) -> Dict:
         headers = self.DEFAULT_HEADERS.copy()
         headers['User-Agent'] = self.user_agent.random
 
-        # Добавляем кастомные заголовки из конфига
+        # Приоритет: пользовательские заголовки > конфига > дефолтные
         if self.config.get('headers'):
             headers.update(self.config['headers'])
-
-        # Добавляем пользовательские заголовки
         if custom_headers:
             headers.update(custom_headers)
 
-        logging.debug(f"Используемые заголовки: {headers}")
+        logger.debug(f"Используемые заголовки: {headers}")
         return headers
 
+    def _retry_request(self, url: str, headers: Dict, timeout: int = 10) -> requests.Response:
+        for attempt in range(self.retry_attempts + 1):
+            try:
+                response = self.session.get(
+                    url,
+                    headers=headers,
+                    timeout=timeout,
+                    allow_redirects=True
+                )
+                response.raise_for_status()
+                logger.debug(f"Успех: {url} (Статус: {response.status_code})")
+                return response
+            except requests.exceptions.RequestException as e:
+                if attempt < self.retry_attempts:
+                    backoff = self.retry_delay * (2 ** attempt) + random.uniform(0.1, 0.5)
+                    logger.warning(
+                        f"Ошибка запроса к {url} (Попытка {attempt + 1}/{self.retry_attempts}): {e}. "
+                        f"Повторная попытка через {backoff:.1f} сек."
+                    )
+                    time.sleep(backoff)
+                else:
+                    logger.error(f"Превышено количество попыток для {url}: {e}")
+                    raise
+        return None  # Не должно достигаться из-за raise выше
+
     def parse(self):
-        """Основной метод парсинга"""
         try:
-            for site_config in self.config.get('sites', []):
-                self._parse_site(site_config)
+            for site in self.config['sites']:
+                self._parse_site(site)
         except Exception as e:
-            logging.error(f"Критическая ошибка парсинга: {e}", exc_info=True)
+            logger.error(f"Критическая ошибка парсинга: {e}", exc_info=True)
             raise
         finally:
             self.save_to_json()
 
-    def _parse_site(self, site_config):
-        """Парсинг отдельного сайта"""
+    def _parse_site(self, site_config: Dict):
         site_name = site_config.get('name', 'Unknown')
-        logging.info(f"Начат парсинг сайта: {site_name}")
+        logger.info(f"Начало парсинга: {site_name}")
 
+        base_url = site_config['url']
+        custom_headers = site_config.get('headers', {})
+        timeout = site_config.get('timeout', 10)
+
+        # Поддержка разных типов пагинации
+        pagination = site_config.get('pagination', {})
+        if pagination.get('type') == 'url_parameter':
+            param = pagination.get('param', 'page')
+            max_pages = pagination.get('max_pages', 1)
+            for page in range(1, max_pages + 1):
+                current_url = f"{base_url}?{param}={page}"
+                self._process_pagination_page(current_url, custom_headers, site_config, base_url,
+                                              timeout)
+                time.sleep(random.uniform(0.5, 1.5))
+        elif pagination.get('type') == 'next_page_link':
+            next_url = base_url
+            while next_url:
+                self._process_pagination_page(next_url, custom_headers, site_config, base_url,
+                                              timeout)
+                next_url = self._find_next_page_link(next_url, site_config)
+                time.sleep(random.uniform(0.5, 1.5))
+        else:
+            self._process_pagination_page(base_url, custom_headers, site_config, base_url, timeout)
+
+    def _process_pagination_page(self, url: str, custom_headers: Dict, site_config: Dict,
+                                 base_url: str, timeout: int):
+        headers = self.get_random_headers(custom_headers)
         try:
-            base_url = site_config['url']
-            custom_headers = site_config.get('headers', {})
-
-            # Обработка пагинации
-            pagination = site_config.get('pagination', {})
-            if pagination.get('type') == 'url_parameter':
-                for page in range(1, pagination['max_pages'] + 1):
-                    current_url = f"{base_url}?{pagination['param']}={page}"
-                    headers = self.get_random_headers(custom_headers)
-                    self._process_page(current_url, headers, site_config, base_url)
-                    time.sleep(random.uniform(0.5, 1.5))
-            else:
-                headers = self.get_random_headers(custom_headers)
-                self._process_page(base_url, headers, site_config, base_url)
-
-        except Exception as e:
-            logging.error(f"Ошибка при парсинге сайта {site_name}: {e}", exc_info=True)
-            raise
-
-    def _process_page(self, url, headers, site_config, base_url):
-        """Обработка отдельной страницы"""
-        try:
-            response = requests.get(url, headers=headers, timeout=10)
-            response.raise_for_status()
+            response = self._retry_request(url, headers, timeout)
             soup = BeautifulSoup(response.content, 'html.parser')
 
-            # Парсинг контейнера
-            container_selector = site_config.get('container_selector')
-            if container_selector:
-                containers = soup.select(container_selector)
-                logging.debug(
-                    f"Найдено {len(containers)} элементов по селектору {container_selector}")
+            # Извлекаем селектор контейнера из parser_config
+            container_selector = site_config.get('parser_config', {}).get('container', {}).get(
+                'selector')
+            if not container_selector:
+                logger.error("Селектор контейнера не найден в конфиге")
+                return
+
+            containers = soup.select(container_selector)
+            if site_config.get('parser_config', {}).get('container', {}).get('pair_processing',
+                                                                             False):
+                # Обработка парами: заголовок + текст
+                for i in range(0, len(containers), 2):
+                    title_container = containers[i]
+                    text_container = containers[i + 1] if i + 1 < len(containers) else None
+
+                    item = {}
+                    # Заголовок
+                    title_elem = title_container.select_one(
+                        site_config['parser_config']['fields'][0]['selector'])
+                    item["title"] = title_elem.text.strip() if title_elem else None
+
+                    # Текст
+                    if text_container:
+                        text_elem = text_container.select_one(
+                            site_config['parser_config']['fields'][1]['selector'])
+                        item["text"] = text_elem.text.strip() if text_elem else None
+                    else:
+                        item["text"] = None
+
+                    self.data.append(item)
+            else:
+                # Обработка каждого контейнера отдельно
                 for container in containers:
                     self._parse_container(container, site_config, base_url)
-            else:
-                self._parse_container(soup, site_config, base_url)
 
         except requests.exceptions.RequestException as e:
-            logging.error(f"Ошибка запроса к {url}: {e}")
+            logger.error(f"Ошибка при обработке страницы {url}: {e}", exc_info=True)
             raise
 
-    def _parse_container(self, container, site_config, base_url):
-        """Парсинг элемента контейнера с поддержкой вложенных структур"""
+    def _find_next_page_link(self, current_url: str, site_config: Dict) -> str:
+        next_link_selector = site_config.get('pagination', {}).get('next_link_selector')
+        if not next_link_selector:
+            return None
+
+        response = self._retry_request(current_url, self.get_random_headers())
+        soup = BeautifulSoup(response.content, 'html.parser')
+        next_link = soup.select_one(next_link_selector)
+        return urljoin(current_url, next_link.get('href', '')) if next_link else None
+
+    def _parse_container(self, container, site_config: Dict, base_url: str):
+        config = site_config.get('parser_config', {})
         item = {}
-        # 1. Парсим основные поля
-        for key, selector in site_config.get('item_selectors', {}).items():
-            try:
-                element = container.select_one(selector)
-                item[key] = self._process_element(element, key, base_url)
-                logging.debug(f"Спарсено поле '{key}': {item[key]}")
-            except Exception as e:
-                logging.warning(f"Ошибка парсинга поля {key} с селектором {selector}: {e}")
 
-        # 2. Парсим детали (если есть ссылка)
-        if 'details_link' in item and site_config.get('details'):
-            details_url = item['details_link']
-            logging.info(f"Переход на детальную страницу: {details_url}")
-            details_data = self._parse_details_page(details_url, site_config['details'])
-            item.update(details_data)
+        # Логирование начала обработки контейнера
+        logger.debug(
+            f"Обрабатывается контейнер: {container.prettify()[:500]}..."
+        )  # Ограничиваем вывод HTML
 
+        for field in config.get('fields', []):
+            name = field['name']
+            selector = field['selector']
+            field_type = field.get('type', 'text')
+            regex = field.get('regex')
+            attr = field.get('attr', '')
+            required = field.get('required', False)
+
+            # Логирование начала обработки поля
+            logger.debug(f"Обработка поля '{name}':")
+            logger.debug(f"  Селектор: {selector}")
+
+            elements = container.select(selector)
+            if not elements:
+                if required:
+                    logger.error(
+                        f"Пропуск контейнера: не найдено required поле '{name}' (селектор {selector})"
+                    )
+                    return {}
+                else:
+                    item[name] = None
+                    logger.warning(
+                        f"Поле '{name}' не найдено (селектор {selector}), установлено значение None"
+                    )
+                    continue
+
+            # Логирование найденных элементов
+            logger.debug(f"  Найдено {len(elements)} элементов")
+
+            if field_type == 'text':
+                text = elements[0].get_text(strip=True)
+                if regex:
+                    text = re.sub(regex, '', text)
+                item[name] = text
+                logger.debug(f"  Результат: {text}")
+            elif field_type == 'list':
+                item[name] = [e.get_text(strip=True) for e in elements]
+                logger.debug(f"  Результат: {item[name]}")
+            elif field_type in ['href', 'src']:
+                item[name] = elements[0].get(attr, '')
+                logger.debug(f"  Результат: {item[name]}")
+            else:
+                logger.error(
+                    f"Неизвестный тип поля '{field_type}' для поля '{name}'",
+                    exc_info=True
+                )
+                item[name] = None
+
+        # Логирование успешного парсинга элемента
+        logger.info(f"Успешно обработан элемент: {item}")
+
+        # Обработка деталей
+        if config.get('details', {}).get('enabled'):
+            follow_link_field = config['details'].get('follow_link')
+            details_link = item.get(follow_link_field)
+            if details_link:
+                details_url = urljoin(base_url, details_link)
+                logger.info(f"Переход на детальную страницу: {details_url}")
+                details_data = self._parse_details_page(
+                    details_url,
+                    config['details'],
+                    base_url
+                )
+                item.update(details_data)
+            else:
+                logger.warning(
+                    f"Не найдена ссылка для детальной страницы в поле '{follow_link_field}'"
+                )
+
+        # Добавление в данные и логирование
         self.data.append(item)
+        logger.debug(f"Добавлен элемент в данные: {item}")
 
-    def _parse_details_page(self, url, details_config):
-        """Парсинг детальной страницы с вложенными списками"""
+    def _parse_details_page(self, url: str, details_config: Dict, base_url: str) -> Dict:
         headers = self.get_random_headers()
-        details = {}
+        details = {}  # Инициализируем пустой словарь
 
         try:
-            response = requests.get(url, headers=headers, timeout=10)
-            response.raise_for_status()
+            response = self._retry_request(url, headers)
             soup = BeautifulSoup(response.content, 'html.parser')
 
-            # 1. Парсим основные поля детальной страницы
-            for key, selector in details_config.get('content_selectors', {}).items():
+            # Обработка основных полей
+            content_selectors = details_config.get('content_selectors', {})
+            for key, selector in content_selectors.items():
                 element = soup.select_one(selector)
-                details[key] = self._process_element(element, key, url)
-                logging.debug(f"Спарсено детальное поле '{key}': {details[key]}")
+                details[key] = self._process_element(element, key, base_url)
 
-            # 2. Парсим вложенные списки
-            for nested_list in details_config.get('nested_lists', []):
-                list_name = nested_list['name']
+            # Обработка вложенных списков
+            for nested in details_config.get('nested_lists', []):
+                list_name = nested['name']
                 details[list_name] = []
-                container = soup.select_one(nested_list['container'])
-
+                container = soup.select_one(nested['container'])
                 if container:
-                    items = container.select(nested_list['item_selector'])
+                    items = container.select(nested['item_selector'])
                     for sub_item in items:
                         sub_data = {}
-                        for key, selector in nested_list['selectors'].items():
-                            element = sub_item.select_one(selector)
-                            sub_data[key] = self._process_element(element, key, url)
+                        for key, selector in nested['selectors'].items():
+                            elem = sub_item.select_one(selector)
+                            sub_data[key] = self._process_element(elem, key, url)
                         details[list_name].append(sub_data)
                 else:
-                    logging.warning(f"Контейнер {nested_list['container']} не найден на {url}")
+                    logger.warning(f"Контейнер {nested['container']} не найден на {url}")
 
         except requests.exceptions.RequestException as e:
-            logging.error(f"Ошибка при парсинге детальной страницы {url}: {e}")
-            return {}
+            logger.error(f"Ошибка парсинга детальной страницы {url}: {e}")
+            return {}  # Возвращаем пустой словарь, а не None
 
-        return details
+        return details  # Всегда возвращаем словарь
 
-    def _process_element(self, element, key, base_url):
-        """Обработка элемента"""
+    def _process_element(self, element, key: str, base_url: str) -> Any:
         if not element:
             return None
         if 'link' in key:
             return urljoin(base_url, element.get('href', ''))
         if 'image' in key:
             return urljoin(base_url, element.get('src', ''))
-        return element.get_text(strip=True)
+        return element.get_text(strip=True).strip()
 
     def save_to_json(self):
-        """Сохранение результата"""
-        output_file = self.output_dir / 'parsing_output.json'
+        output_file = self.output_dir / self.config.get('output_file', 'parsing_output.json')
+        temp_file = output_file.with_suffix('.tmp')
+
         try:
-            with open(output_file, 'w', encoding='utf-8') as f:
+            if not self.data:
+                logger.warning("Нет данных для сохранения")
+                return
+
+            logger.debug(f"Сохраняем {len(self.data)} записей")  # Отладочный лог
+            # Запись во временный файл
+            with temp_file.open('w', encoding='utf-8') as f:
                 json.dump(self.data, f, ensure_ascii=False, indent=2)
-            logging.info(f"Данные успешно сохранены в {output_file}")
+
+            # Атомарное замещение файла (работает в Windows/Linux)
+            os.replace(str(temp_file), str(output_file))
+
+            logger.info(f"Данные сохранены в {output_file}")
         except Exception as e:
-            logging.error(f"Ошибка сохранения файла: {e}")
+            logger.error(f"Ошибка сохранения данных: {e}")
             raise

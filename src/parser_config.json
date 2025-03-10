@@ -1,50 +1,113 @@
 {
+  "logging": {
+    "log_level": "INFO",
+    "log_file": "parser.log"
+  },
+  "output_dir": "results",
+  "output_file": "data.json",
+  "retry_attempts": 3,
+  "retry_delay": 1,
   "sites": [
     {
       "enabled": false,
       "name": "Интернет-магазин электроники",
       "url": "https://example-shop.com/products",
-      "container_selector": ".products-list .product-item",
-      "item_selectors": {
-        "product_name": ".product-title",
-        "price": ".price-value",
-        "rating": ".rating-stars",
-        "details_link": "a.product-link"
-      },
-      "pagination": {
-        "type": "url_parameter",
-        "param": "page",
-        "max_pages": 5
-      },
-      "details": {
-        "content_selectors": {
-          "full_description": "#product-description",
-          "specifications": ".tech-specs-table",
-          "main_image": ".product-main-image img"
+      "parser_config": {
+        "container": {
+          "selector": ".products-list .product-item",
+          "type": "list"
         },
-        "nested_lists": [
+        "fields": [
           {
-            "name": "gallery",
-            "container": ".product-gallery",
-            "item_selector": ".gallery-item",
-            "selectors": {
-              "image_url": "img.gallery-image"
-            }
+            "name": "product_name",
+            "selector": ".product-title",
+            "type": "text",
+            "required": true
           },
           {
-            "name": "reviews",
-            "container": "#reviews-list",
-            "item_selector": ".review-item",
-            "selectors": {
-              "author": ".review-author",
-              "text": ".review-text",
-              "rating": ".review-rating",
-              "date": ".review-date"
-            }
+            "name": "price",
+            "selector": ".price-value",
+            "type": "text",
+            "regex": "\\d+(?:\\.\\d+)?"
+          },
+          {
+            "name": "rating",
+            "selector": ".rating-stars",
+            "type": "text",
+            "regex": "\\d+\\."
+          },
+          {
+            "name": "details_link",
+            "selector": "a.product-link",
+            "type": "href",
+            "attr": "href"
           }
-        ]
+        ],
+        "pagination": {
+          "type": "url_param",
+          "param": "page",
+          "max_pages": 5
+        },
+        "details": {
+          "enabled": true,
+          "follow_link": "details_link",
+          "fields": [
+            {
+              "name": "full_description",
+              "selector": "#product-description",
+              "type": "text"
+            },
+            {
+              "name": "specifications",
+              "selector": ".tech-specs-table td",
+              "type": "list",
+              "join": "\n"
+            },
+            {
+              "name": "main_image",
+              "selector": ".product-main-image img",
+              "type": "src",
+              "attr": "src"
+            }
+          ],
+          "nested_lists": [
+            {
+              "name": "gallery",
+              "selector": ".product-gallery .gallery-item img",
+              "type": "src",
+              "attr": "src"
+            },
+            {
+              "name": "reviews",
+              "selector": ".review-item",
+              "fields": [
+                {
+                  "name": "author",
+                  "selector": ".review-author",
+                  "type": "text"
+                },
+                {
+                  "name": "text",
+                  "selector": ".review-text",
+                  "type": "text"
+                },
+                {
+                  "name": "rating",
+                  "selector": ".review-rating",
+                  "type": "text"
+                },
+                {
+                  "name": "date",
+                  "selector": ".review-date",
+                  "type": "text"
+                }
+              ]
+            }
+          ]
+        }
       }
-    },{
+    },
+    {
       "enabled": false,
       "name": "Интернет-магазин электроники",
       "url": "https://example-shop.com/products",
@@ -121,12 +184,35 @@
     },
     {
       "enabled": true,
-      "name": "10 качественных промптов для ChatGPT, которые действительно помогают в работе\u2060\u2060",
+      "name": "10 качественных промптов для ChatGPT",
       "url": "https://pikabu.ru/story/10_kachestvennyikh_promptov_dlya_chatgpt_kotoryie_deystvitelno_pomogayut_v_rabote_10836515",
-      "container_selector": ".story__content-inner div",
-      "item_selectors": {
-        "title": ".story-block .story-block_type_text ol li p",
-        "text": ".story-block .story-block_type_text blockquote"
+      "parser_config": {
+        "container": {
+          "selector": ".story-block_type_text",
+          "type": "list",
+          "pair_processing": true
+        },
+        "fields": [
+          {
+            "name": "title",
+            "selector": "p:not(:has(blockquote))",
+            "type": "text",
+            "required": true
+          },
+          {
+            "name": "text",
+            "selector": "blockquote p",
+            "type": "text",
+            "join": "\n",
+            "required": true
+          }
+        ],
+        "details": {
+          "enabled": false
+        },
+        "pagination": {
+          "type": "none"
+        }
       }
     }
   ]

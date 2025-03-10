@@ -76,21 +76,42 @@ class PromptManager:
 
     def edit_prompt(self, prompt_id: str, new_data: dict):
         self.logger.debug(f"Редактирование промпта {prompt_id} с данными: {new_data}")
-        if prompt_id not in self.prompts:
-            raise ValueError("Prompt не найден")
+        current_prompt = self.prompts.get(prompt_id)
+        if not current_prompt:
+            raise ValueError("Промпт не найден")
 
-        updated_data = self.prompts[prompt_id].model_dump()
+        # Проверяем изменение категории
+        old_category = current_prompt.category
+        new_category = new_data.get('category', old_category)
+
+        # Обновляем данные промпта
+        updated_data = current_prompt.model_dump()
         updated_data.update(new_data)
         updated_prompt = Prompt(**updated_data)
 
+        # Если категория изменилась — перемещаем файл
+        if new_category != old_category:
+            try:
+                self.storage.move_prompt_file(prompt_id, old_category, new_category)
+            except FileNotFoundError as e:
+                # Если файл не найден в категории, ищем в корне и перемещаем
+                if old_category == "general":
+                    self.storage.move_prompt_file(prompt_id, "",
+                                                  new_category)  # Пустая категория = корень
+                else:
+                    raise e
+
+        # Обновляем категорию в объекте промпта
+        updated_prompt.category = new_category  # Важно!
+
+        # Обновляем кэш и сохраняем
         self.prompts[prompt_id] = updated_prompt
-        self.storage.save_prompt(updated_prompt)
+        self.storage.save_prompt(updated_prompt)  # Теперь сохраняет в новую категорию
 
     def delete_prompt(self, prompt_id: str):
         self.logger.warning(f"Удаление промпта {prompt_id}")
-        file_path = self.storage.storage_path / f"{prompt_id}.json"
-        if file_path.exists():
-            file_path.unlink()
+        prompt = self.prompts[prompt_id]
+        self.storage.delete_prompt(prompt_id, prompt.category)  # Делегируем удаление файлу Storage
         if prompt_id in self.prompts:
             del self.prompts[prompt_id]
 
