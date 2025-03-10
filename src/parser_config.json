@@ -1,0 +1,133 @@
+{
+  "sites": [
+    {
+      "enabled": false,
+      "name": "Интернет-магазин электроники",
+      "url": "https://example-shop.com/products",
+      "container_selector": ".products-list .product-item",
+      "item_selectors": {
+        "product_name": ".product-title",
+        "price": ".price-value",
+        "rating": ".rating-stars",
+        "details_link": "a.product-link"
+      },
+      "pagination": {
+        "type": "url_parameter",
+        "param": "page",
+        "max_pages": 5
+      },
+      "details": {
+        "content_selectors": {
+          "full_description": "#product-description",
+          "specifications": ".tech-specs-table",
+          "main_image": ".product-main-image img"
+        },
+        "nested_lists": [
+          {
+            "name": "gallery",
+            "container": ".product-gallery",
+            "item_selector": ".gallery-item",
+            "selectors": {
+              "image_url": "img.gallery-image"
+            }
+          },
+          {
+            "name": "reviews",
+            "container": "#reviews-list",
+            "item_selector": ".review-item",
+            "selectors": {
+              "author": ".review-author",
+              "text": ".review-text",
+              "rating": ".review-rating",
+              "date": ".review-date"
+            }
+          }
+        ]
+      }
+    },{
+      "enabled": false,
+      "name": "Интернет-магазин электроники",
+      "url": "https://example-shop.com/products",
+      "container_selector": ".products-list .product-item",
+      "item_selectors": {
+        "product_name": ".product-title",
+        "price": ".price-value",
+        "rating": ".rating-stars",
+        "details_link": "a.product-link"
+      },
+      "pagination": {
+        "type": "url_parameter",
+        "param": "page",
+        "max_pages": 5
+      },
+      "details": {
+        "content_selectors": {
+          "full_description": "#product-description",
+          "specifications": ".tech-specs-table",
+          "main_image": ".product-main-image img"
+        },
+        "nested_lists": [
+          {
+            "name": "gallery",
+            "container": ".product-gallery",
+            "item_selector": ".gallery-item",
+            "selectors": {
+              "image_url": "img.gallery-image"
+            }
+          },
+          {
+            "name": "reviews",
+            "container": "#reviews-list",
+            "item_selector": ".review-item",
+            "selectors": {
+              "author": ".review-author",
+              "text": ".review-text",
+              "rating": ".review-rating",
+              "date": ".review-date"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "enabled": false,
+      "name": "Новостной агрегатор",
+      "url": "https://news.example.com/articles",
+      "container_selector": ".news-grid .article-preview",
+      "item_selectors": {
+        "headline": "h2.article-title",
+        "summary": ".article-summary",
+        "category": ".article-category",
+        "details_link": "a.read-more"
+      },
+      "details": {
+        "content_selectors": {
+          "full_text": ".article-content",
+          "author_info": ".author-bio",
+          "publication_date": ".pub-date"
+        },
+        "nested_lists": [
+          {
+            "name": "related_articles",
+            "container": ".related-news",
+            "item_selector": ".related-item",
+            "selectors": {
+              "title": ".related-title",
+              "link": "a.related-link"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "enabled": true,
+      "name": "10 качественных промптов для ChatGPT, которые действительно помогают в работе\u2060\u2060",
+      "url": "https://pikabu.ru/story/10_kachestvennyikh_promptov_dlya_chatgpt_kotoryie_deystvitelno_pomogayut_v_rabote_10836515",
+      "container_selector": ".story__content-inner div",
+      "item_selectors": {
+        "title": ".story-block .story-block_type_text ol li p",
+        "text": ".story-block .story-block_type_text blockquote"
+      }
+    }
+  ]
+}

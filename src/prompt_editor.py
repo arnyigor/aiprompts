@@ -1,10 +1,22 @@
-# ui/prompt_editor.py
 import logging
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QDialog, QTextEdit, QVBoxLayout, QLabel, QLineEdit, QPushButton, \
-    QHBoxLayout, QListWidget, QListWidgetItem, QTabWidget, QMessageBox, QInputDialog
+from PyQt6.QtWidgets import (
+    QDialog,
+    QTextEdit,
+    QVBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QHBoxLayout,
+    QListWidget,
+    QListWidgetItem,
+    QTabWidget,
+    QMessageBox,
+    QComboBox, QInputDialog
+)
 
+from src.category_manager import CATEGORIES, CategoryManager
 from src.models import Variable
 from src.prompt_manager import PromptManager
 
@@ -15,25 +27,40 @@ class PromptEditor(QDialog):
         self.logger = logging.getLogger(__name__)
         self.prompt_manager = prompt_manager
         self.prompt_id = prompt_id
+        self.cat_manager = CategoryManager()
         self.setWindowTitle("Редактор промпта")
-        self.setGeometry(200, 200, 600, 400)
+        self.setGeometry(200, 200, 800, 600)  # Увеличение размера окна
+
+        # Категории
+        self.category_selector = QComboBox()
+        self.category_selector.addItem("Общее", "general")
+        for code, cat in CATEGORIES.items():
+            self.category_selector.addItem(
+                cat["name"]["ru"],
+                code
+            )
 
         # Поля формы
         self.title_field = QLineEdit()
-        self.description_field = QTextEdit()  # Единое описание
+        self.description_field = QTextEdit()
+        self.description_field.setMinimumHeight(30)  # Увеличение поля описания
 
-        # Вкладки для контента
+        # Вкладки контента
         self.content_tabs = QTabWidget()
         self.content_ru = QTextEdit()
+        self.content_ru.setMinimumHeight(200)
         self.content_en = QTextEdit()
+        self.content_en.setMinimumHeight(200)
         self.content_tabs.addTab(self.content_ru, "RU контент")
         self.content_tabs.addTab(self.content_en, "EN контент")
 
-        self.category_field = QLineEdit()
         self.tags_field = QLineEdit()
         self.variables_list = QListWidget()
+        self.variables_list.setMinimumHeight(50)
         self.add_variable_btn = QPushButton("Добавить переменную")
         self.save_btn = QPushButton("Сохранить")
+        self.analyze_btn = QPushButton("Определить категорию")
+        self.analyze_btn.clicked.connect(self.analyze_content)
 
         # Layout
         layout = QVBoxLayout()
@@ -44,11 +71,11 @@ class PromptEditor(QDialog):
         layout.addWidget(QLabel("Контент:"))
         layout.addWidget(self.content_tabs)
         layout.addWidget(QLabel("Категория:"))
-        layout.addWidget(self.category_field)
+        layout.addWidget(self.category_selector)
+        layout.addWidget(self.analyze_btn)
         layout.addWidget(QLabel("Теги (через запятую):"))
         layout.addWidget(self.tags_field)
 
-        # Блок с переменными
         variables_layout = QHBoxLayout()
         variables_layout.addWidget(self.variables_list)
         variables_layout.addWidget(self.add_variable_btn)
@@ -60,38 +87,24 @@ class PromptEditor(QDialog):
         # События
         self.add_variable_btn.clicked.connect(self.add_variable)
         self.save_btn.clicked.connect(self.save_prompt)
-
         if self.prompt_id:
             self.load_prompt_data()
 
     def load_prompt_data(self):
-        """Загрузка данных существующего промпта"""
-        self.logger.info(f"Загрузка промпта: {self.prompt_id}")
-
-        # Получаем промпт через менеджер
         prompt = self.prompt_manager.get_prompt(self.prompt_id)
-
         if not prompt:
-            self.logger.error("Промпт не найден")
-            QMessageBox.warning(self, "Ошибка", "Промпт не существует")
             return
-
-        # Добавляем в кеш
-        # self.prompt_manager.prompts[self.prompt_id] = prompt - ошибка!!!!
-
         self.title_field.setText(prompt.title)
         self.description_field.setText(prompt.description)
-
-        # Заполнение контента
-        if 'ru' in prompt.content:
-            self.content_ru.setText(prompt.content['ru'])
-        if 'en' in prompt.content:
-            self.content_en.setText(prompt.content['en'])
-
-        self.category_field.setText(prompt.category)
+        self.content_ru.setText(prompt.content.get('ru', ''))
+        self.content_en.setText(prompt.content.get('en', ''))
         self.tags_field.setText(", ".join(prompt.tags))
-
-        # Переменные
+        # Установка категории
+        category_code = prompt.category
+        index = self.category_selector.findData(category_code)
+        if index >= 0:
+            self.category_selector.setCurrentIndex(index)
+        # Загрузка переменных
         self.variables_list.clear()
         for var in prompt.variables:
             item = QListWidgetItem(f"{var.name} ({var.type}): {var.description}")
@@ -100,34 +113,48 @@ class PromptEditor(QDialog):
 
     def save_prompt(self):
         try:
-            """Сохранение промпта с мультиязычным контентом"""
+            category_code = self.category_selector.currentData()
             variables = []
             for i in range(self.variables_list.count()):
                 var_data = self.variables_list.item(i).data(Qt.ItemDataRole.UserRole)
                 variables.append(Variable(**var_data))
-
             prompt_data = {
                 "title": self.title_field.text(),
                 "description": self.description_field.toPlainText(),
-                "content": {  # Теперь словарь с языками
+                "content": {
                     "ru": self.content_ru.toPlainText(),
                     "en": self.content_en.toPlainText()
                 },
-                "category": self.category_field.text(),
+                "category": category_code,
                 "tags": [t.strip() for t in self.tags_field.text().split(",")],
                 "variables": variables,
                 "ai_model": "gpt-3"
             }
-
             if self.prompt_id:
                 self.prompt_manager.edit_prompt(self.prompt_id, prompt_data)
             else:
                 self.prompt_manager.add_prompt(prompt_data)
-
             self.accept()
         except Exception as e:
-            self.logger.error(f"Ошибка сохранения промпта {str(e)}", exc_info=True)
             QMessageBox.critical(self, "Ошибка", str(e))
+
+    def analyze_content(self):
+        text = self.content_ru.toPlainText() + self.content_en.toPlainText()
+        suggestions = self.cat_manager.suggest(text)
+        if suggestions:
+            category_code = suggestions[0]
+            index = self.category_selector.findData(category_code)
+            if index >= 0:
+                self.category_selector.setCurrentIndex(index)
+            else:
+                self.show_info("Информация", "Нет подходящей категории")
+        else:
+            self.show_info("Информация", "Категория не определена")
+
+    def show_info(self, title, message):
+        QMessageBox.information(self, title, message)
+
+        # Добавьте этот метод в класс:
 
     def add_variable(self):
         """Добавление новой переменной через диалог"""
@@ -145,7 +172,11 @@ class PromptEditor(QDialog):
         if not ok:
             return
 
-        description, ok = QInputDialog.getText(self, "Описание", "Введите описание:")
+        description, ok = QInputDialog.getText(
+            self,
+            "Описание",
+            "Введите описание:"
+        )
         if not ok:
             return
 

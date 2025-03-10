@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional
 from uuid import uuid4
 
+from src.category_manager import CategoryManager
 from src.models import Prompt
 from src.storage import LocalStorage
 
@@ -15,24 +16,45 @@ class PromptManager:
 
     def __init__(self, storage_path="prompts"):
         self.logger = logging.getLogger(__name__)
+        self.cat_manager = CategoryManager()
         self.storage = LocalStorage(storage_path)
-        self.prompts = {}  # Кэш промптов
+        self.prompts = {p.id: p for p in self.storage.list_prompts()}
         self.storage_path = Path(storage_path)
+        self.load_all_prompts()
+
+    def load_all_prompts(self):
+        """Загрузка всех промптов в кэш при старте"""
+        for prompt in self.storage.list_prompts():
+            self.prompts[prompt.id] = prompt
+        self.logger.info(f"Загружено {len(self.prompts)} промптов")
 
     def list_prompts(self) -> list[Prompt]:
-        """Возвращает список всех промптов"""
-        return self.storage.list_prompts()
+        """Загружает промпты в кэш при первом вызове"""
+        return list(self.prompts.values())
 
     def get_prompt(self, prompt_id: str) -> Optional[Prompt]:
         """Интерфейсный метод для получения промпта"""
-        return self.storage.load_prompt(prompt_id)  # Используйте метод хранилища
+        return self.storage.load_prompt(prompt_id)
 
-    def search_prompts(self, query: str) -> list[Prompt]:
-        """Поиск промптов по запросу"""
+    def is_in_category_tree(self, child_code: str, parent_code: str) -> bool:
+        current = self.cat_manager.get_category(child_code)
+        while current.parent:
+            if current.parent == parent_code:
+                return True
+            current = self.cat_manager.get_category(current.parent)
+        return False
+
+    def search_prompts(self, query: str, category: str = None) -> list[Prompt]:
         results = []
-        for prompt in self.list_prompts():
-            if query in prompt.title.lower() or query in prompt.description.lower():
-                results.append(prompt)
+        for prompt in self.prompts.values():
+            # Извлекаем текст из контента
+            content_text = " ".join(str(v) for v in prompt.content.values())  # Объединяем все языки
+            # Проверяем все поля
+            if (query.lower() in prompt.title.lower() or
+                    query.lower() in prompt.description.lower() or
+                    query.lower() in content_text.lower()):
+                if not category or self.is_in_category_tree(prompt.category, category):
+                    results.append(prompt)
         return results
 
     def validate_unique(self, prompt_id):
@@ -57,7 +79,7 @@ class PromptManager:
         if prompt_id not in self.prompts:
             raise ValueError("Prompt не найден")
 
-        updated_data = self.prompts[prompt_id].dict()
+        updated_data = self.prompts[prompt_id].model_dump()
         updated_data.update(new_data)
         updated_prompt = Prompt(**updated_data)
 
@@ -66,10 +88,11 @@ class PromptManager:
 
     def delete_prompt(self, prompt_id: str):
         self.logger.warning(f"Удаление промпта {prompt_id}")
-        # Используйте self.storage.path вместо base_path
         file_path = self.storage.storage_path / f"{prompt_id}.json"
         if file_path.exists():
             file_path.unlink()
+        if prompt_id in self.prompts:
+            del self.prompts[prompt_id]
 
     def get_prompt_history(self, prompt_id: str):
         """Получение истории версий промпта"""
@@ -94,14 +117,3 @@ class PromptManager:
         with open(version_file, 'r') as f:
             data = json.load(f)
             self.edit_prompt(prompt_id, data)
-
-    def search_prompts(self, query: str, category: str = None):
-        """Поиск промптов по запросу и категории"""
-        results = []
-        for prompt in self.prompts.values():
-            if (query.lower() in prompt.title.lower() or
-                    query.lower() in prompt.description.lower() or
-                    query.lower() in prompt.content.lower()):
-                if not category or prompt.category == category:
-                    results.append(prompt)
-        return results

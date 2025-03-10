@@ -1,9 +1,16 @@
 # data/models.py
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Optional
 from uuid import uuid4
 
 from pydantic import BaseModel, Field, validator, ConfigDict
+
+
+class Category(BaseModel):
+    code: str
+    name: dict[str, str]
+    parent: Optional[str] = None
+    children: list[str] = []
 
 
 class Variable(BaseModel):
@@ -28,8 +35,8 @@ class Prompt(BaseModel):
         default_factory=lambda: {"ru": "", "en": ""},
         description="Контент с поддержкой языков (ru/en)"
     )
-    category: str
-    tags: List[str]
+    category: str = "general"  # Хранит код категории
+    tags: list[str] = []
     variables: List[Variable]
     metadata: dict = {}
     ai_model: str

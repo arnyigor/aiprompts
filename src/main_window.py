@@ -2,11 +2,11 @@
 import logging
 
 from PyQt6.QtWidgets import QMainWindow, QListWidget, QVBoxLayout, QWidget, QPushButton, \
-    QHBoxLayout, QLineEdit, QLabel, QMessageBox
+    QHBoxLayout, QLineEdit, QLabel, QMessageBox, QComboBox
 
+from src.preview import PromptPreview
 from src.prompt_editor import PromptEditor
 from src.prompt_manager import PromptManager
-from src.preview import PromptPreview
 
 
 class MainWindow(QMainWindow):
@@ -17,6 +17,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Prompt Manager")
         self.setGeometry(100, 100, 800, 600)
 
+        # Фильтр по языкам
+        self.lang_filter = QComboBox()
+        self.lang_filter.addItems(["Все", "RU", "EN"])
         # UI Components
         self.prompt_list = QListWidget()
         self.search_field = QLineEdit()
@@ -24,6 +27,11 @@ class MainWindow(QMainWindow):
         self.preview_button = QPushButton("Просмотр")
         self.edit_button = QPushButton("Редактировать")
         self.delete_button = QPushButton("Удалить")
+
+        # Добавляем выпадающий список категорий
+        self.category_filter = QComboBox()
+        self.category_filter.addItem("Все категории")
+        self.category_filter.currentTextChanged.connect(self.filter_prompts)
 
         # Layout setup
         main_layout = QHBoxLayout()
@@ -33,7 +41,15 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(QLabel("Поиск:"))
         left_layout.addWidget(self.search_field)
         left_layout.addWidget(self.prompt_list)
+        # Обновленный layout
+        left_layout.addWidget(QLabel("Язык:"))
+        left_layout.addWidget(self.lang_filter)
+        left_layout.addWidget(QLabel("Категория:"))
+        left_layout.addWidget(self.category_filter)
 
+        # Подключение обновленного поиска
+        self.lang_filter.currentTextChanged.connect(self.filter_prompts)
+        self.category_filter.currentTextChanged.connect(self.filter_prompts)
         # Right panel (buttons)
         button_layout = QVBoxLayout()
         button_layout.addWidget(self.add_button)
@@ -61,11 +77,17 @@ class MainWindow(QMainWindow):
         self.load_prompts()
 
     def load_prompts(self):
-        """Загрузка промптов в список"""
+        """Загрузка промптов в список с обновлением кэша"""
         self.prompt_list.clear()
         prompts = self.prompt_manager.list_prompts()
         for prompt in prompts:
             self.prompt_list.addItem(f"{prompt.title} ({prompt.id})")
+        categories = set()
+        for prompt in self.prompt_manager.list_prompts():
+            categories.add(prompt.category)
+        self.category_filter.clear()
+        self.category_filter.addItem("Все категории")
+        self.category_filter.addItems(sorted(categories))
 
     def preview_selected(self):
         """Открытие предпросмотра"""
@@ -88,11 +110,15 @@ class MainWindow(QMainWindow):
 
     def filter_prompts(self):
         """Фильтрация промптов по поисковому запросу"""
-        query = self.search_field.text().lower()
-        filtered = self.prompt_manager.search_prompts(query)
-        self.prompt_list.clear()
-        for prompt in filtered:
-            self.prompt_list.addItem(f"{prompt.title} ({prompt.id})")
+        try:
+            query = self.search_field.text().lower()
+            filtered = self.prompt_manager.search_prompts(query)
+            self.prompt_list.clear()
+            for prompt in filtered:
+                self.prompt_list.addItem(f"{prompt.title} ({prompt.id})")
+        except Exception as e:
+            self.logger.error(f"Ошибка фильтрации: {str(e)}", exc_info=True)
+            QMessageBox.critical(self, "Ошибка", f"Не удалось выполнить поиск {str(e)}")
 
     def open_editor(self):
         self.logger.debug("Открытие редактора...")
