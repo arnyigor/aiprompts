@@ -1,4 +1,5 @@
 import logging
+import os
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
@@ -17,6 +18,7 @@ from PyQt6.QtWidgets import (
 )
 
 from src.category_manager import CATEGORIES, CategoryManager
+from src.huggingface_api import HuggingFaceInference
 from src.models import Variable
 from src.prompt_manager import PromptManager
 
@@ -25,11 +27,19 @@ class PromptEditor(QDialog):
     def __init__(self, prompt_manager: PromptManager, prompt_id=None):
         super().__init__()
         self.logger = logging.getLogger(__name__)
+        self.hf_api = HuggingFaceInference()
         self.prompt_manager = prompt_manager
         self.prompt_id = prompt_id
         self.cat_manager = CategoryManager()
         self.setWindowTitle("Редактор промпта")
         self.setGeometry(200, 200, 800, 600)  # Увеличение размера окна
+        # Добавьте кнопку:
+        self.run_prompt_btn = QPushButton("Выполнить через Hugging Face")
+        self.run_prompt_btn.clicked.connect(self.execute_prompt)
+        # Добавьте поле вывода:
+        self.output_field = QTextEdit()
+        self.output_field.setReadOnly(True)
+        self.output_field.setMinimumHeight(200)
 
         # Категории
         self.category_selector = QComboBox()
@@ -70,6 +80,9 @@ class PromptEditor(QDialog):
         layout.addWidget(self.description_field)
         layout.addWidget(QLabel("Контент:"))
         layout.addWidget(self.content_tabs)
+        layout.addWidget(self.run_prompt_btn)
+        layout.addWidget(QLabel("Результат:"))
+        layout.addWidget(self.output_field)
         layout.addWidget(QLabel("Категория:"))
         layout.addWidget(self.category_selector)
         layout.addWidget(self.analyze_btn)
@@ -89,6 +102,51 @@ class PromptEditor(QDialog):
         self.save_btn.clicked.connect(self.save_prompt)
         if self.prompt_id:
             self.load_prompt_data()
+
+    def execute_prompt(self):
+        def update_output(response):
+            self.output_field.setText(response)
+
+        def stream_handler():
+            try:
+                prompt_data = self.get_current_prompt_data()
+                messages = [{"role": "user", "content": prompt_data["content"]["ru"]}]
+                response = ""
+                for chunk in self.hf_api.client.chat.completions.create(
+                        messages=messages,
+                        stream=True
+                ):
+                    if chunk.choices and chunk.choices[0].delta.content:
+                        response += chunk.choices[0].delta.content
+                        update_output(response)
+            except Exception as e:
+                update_output(f"Ошибка: {str(e)}")
+
+        # Запускаем в отдельном потоке, чтобы не блокировать GUI
+        from PyQt6.QtCore import QRunnable, QThreadPool
+        class Worker(QRunnable):
+            def run(self):
+                stream_handler()
+
+        threadpool = QThreadPool.globalInstance()
+        worker = Worker()
+        threadpool.start(worker)
+
+    def get_current_prompt_data(self) -> dict:
+        """Формирует данные текущего промпта из полей формы"""
+        return {
+            "title": self.title_field.text(),
+            "description": self.description_field.toPlainText(),
+            "content": {
+                "ru": self.content_ru.toPlainText(),
+                "en": self.content_en.toPlainText()
+            },
+            "category": self.category_selector.currentData(),
+            "tags": [t.strip() for t in self.tags_field.text().split(",")],
+            "variables": [item.data(Qt.ItemDataRole.UserRole) for item in
+                          self.variables_list.items()],
+            "ai_model": "gpt-3"  # Можно заменить на текущую модель
+        }
 
     def load_prompt_data(self):
         prompt = self.prompt_manager.get_prompt(self.prompt_id)
