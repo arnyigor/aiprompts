@@ -233,6 +233,10 @@ class CategoryManager:
         self.blacklist = BLACKLIST
         self.categories = self.load_categories()
 
+    def get_categories(self) -> dict:
+        """Возвращает словарь всех категорий с их локализованными названиями"""
+        return CATEGORIES
+
     def load_categories(self) -> dict[str, Category]:
         return {
             code: Category(
@@ -243,6 +247,27 @@ class CategoryManager:
             )
             for code, data in CATEGORIES.items()
         }
+
+    def get_category_tree(self) -> dict:
+        """Возвращает дерево категорий в иерархическом виде"""
+        tree = {}
+        for code, category in CATEGORIES.items():
+            if category["parent"] is None:  # Корневые категории
+                tree[code] = self._build_subtree(code)
+        return tree
+
+    def _build_subtree(self, parent_code: str) -> dict:
+        """Рекурсивно строит поддерево для заданной категории"""
+        subtree = {
+            "name": CATEGORIES[parent_code]["name"],
+            "children": {}
+        }
+
+        for child_code in CATEGORIES[parent_code].get("children", []):
+            if child_code in CATEGORIES:
+                subtree["children"][child_code] = self._build_subtree(child_code)
+
+        return subtree
 
     def get_category(self, code: str) -> Category:
         return self.categories.get(code)

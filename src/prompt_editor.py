@@ -13,19 +13,21 @@ from PyQt6.QtWidgets import (
     QListWidgetItem,
     QTabWidget,
     QMessageBox,
-    QComboBox, QInputDialog, QWidget
+    QComboBox, QInputDialog, QCheckBox, QDoubleSpinBox, QSpinBox, QGroupBox, QWidget, QFormLayout
 )
 
-from src.category_manager import CATEGORIES, CategoryManager
+from src.category_manager import CategoryManager
 from src.huggingface_api import HuggingFaceInference
 from src.huggingface_dialog import HuggingFaceDialog
-from src.models import Variable
+from src.model_dialog import ModelConfigDialog
 from src.prompt_manager import PromptManager
 
 
 class PromptEditor(QDialog):
     def __init__(self, prompt_manager: PromptManager, prompt_id=None):
         super().__init__()
+
+        # Базовая инициализация
         self.logger = logging.getLogger(__name__)
         try:
             self.hf_api = HuggingFaceInference()
@@ -36,119 +38,699 @@ class PromptEditor(QDialog):
         self.prompt_manager = prompt_manager
         self.prompt_id = prompt_id
         self.cat_manager = CategoryManager()
-        self.setWindowTitle("Редактор промпта")
-        self.setGeometry(200, 200, 800, 600)  # Увеличение размера окна
 
-        self.output_field = QTextEdit()
-        self.output_field.setReadOnly(True)
-        self.output_field.setMinimumHeight(200)
-
-        # Категории
-        self.category_selector = QComboBox()
-        self.category_selector.addItem("Общее", "general")
-        for code, cat in CATEGORIES.items():
-            self.category_selector.addItem(
-                cat["name"]["ru"],
-                code
-            )
-
-        # Поля формы
+        # Инициализация UI элементов
         self.title_field = QLineEdit()
+        self.version_field = QLineEdit()
+        self.status_selector = QComboBox()
         self.description_field = QTextEdit()
-        self.description_field.setMinimumHeight(30)  # Увеличение поля описания
-
-        # Вкладки контента
+        self.is_local_checkbox = QCheckBox("Локальный промпт")
+        self.is_favorite_checkbox = QCheckBox("Добавить в избранное")
+        self.rating_score = QDoubleSpinBox()
+        self.rating_votes = QSpinBox()
         self.content_tabs = QTabWidget()
-
-        # Русская вкладка с контейнером
-        ru_container = QWidget()
-        ru_layout = QVBoxLayout()
         self.content_ru = QTextEdit()
-        self.content_ru.setMinimumHeight(200)
-        ru_button_layout = QHBoxLayout()
-        self.run_ru_prompt_btn = QPushButton("Выполнить через Hugging Face")
-        self.run_ru_prompt_btn.clicked.connect(lambda: self.show_huggingface_dialog("ru"))
-        ru_button_layout.addWidget(self.run_ru_prompt_btn)
-        ru_layout.addWidget(self.content_ru)
-        ru_layout.addLayout(ru_button_layout)
-        ru_container.setLayout(ru_layout)
-
-        # Английская вкладка с контейнером
-        en_container = QWidget()
-        en_layout = QVBoxLayout()
         self.content_en = QTextEdit()
-        self.content_en.setMinimumHeight(200)
-        en_button_layout = QHBoxLayout()
-        self.run_en_prompt_btn = QPushButton("Execute with Hugging Face")
-        self.run_en_prompt_btn.clicked.connect(lambda: self.show_huggingface_dialog("en"))
-        en_button_layout.addWidget(self.run_en_prompt_btn)
-        en_layout.addWidget(self.content_en)
-        en_layout.addLayout(en_button_layout)
-        en_container.setLayout(en_layout)
-
-        self.content_tabs.addTab(ru_container, "RU контент")
-        self.content_tabs.addTab(en_container, "EN контент")
-
-        self.tags_field = QLineEdit()
-        self.variables_list = QListWidget()
-        self.variables_list.setMinimumHeight(50)
-        self.add_variable_btn = QPushButton("Добавить переменную")
-        self.save_btn = QPushButton("Сохранить")
+        self.ru_system_prompt = QTextEdit()
+        self.ru_user_prompt = QTextEdit()
+        self.en_system_prompt = QTextEdit()
+        self.en_user_prompt = QTextEdit()
+        self.result_ru = QTextEdit()
+        self.result_en = QTextEdit()
+        self.category_selector = QComboBox()
         self.analyze_btn = QPushButton("Определить категорию")
-        self.analyze_btn.clicked.connect(self.analyze_content)
+        self.models_group = QGroupBox("Совместимые модели")
+        self.models_list = QListWidget()
+        self.tags_field = QLineEdit()
+        self.variables_group = QGroupBox("Переменные")
+        self.variables_list = QListWidget()
+        self.metadata_group = QGroupBox("Метаданные")
+        self.author_id_field = QLineEdit()
+        self.author_name_field = QLineEdit()
+        self.source_field = QLineEdit()
+        self.notes_field = QTextEdit()
+        self.save_btn = QPushButton("Сохранить")
+        self.save_btn.clicked.connect(self.save_prompt)
+        # Настройка базовых полей
+        self.setup_basic_info()
 
-        # Layout
+        # Настройка окна
+        self.setWindowTitle("Редактор промпта")
+        self.setGeometry(200, 200, 800, 800)
+
+        # Добавляем вкладки верхнего уровня
+        self.main_tabs = QTabWidget()
+
+        # Добавляем поле предпросмотра JSON
+        self.json_preview = QTextEdit()
+        self.json_preview.setReadOnly(True)
+
+        # Настройка UI
+        self.setup_ui()
+
+        # Загрузка данных если редактируем существующий промпт
+        if self.prompt_id:
+            self.load_prompt_data()
+
+    def setup_basic_info(self):
+        """Настройка базовых полей"""
+        # Версия по умолчанию
+        self.version_field.setText("1.0.0")
+
+        # Статусы
+        self.status_selector.clear()
+        self.status_selector.addItems([
+            "active",
+            "draft",
+            "archived",
+            "deprecated"
+        ])
+        self.status_selector.setCurrentText("draft")  # По умолчанию
+
+    def setup_ui(self):
+        """Настройка пользовательского интерфейса"""
+        main_layout = QVBoxLayout()
+
+        # Создаем вкладки
+        self.main_tabs = QTabWidget()
+
+        # Создаем все вкладки
+        self.create_basic_info_tab()  # Основная информация
+        self.create_content_tab()  # Контент
+        self.create_metadata_tab()  # Метаданные
+        self.create_variables_tab()  # Переменные
+        self.create_models_tab()  # Модели
+
+        # Добавляем вкладки в основной layout
+        main_layout.addWidget(self.main_tabs)
+
+        # Добавляем предпросмотр JSON
+        json_group = QGroupBox("Предпросмотр JSON")
+        json_layout = QVBoxLayout()
+        json_layout.addWidget(self.json_preview)
+        json_group.setLayout(json_layout)
+        json_group.setMaximumHeight(200)
+        main_layout.addWidget(json_group)
+
+        # Добавляем кнопки
+        buttons_layout = QHBoxLayout()
+        buttons_layout.addWidget(self.save_btn)
+        cancel_btn = QPushButton("Отмена")
+        cancel_btn.clicked.connect(self.reject)
+        buttons_layout.addWidget(cancel_btn)
+        main_layout.addLayout(buttons_layout)
+
+        self.setLayout(main_layout)
+
+        # Подключаем обновление JSON при изменении любого поля
+        self.setup_json_update_triggers()
+
+    def create_metadata_tab(self):
+        """Вкладка с метаданными"""
+        tab = QWidget()
         layout = QVBoxLayout()
-        layout.addWidget(QLabel("Название:"))
-        layout.addWidget(self.title_field)
-        layout.addWidget(QLabel("Описание:"))
-        layout.addWidget(self.description_field)
-        layout.addWidget(QLabel("Контент:"))
+
+        # Поиск
+        search_layout = QHBoxLayout()
+        search_field = QLineEdit()
+        search_field.setPlaceholderText("Поиск по метаданным...")
+        search_layout.addWidget(search_field)
+
+        # Форма метаданных
+        form = QFormLayout()
+        form.addRow("ID автора:", self.author_id_field)
+        form.addRow("Имя автора:", self.author_name_field)
+        form.addRow("Источник:", self.source_field)
+
+        # Заметки
+        notes_group = QGroupBox("Заметки")
+        notes_layout = QVBoxLayout()
+        notes_layout.addWidget(self.notes_field)
+        notes_group.setLayout(notes_layout)
+
+        # История изменений
+        history_group = QGroupBox("История изменений")
+        history_layout = QVBoxLayout()
+        self.history_list = QListWidget()
+        history_layout.addWidget(self.history_list)
+        history_group.setLayout(history_layout)
+
+        layout.addLayout(search_layout)
+        layout.addLayout(form)
+        layout.addWidget(notes_group)
+        layout.addWidget(history_group)
+
+        tab.setLayout(layout)
+        self.main_tabs.addTab(tab, "Метаданные")
+
+    def create_variables_tab(self):
+        """Вкладка с переменными"""
+        tab = QWidget()
+        layout = QVBoxLayout()
+
+        # Список переменных
+        self.variables_list.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
+        layout.addWidget(self.variables_list)
+
+        # Кнопки управления
+        buttons_layout = QHBoxLayout()
+
+        add_btn = QPushButton("Добавить")
+        add_btn.clicked.connect(self.add_variable)
+
+        delete_btn = QPushButton("Удалить")
+        delete_btn.clicked.connect(self.delete_variable)
+
+        buttons_layout.addWidget(add_btn)
+        buttons_layout.addWidget(delete_btn)
+        layout.addLayout(buttons_layout)
+
+        tab.setLayout(layout)
+        self.main_tabs.addTab(tab, "Переменные")
+
+    def delete_variable(self):
+        """Удаление выбранной переменной"""
+        current = self.variables_list.currentItem()
+        if current:
+            self.variables_list.takeItem(self.variables_list.row(current))
+
+    def create_models_tab(self):
+        """Вкладка с моделями"""
+        tab = QWidget()
+        layout = QVBoxLayout()
+
+        # Список моделей с группировкой по провайдерам
+        models = {
+            "OpenAI": [
+                "gpt-4-turbo-preview",
+                "gpt-4",
+                "gpt-4-32k",
+                "gpt-3.5-turbo",
+                "gpt-3.5-turbo-16k",
+                "dall-e-3",
+                "dall-e-2"
+            ],
+            "Anthropic": [
+                "claude-3-opus",
+                "claude-3-sonnet",
+                "claude-3-haiku",
+                "claude-2.1",
+                "claude-2.0",
+                "claude-instant"
+            ],
+            "Google": [
+                "gemini-pro",
+                "gemini-ultra",
+                "palm-2"
+            ],
+            "Meta": [
+                "llama-2-70b",
+                "llama-2-13b",
+                "llama-2-7b"
+            ],
+            "Mistral AI": [
+                "mistral-large",
+                "mistral-medium",
+                "mistral-small"
+            ]
+        }
+
+        # Настройка списка моделей
+        self.models_list.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
+
+        for provider, provider_models in models.items():
+            # Добавляем заголовок провайдера
+            provider_item = QListWidgetItem(provider)
+            provider_item.setFlags(provider_item.flags() & ~Qt.ItemFlag.ItemIsSelectable)
+            provider_item.setBackground(self.palette().alternateBase())
+            self.models_list.addItem(provider_item)
+
+            # Добавляем модели провайдера
+            for model in provider_models:
+                self.models_list.addItem(model)
+
+        layout.addWidget(self.models_list)
+        tab.setLayout(layout)
+        self.main_tabs.addTab(tab, "Модели")
+
+    def edit_model(self):
+        """Редактирование выбранной модели"""
+        current_item = self.models_list.currentItem()
+        if not current_item:
+            QMessageBox.warning(self, "Предупреждение", "Выберите модель для редактирования")
+            return
+
+        # Получаем текущую конфигурацию
+        current_config = current_item.data(Qt.ItemDataRole.UserRole)
+
+        # Создаем диалог и заполняем текущими данными
+        dialog = ModelConfigDialog(self)
+        dialog.name.setText(current_config.get('name', ''))
+        provider_index = dialog.provider.findText(current_config.get('provider', ''))
+        if provider_index >= 0:
+            dialog.provider.setCurrentIndex(provider_index)
+        dialog.max_tokens.setValue(current_config.get('max_tokens', 2000))
+        dialog.temperature.setValue(current_config.get('temperature', 0.7))
+
+        # Если пользователь подтвердил изменения
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            new_config = dialog.get_config()
+            current_item.setText(f"{new_config['name']} ({new_config['provider']})")
+            current_item.setData(Qt.ItemDataRole.UserRole, new_config)
+
+    def delete_model(self):
+        """Удаление выбранной модели"""
+        current_item = self.models_list.currentItem()
+        if not current_item:
+            QMessageBox.warning(self, "Предупреждение", "Выберите модель для удаления")
+            return
+
+        # Проверяем, не является ли элемент заголовком провайдера
+        if not current_item.data(Qt.ItemDataRole.UserRole):
+            QMessageBox.warning(self, "Предупреждение", "Нельзя удалить заголовок провайдера")
+            return
+
+        # Запрашиваем подтверждение
+        reply = QMessageBox.question(
+            self,
+            "Подтверждение",
+            f"Вы уверены, что хотите удалить модель {current_item.text()}?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            self.models_list.takeItem(self.models_list.row(current_item))
+
+    def add_model(self):
+        """Добавление новой модели"""
+        dialog = ModelConfigDialog(self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            config = dialog.get_config()
+
+            # Находим нужного провайдера или создаем новую группу
+            provider = config['provider']
+            provider_found = False
+
+            for i in range(self.models_list.count()):
+                item = self.models_list.item(i)
+                if item.text() == provider:
+                    provider_found = True
+                    insert_index = i + 1
+                    # Ищем конец группы этого провайдера
+                    while (insert_index < self.models_list.count() and
+                           self.models_list.item(insert_index).data(Qt.ItemDataRole.UserRole)):
+                        insert_index += 1
+                    break
+
+            # Если провайдер не найден, добавляем новую группу в конец
+            if not provider_found:
+                provider_item = QListWidgetItem(provider)
+                provider_item.setFlags(provider_item.flags() & ~Qt.ItemFlag.ItemIsSelectable)
+                provider_item.setBackground(self.palette().alternateBase())
+                self.models_list.addItem(provider_item)
+                insert_index = self.models_list.count()
+
+            # Добавляем новую модель
+            new_item = QListWidgetItem(f"{config['name']} ({config['provider']})")
+            new_item.setData(Qt.ItemDataRole.UserRole, config)
+            self.models_list.insertItem(insert_index, new_item)
+
+    def validate_data(self) -> bool:
+        """Проверка корректности данных"""
+        if not self.title_field.text().strip():
+            QMessageBox.warning(self, "Ошибка", "Название не может быть пустым")
+            return False
+
+        if not self.content_ru.toPlainText().strip() and not self.content_en.toPlainText().strip():
+            QMessageBox.warning(self, "Ошибка", "Должен быть заполнен хотя бы один язык контента")
+            return False
+
+        if not self.category_selector.currentData():
+            QMessageBox.warning(self, "Ошибка", "Необходимо выбрать категорию")
+            return False
+
+        return True
+
+    def create_basic_info_tab(self):
+        """Вкладка с основной информацией"""
+        tab = QWidget()
+        layout = QVBoxLayout()
+
+        # Базовые поля
+        form_layout = QFormLayout()
+        form_layout.addRow("Название:", self.title_field)
+        form_layout.addRow("Версия:", self.version_field)
+        form_layout.addRow("Статус:", self.status_selector)
+        form_layout.addRow("Описание:", self.description_field)
+
+        # Флаги и рейтинг
+        flags_rating = self.setup_flags_and_rating()
+
+        layout.addLayout(form_layout)
+        layout.addLayout(flags_rating)
+        tab.setLayout(layout)
+        # Ограничиваем высоту описания
+        self.description_field.setMaximumHeight(60)
+        self.description_field.setPlaceholderText("Краткое описание промпта...")
+        self.main_tabs.addTab(tab, "Основное")
+
+    def setup_json_update_triggers(self):
+        """Подключение сигналов для обновления JSON"""
+        # Основная информация
+        self.title_field.textChanged.connect(self.update_json_preview)
+        self.version_field.textChanged.connect(self.update_json_preview)
+        self.status_selector.currentTextChanged.connect(self.update_json_preview)
+        self.description_field.textChanged.connect(self.update_json_preview)
+        self.is_local_checkbox.stateChanged.connect(self.update_json_preview)
+        self.is_favorite_checkbox.stateChanged.connect(self.update_json_preview)
+        self.rating_score.valueChanged.connect(self.update_json_preview)
+        self.rating_votes.valueChanged.connect(self.update_json_preview)
+
+        # Контент
+        self.ru_system_prompt.textChanged.connect(self.update_json_preview)
+        self.ru_user_prompt.textChanged.connect(self.update_json_preview)
+        self.en_system_prompt.textChanged.connect(self.update_json_preview)
+        self.en_user_prompt.textChanged.connect(self.update_json_preview)
+        self.category_selector.currentIndexChanged.connect(self.update_json_preview)
+        self.tags_field.textChanged.connect(self.update_json_preview)
+
+        # Метаданные
+        self.author_id_field.textChanged.connect(self.update_json_preview)
+        self.author_name_field.textChanged.connect(self.update_json_preview)
+        self.source_field.textChanged.connect(self.update_json_preview)
+        self.notes_field.textChanged.connect(self.update_json_preview)
+
+    def update_json_preview(self):
+        """Обновление предпросмотра JSON"""
+        try:
+            import json
+            data = self.get_current_prompt_data()
+            formatted_json = json.dumps(data, indent=2, ensure_ascii=False)
+            self.json_preview.setPlainText(formatted_json)
+        except Exception as e:
+            self.json_preview.setPlainText(f"Ошибка формирования JSON: {str(e)}")
+
+    def setup_flags_and_rating(self):
+        """Настройка флагов и рейтинга"""
+        flags_rating_layout = QHBoxLayout()
+
+        # Чекбоксы
+        checkbox_layout = QVBoxLayout()
+        self.is_local_checkbox.setChecked(True)
+        checkbox_layout.addWidget(self.is_local_checkbox)
+        checkbox_layout.addWidget(self.is_favorite_checkbox)
+
+        # Рейтинг
+        rating_layout = QHBoxLayout()
+        self.rating_score.setRange(0, 5)
+        self.rating_score.setSingleStep(0.5)
+        self.rating_votes.setRange(0, 9999)
+        rating_layout.addWidget(QLabel("Рейтинг:"))
+        rating_layout.addWidget(self.rating_score)
+        rating_layout.addWidget(QLabel("Голосов:"))
+        rating_layout.addWidget(self.rating_votes)
+
+        flags_rating_layout.addLayout(checkbox_layout)
+        flags_rating_layout.addLayout(rating_layout)
+
+        return flags_rating_layout
+
+    def setup_models_section(self):
+        """Настройка секции моделей"""
+        models_layout = QVBoxLayout()
+        self.models_list.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
+
+        models = {
+            "OpenAI": [
+                "gpt-4-turbo-preview",
+                "gpt-4",
+                "gpt-4-32k",
+                "gpt-3.5-turbo",
+                "gpt-3.5-turbo-16k",
+                "dall-e-3",
+                "dall-e-2"
+            ],
+            "Anthropic": [
+                "claude-3-opus",
+                "claude-3-sonnet",
+                "claude-3-haiku",
+                "claude-2.1",
+                "claude-2.0",
+                "claude-instant"
+            ],
+            "Google": [
+                "gemini-pro",
+                "gemini-ultra",
+                "palm-2"
+            ],
+            "Meta": [
+                "llama-2-70b",
+                "llama-2-13b",
+                "llama-2-7b"
+            ],
+            "Mistral AI": [
+                "mistral-large",
+                "mistral-medium",
+                "mistral-small"
+            ],
+            "Stability AI": [
+                "stable-diffusion-xl",
+                "stable-diffusion-2"
+            ]
+        }
+
+        for provider, provider_models in models.items():
+            provider_item = QListWidgetItem(provider)
+            provider_item.setFlags(provider_item.flags() & ~Qt.ItemFlag.ItemIsSelectable)
+            provider_item.setBackground(self.palette().alternateBase())
+            self.models_list.addItem(provider_item)
+
+            for model in provider_models:
+                self.models_list.addItem(model)
+
+        self.models_list.setMaximumHeight(200)
+        models_layout.addWidget(self.models_list)
+        self.models_group.setLayout(models_layout)
+
+    def create_content_tab(self):
+        """Вкладка с контентом"""
+        tab = QWidget()
+        layout = QVBoxLayout()
+
+        # Добавляем вкладки для контента
+        self.content_tabs = QTabWidget()
+        self.setup_content_tabs()  # Настраиваем вкладки RU и EN
         layout.addWidget(self.content_tabs)
-        layout.addWidget(QLabel("Результат:"))
-        layout.addWidget(self.output_field)
-        layout.addWidget(QLabel("Категория:"))
-        layout.addWidget(self.category_selector)
-        layout.addWidget(self.analyze_btn)
+
+        # Категория
+        category_layout = self.setup_category_section()
+        layout.addLayout(category_layout)
+
+        # Теги
         layout.addWidget(QLabel("Теги (через запятую):"))
         layout.addWidget(self.tags_field)
 
-        variables_layout = QHBoxLayout()
-        variables_layout.addWidget(self.variables_list)
-        variables_layout.addWidget(self.add_variable_btn)
-        layout.addLayout(variables_layout)
-        layout.addWidget(self.save_btn)
+        tab.setLayout(layout)
+        self.main_tabs.addTab(tab, "Контент")
 
-        self.setLayout(layout)
+    def setup_category_section(self):
+        """Настройка секции категорий"""
+        category_layout = QHBoxLayout()
 
-        # События
-        self.add_variable_btn.clicked.connect(self.add_variable)
-        self.save_btn.clicked.connect(self.save_prompt)
-        if self.prompt_id:
-            self.load_prompt_data()
+        # Заполнение категорий
+        self.category_selector.clear()
+        self.category_selector.addItem("Общее", "general")
+
+        # Получаем категории из менеджера категорий
+        categories = self.cat_manager.get_categories()
+
+        # Сортируем категории по имени для удобства
+        sorted_categories = sorted(
+            categories.items(),
+            key=lambda x: x[1]["name"]["ru"]
+        )
+
+        # Добавляем категории в селектор
+        for code, cat in sorted_categories:
+            self.category_selector.addItem(cat["name"]["ru"], code)
+
+        # Добавляем элементы в layout
+        category_layout.addWidget(QLabel("Категория:"))
+        category_layout.addWidget(self.category_selector)
+
+        # Кнопка анализа
+        self.analyze_btn = QPushButton("Определить категорию")
+        self.analyze_btn.clicked.connect(self.analyze_content)
+        category_layout.addWidget(self.analyze_btn)
+
+        return category_layout
+
+    def analyze_content(self):
+        """Анализ контента для определения категории"""
+        # Собираем весь текст из промптов
+        ru_text = (self.ru_system_prompt.toPlainText() + " " +
+                   self.ru_user_prompt.toPlainText())
+        en_text = (self.en_system_prompt.toPlainText() + " " +
+                   self.en_user_prompt.toPlainText())
+
+        text = ru_text + " " + en_text
+
+        # Получаем предложения по категории
+        suggestions = self.cat_manager.suggest(text)
+
+        if suggestions:
+            category_code = suggestions[0]
+            index = self.category_selector.findData(category_code)
+            if index >= 0:
+                self.category_selector.setCurrentIndex(index)
+                QMessageBox.information(self, "Информация",
+                                        f"Предложенная категория: {self.category_selector.currentText()}")
+            else:
+                QMessageBox.information(self, "Информация", "Нет подходящей категории")
+        else:
+            QMessageBox.information(self, "Информация", "Категория не определена")
+
+    def setup_content_tabs(self):
+        """Настройка вкладок контента"""
+        # Русская вкладка
+        ru_container = QWidget()
+        ru_layout = QVBoxLayout()
+
+        # Промпт на русском
+        ru_prompt_group = QGroupBox("Промпт")
+        ru_prompt_layout = QVBoxLayout()
+
+        # Поле ввода системного промпта
+        ru_system_label = QLabel("Системный промпт:")
+        self.ru_system_prompt = QTextEdit()
+        self.ru_system_prompt.setPlaceholderText("Введите системный промпт...")
+        self.ru_system_prompt.setMaximumHeight(100)
+
+        # Поле ввода пользовательского промпта
+        ru_user_label = QLabel("Пользовательский промпт:")
+        self.ru_user_prompt = QTextEdit()
+        self.ru_user_prompt.setPlaceholderText("Введите пользовательский промпт...")
+
+        ru_prompt_layout.addWidget(ru_system_label)
+        ru_prompt_layout.addWidget(self.ru_system_prompt)
+        ru_prompt_layout.addWidget(ru_user_label)
+        ru_prompt_layout.addWidget(self.ru_user_prompt)
+        ru_prompt_group.setLayout(ru_prompt_layout)
+
+        # Результат на русском
+        ru_result_group = QGroupBox("Результат")
+        ru_result_layout = QVBoxLayout()
+        self.result_ru = QTextEdit()
+        self.result_ru.setReadOnly(True)
+        self.result_ru.setPlaceholderText("Здесь появится результат обработки...")
+        ru_result_layout.addWidget(self.result_ru)
+        ru_result_group.setLayout(ru_result_layout)
+
+        # Кнопки для русской версии
+        ru_buttons = QHBoxLayout()
+        ru_process_btn = QPushButton("Выполнить через Hugging Face")
+        ru_process_btn.clicked.connect(lambda: self.show_huggingface_dialog("ru"))
+        ru_copy_btn = QPushButton("Копировать результат в промпт")
+        ru_copy_btn.clicked.connect(lambda: self.copy_result_to_prompt("ru"))
+        ru_clear_btn = QPushButton("Очистить")
+        ru_clear_btn.clicked.connect(lambda: self.clear_content("ru"))
+        ru_buttons.addWidget(ru_process_btn)
+        ru_buttons.addWidget(ru_copy_btn)
+        ru_buttons.addWidget(ru_clear_btn)
+
+        ru_layout.addWidget(ru_prompt_group)
+        ru_layout.addWidget(ru_result_group)
+        ru_layout.addLayout(ru_buttons)
+        ru_container.setLayout(ru_layout)
+
+        # Английская вкладка
+        en_container = QWidget()
+        en_layout = QVBoxLayout()
+
+        # Промпт на английском
+        en_prompt_group = QGroupBox("Prompt")
+        en_prompt_layout = QVBoxLayout()
+
+        # Поле ввода системного промпта
+        en_system_label = QLabel("System prompt:")
+        self.en_system_prompt = QTextEdit()
+        self.en_system_prompt.setPlaceholderText("Enter system prompt...")
+        self.en_system_prompt.setMaximumHeight(100)
+
+        # Поле ввода пользовательского промпта
+        en_user_label = QLabel("User prompt:")
+        self.en_user_prompt = QTextEdit()
+        self.en_user_prompt.setPlaceholderText("Enter user prompt...")
+
+        en_prompt_layout.addWidget(en_system_label)
+        en_prompt_layout.addWidget(self.en_system_prompt)
+        en_prompt_layout.addWidget(en_user_label)
+        en_prompt_layout.addWidget(self.en_user_prompt)
+        en_prompt_group.setLayout(en_prompt_layout)
+
+        # Результат на английском
+        en_result_group = QGroupBox("Result")
+        en_result_layout = QVBoxLayout()
+        self.result_en = QTextEdit()
+        self.result_en.setReadOnly(True)
+        self.result_en.setPlaceholderText("Processing result will appear here...")
+        en_result_layout.addWidget(self.result_en)
+        en_result_group.setLayout(en_result_layout)
+
+        # Кнопки для английской версии
+        en_buttons = QHBoxLayout()
+        en_process_btn = QPushButton("Execute with Hugging Face")
+        en_process_btn.clicked.connect(lambda: self.show_huggingface_dialog("en"))
+        en_copy_btn = QPushButton("Copy result to prompt")
+        en_copy_btn.clicked.connect(lambda: self.copy_result_to_prompt("en"))
+        en_clear_btn = QPushButton("Clear")
+        en_clear_btn.clicked.connect(lambda: self.clear_content("en"))
+        en_buttons.addWidget(en_process_btn)
+        en_buttons.addWidget(en_copy_btn)
+        en_buttons.addWidget(en_clear_btn)
+
+        en_layout.addWidget(en_prompt_group)
+        en_layout.addWidget(en_result_group)
+        en_layout.addLayout(en_buttons)
+        en_container.setLayout(en_layout)
+
+        # Добавляем вкладки
+        self.content_tabs.addTab(ru_container, "RU контент")
+        self.content_tabs.addTab(en_container, "EN контент")
 
     def show_huggingface_dialog(self, language):
         """Показывает диалог Hugging Face и обрабатывает результат"""
         try:
-            content_field = self.content_ru if language == "ru" else self.content_en
-            current_text = content_field.toPlainText()
+            # Получаем системный и пользовательский промпты
+            if language == "ru":
+                system_prompt = self.ru_system_prompt.toPlainText()
+                user_prompt = self.ru_user_prompt.toPlainText()
+                result_field = self.result_ru
+            else:
+                system_prompt = self.en_system_prompt.toPlainText()
+                user_prompt = self.en_user_prompt.toPlainText()
+                result_field = self.result_en
 
-            dialog = HuggingFaceDialog(self.hf_api, current_text, self)
-            result = dialog.exec()  # Получаем результат выполнения диалога
+            # Формируем полный промпт
+            full_prompt = ""
+            if system_prompt:
+                full_prompt += f"System: {system_prompt}\n\n"
+            if user_prompt:
+                full_prompt += f"User: {user_prompt}"
 
-            # Обновляем текст только если диалог был принят (нажата кнопка "Вернуть результат")
-            if result == QDialog.DialogCode.Accepted:
-                dialog_result = dialog.get_result()
-                if dialog_result:
-                    # Добавляем результат в конец текущего текста с разделителем
-                    new_text = current_text
-                    if new_text:
-                        new_text += "\n\n"
-                    new_text += dialog_result
-                    content_field.setPlainText(new_text)
-                    self.logger.debug("Результат успешно добавлен в редактор")
+            if not full_prompt.strip():
+                QMessageBox.warning(self, "Предупреждение", "Введите хотя бы один промпт")
+                return
+
+            dialog = HuggingFaceDialog(self.hf_api, full_prompt, self)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                result = dialog.get_result()
+                if result:
+                    result_field.setPlainText(result)
+                    self.logger.debug("Результат успешно добавлен")
                 else:
                     self.logger.warning("Получен пустой результат от диалога")
+                    QMessageBox.warning(self, "Предупреждение", "Получен пустой результат")
             else:
                 self.logger.debug("Диалог был закрыт без сохранения результата")
 
@@ -156,68 +738,167 @@ class PromptEditor(QDialog):
             self.logger.error(f"Ошибка при открытии диалога: {str(e)}", exc_info=True)
             QMessageBox.critical(self, "Ошибка", f"Не удалось открыть диалог: {str(e)}")
 
-    def get_current_prompt_data(self) -> dict:
-        """Формирует данные текущего промпта из полей формы"""
-        # Получаем переменные из списка
-        variables = []
-        for i in range(self.variables_list.count()):
-            item = self.variables_list.item(i)
-            if item:
-                variables.append(item.data(Qt.ItemDataRole.UserRole))
+    def copy_result_to_prompt(self, language):
+        """Копирование результата в поле промпта"""
+        if language == "ru":
+            result_text = self.result_ru.toPlainText()
+            current_text = self.ru_user_prompt.toPlainText()
+            if current_text:
+                self.ru_user_prompt.setPlainText(f"{current_text}\n\n{result_text}")
+            else:
+                self.ru_user_prompt.setPlainText(result_text)
+        else:
+            result_text = self.result_en.toPlainText()
+            current_text = self.en_user_prompt.toPlainText()
+            if current_text:
+                self.en_user_prompt.setPlainText(f"{current_text}\n\n{result_text}")
+            else:
+                self.en_user_prompt.setPlainText(result_text)
 
-        return {
-            "title": self.title_field.text(),
-            "description": self.description_field.toPlainText(),
-            "content": {
-                "ru": self.content_ru.toPlainText(),
-                "en": self.content_en.toPlainText()
-            },
-            "category": self.category_selector.currentData(),
-            "tags": [t.strip() for t in self.tags_field.text().split(",") if t.strip()],
-            "variables": variables,
-            "ai_model": "gpt-3"
-        }
+    def clear_content(self, language):
+        """Очистка полей контента"""
+        if language == "ru":
+            self.ru_system_prompt.clear()
+            self.ru_user_prompt.clear()
+            self.result_ru.clear()
+        else:
+            self.en_system_prompt.clear()
+            self.en_user_prompt.clear()
+            self.result_en.clear()
 
     def load_prompt_data(self):
+        """Загрузка данных существующего промпта"""
         prompt = self.prompt_manager.get_prompt(self.prompt_id)
         if not prompt:
             return
+
+        # Основная информация
         self.title_field.setText(prompt.title)
+        self.version_field.setText(prompt.version)
+
+        index = self.status_selector.findText(prompt.status)
+        if index >= 0:
+            self.status_selector.setCurrentIndex(index)
+
+        self.is_local_checkbox.setChecked(prompt.is_local)
+        self.is_favorite_checkbox.setChecked(prompt.is_favorite)
+
+        if hasattr(prompt, 'rating'):
+            self.rating_score.setValue(prompt.rating.get('score', 0))
+            self.rating_votes.setValue(prompt.rating.get('votes', 0))
+
         self.description_field.setText(prompt.description)
-        self.content_ru.setText(prompt.content.get('ru', ''))
-        self.content_en.setText(prompt.content.get('en', ''))
-        self.tags_field.setText(", ".join(prompt.tags))
-        # Установка категории
+
+        # Контент
+        if hasattr(prompt, 'content'):
+            content = prompt.content
+            if isinstance(content, dict):
+                ru_content = content.get('ru', {})
+                en_content = content.get('en', {})
+
+                self.ru_system_prompt.setText(ru_content.get('system', ''))
+                self.ru_user_prompt.setText(ru_content.get('user', ''))
+                self.en_system_prompt.setText(en_content.get('system', ''))
+                self.en_user_prompt.setText(en_content.get('user', ''))
+            else:
+                # Обратная совместимость со старым форматом
+                self.ru_user_prompt.setText(content.get('ru', ''))
+                self.en_user_prompt.setText(content.get('en', ''))
+
+        # Категория
         category_code = prompt.category
         index = self.category_selector.findData(category_code)
         if index >= 0:
             self.category_selector.setCurrentIndex(index)
-        # Загрузка переменных
+
+        # Модели
+        if hasattr(prompt, 'compatible_models'):
+            for i in range(self.models_list.count()):
+                item = self.models_list.item(i)
+                if item and item.text() in prompt.compatible_models:
+                    item.setSelected(True)
+
+        # Теги
+        self.tags_field.setText(", ".join(prompt.tags))
+
+        # Переменные
         self.variables_list.clear()
         for var in prompt.variables:
-            item = QListWidgetItem(f"{var.name} ({var.type}): {var.description}")
+            item = QListWidgetItem(f"{var['name']} ({var['type']}): {var['description']}")
             item.setData(Qt.ItemDataRole.UserRole, var)
             self.variables_list.addItem(item)
 
-    def save_prompt(self):
-        try:
-            category_code = self.category_selector.currentData()
-            variables = []
-            for i in range(self.variables_list.count()):
-                var_data = self.variables_list.item(i).data(Qt.ItemDataRole.UserRole)
-                variables.append(Variable(**var_data))
-            prompt_data = {
-                "title": self.title_field.text(),
-                "description": self.description_field.toPlainText(),
-                "content": {
-                    "ru": self.content_ru.toPlainText(),
-                    "en": self.content_en.toPlainText()
-                },
-                "category": category_code,
-                "tags": [t.strip() for t in self.tags_field.text().split(",")],
-                "variables": variables,
-                "ai_model": "gpt-3"
+        # Метаданные
+        if hasattr(prompt, 'metadata'):
+            metadata = prompt.metadata
+            self.author_id_field.setText(metadata.get('author', {}).get('id', ''))
+            self.author_name_field.setText(metadata.get('author', {}).get('name', ''))
+            self.source_field.setText(metadata.get('source', ''))
+            self.notes_field.setText(metadata.get('notes', ''))
+
+        # Обновляем предпросмотр JSON
+        self.update_json_preview()
+
+    def get_current_prompt_data(self) -> dict:
+        """Получение текущих данных промпта"""
+        # Получаем выбранные модели
+        selected_models = [
+            item.text() for item in self.models_list.selectedItems()
+            if item.data(Qt.ItemDataRole.UserRole) is not None  # Пропускаем заголовки провайдеров
+        ]
+
+        # Получаем переменные
+        variables = []
+        for i in range(self.variables_list.count()):
+            item = self.variables_list.item(i)
+            if item and item.data(Qt.ItemDataRole.UserRole):
+                variables.append(item.data(Qt.ItemDataRole.UserRole))
+
+        # Формируем контент
+        content = {
+            "ru": {
+                "system": self.ru_system_prompt.toPlainText(),
+                "user": self.ru_user_prompt.toPlainText()
+            },
+            "en": {
+                "system": self.en_system_prompt.toPlainText(),
+                "user": self.en_user_prompt.toPlainText()
             }
+        }
+
+        return {
+            "title": self.title_field.text(),
+            "version": self.version_field.text(),
+            "status": self.status_selector.currentText(),
+            "is_local": self.is_local_checkbox.isChecked(),
+            "is_favorite": self.is_favorite_checkbox.isChecked(),
+            "rating": {
+                "score": self.rating_score.value(),
+                "votes": self.rating_votes.value()
+            },
+            "description": self.description_field.toPlainText(),
+            "content": content,
+            "category": self.category_selector.currentData(),
+            "compatible_models": selected_models,
+            "tags": [t.strip() for t in self.tags_field.text().split(",") if t.strip()],
+            "variables": variables,
+            "metadata": {
+                "author": {
+                    "id": self.author_id_field.text(),
+                    "name": self.author_name_field.text()
+                },
+                "source": self.source_field.text(),
+                "notes": self.notes_field.toPlainText()
+            }
+        }
+
+    def save_prompt(self):
+        """Сохранение промпта с валидацией"""
+        if not self.validate_data():
+            return
+
+        try:
+            prompt_data = self.get_current_prompt_data()
             if self.prompt_id:
                 self.prompt_manager.edit_prompt(self.prompt_id, prompt_data)
             else:
@@ -225,19 +906,6 @@ class PromptEditor(QDialog):
             self.accept()
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", str(e))
-
-    def analyze_content(self):
-        text = self.content_ru.toPlainText() + self.content_en.toPlainText()
-        suggestions = self.cat_manager.suggest(text)
-        if suggestions:
-            category_code = suggestions[0]
-            index = self.category_selector.findData(category_code)
-            if index >= 0:
-                self.category_selector.setCurrentIndex(index)
-            else:
-                self.show_info("Информация", "Нет подходящей категории")
-        else:
-            self.show_info("Информация", "Категория не определена")
 
     def show_info(self, title, message):
         QMessageBox.information(self, title, message)

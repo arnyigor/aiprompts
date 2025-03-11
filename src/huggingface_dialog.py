@@ -30,32 +30,55 @@ class Worker(QRunnable):
 
 class HuggingFaceDialog(QDialog):
     MODELS = {
-        "Mistral-7B (Low Memory)": {
+        "Mistral-7B-Instruct": {
             "id": "mistralai/Mistral-7B-Instruct-v0.2",
             "params": {
-                "max_new_tokens": 512,
+                "max_new_tokens": 256,
                 "temperature": 0.7,
                 "top_p": 0.85,
                 "repetition_penalty": 1.1,
-            }
+            },
+            "description": "Мощная модель с хорошим балансом качества и производительности. Отлично подходит для русского языка."
         },
-        "DeepSeek-Coder-6B (Optimized)": {
-            "id": "deepseek-ai/deepseek-coder-6.7b-instruct",
+        "Zephyr-7B": {
+            "id": "HuggingFaceH4/zephyr-7b-beta",
             "params": {
-                "max_new_tokens": 512,
-                "temperature": 0.5,
-                "top_p": 0.95,
-                "repetition_penalty": 1.2,
-            }
-        },
-        "Mixtral-8x7B (High RAM)": {
-            "id": "mistralai/Mixtral-8x7B-Instruct-v0.1",
-            "params": {
-                "max_new_tokens": 256,
-                "temperature": 0.6,
+                "max_new_tokens": 200,
+                "temperature": 0.7,
                 "top_p": 0.9,
                 "repetition_penalty": 1.15,
-            }
+            },
+            "description": "Специализированная модель для инструкций и промптов. Хорошо следует указаниям."
+        },
+        "SOLAR-10.7B-Instruct": {
+            "id": "upstage/SOLAR-10.7B-Instruct-v1.0",
+            "params": {
+                "max_new_tokens": 150,
+                "temperature": 0.65,
+                "top_p": 0.9,
+                "repetition_penalty": 1.2,
+            },
+            "description": "Продвинутая модель с отличным пониманием контекста и генерацией текста."
+        },
+        "Phi-2": {
+            "id": "microsoft/phi-2",
+            "params": {
+                "max_new_tokens": 180,
+                "temperature": 0.75,
+                "top_p": 0.9,
+                "repetition_penalty": 1.1,
+            },
+            "description": "Компактная но мощная модель от Microsoft. Хорошо работает с техническими текстами."
+        },
+        "Starling-LM": {
+            "id": "berkeley-nest/Starling-LM-7B-alpha",
+            "params": {
+                "max_new_tokens": 200,
+                "temperature": 0.7,
+                "top_p": 0.85,
+                "repetition_penalty": 1.15,
+            },
+            "description": "Оптимизирована для следования инструкциям и генерации качественных ответов."
         }
     }
 
@@ -118,10 +141,16 @@ class HuggingFaceDialog(QDialog):
         self.close_button = QPushButton("Закрыть без сохранения")
         self.close_button.clicked.connect(self.reject)  # Используем reject вместо accept
 
+        self.model_description = QLabel()
+        self.model_description.setWordWrap(True)
+        self.model_selector.currentTextChanged.connect(self.update_model_description)
+
         # Компоновка
         layout = QVBoxLayout()
+        # Обновляем layout
         layout.addWidget(QLabel("Выберите модель:"))
         layout.addWidget(self.model_selector)
+        layout.addWidget(self.model_description)
         layout.addWidget(self.settings_group)
         layout.addWidget(QLabel("Промпт:"))
         layout.addWidget(self.prompt_field)
@@ -134,7 +163,19 @@ class HuggingFaceDialog(QDialog):
         button_layout.addWidget(self.close_button)
         layout.addLayout(button_layout)
 
+        # Устанавливаем начальное описание
+        self.update_model_description(self.model_selector.currentText())
         self.setLayout(layout)
+
+    def update_model_description(self, model_name: str):
+        """Обновляет описание выбранной модели"""
+        description = self.MODELS[model_name]["description"]
+        self.model_description.setText(f"Описание: {description}")
+
+        # Обновляем параметры по умолчанию
+        params = self.MODELS[model_name]["params"]
+        self.temperature_slider.setValue(int(params["temperature"] * 100))
+        self.max_tokens_spin.setValue(params["max_new_tokens"])
 
     def apply_result(self):
         """Возвращает результат в редактор промптов"""
@@ -181,14 +222,45 @@ class HuggingFaceDialog(QDialog):
         # Получаем текст промпта
         prompt_text = self.prompt_field.toPlainText()
 
+        # Добавляем инструкции для улучшения промпта
+        enhanced_prompt = (
+            "Ты - опытный эксперт по промпт-инжинирингу. Твоя задача - улучшить следующий промпт, "
+            "используя лучшие практики:\n\n"
+            "ИСХОДНЫЙ ПРОМПТ:\n"
+            f"{prompt_text}\n\n"
+            "ИНСТРУКЦИИ ПО УЛУЧШЕНИЮ:\n"
+            "1. Сделай промпт более конкретным и четким\n"
+            "2. Добавь контекст и ограничения\n"
+            "3. Структурируй информацию в логическом порядке\n"
+            "4. Используй маркеры для разделения частей промпта\n"
+            "5. Укажи желаемый формат ответа\n"
+            "6. Добавь примеры, если это уместно\n\n"
+            "ФОРМАТ ОТВЕТА:\n"
+            "### Роль и контекст\n"
+            "[Определи роль ИИ и контекст задачи]\n\n"
+            "### Основная задача\n"
+            "[Четко сформулируй, что нужно сделать]\n\n"
+            "### Ограничения и требования\n"
+            "[Укажи важные ограничения и специальные требования]\n\n"
+            "### Формат вывода\n"
+            "[Опиши, как должен быть структурирован ответ]\n\n"
+            "### Дополнительные указания\n"
+            "[Добавь уточнения или примеры при необходимости]\n\n"
+            "ВАЖНО:\n"
+            "- Сохрани исходную цель и основной смысл промпта\n"
+            "- Используй профессиональный, но понятный язык\n"
+            "- Добавь конкретные метрики или критерии успеха\n"
+            "- Учитывай возможные ограничения модели\n\n"
+            "Пожалуйста, верни только улучшенную версию промпта, следуя указанному формату, "
+            "без дополнительных пояснений или комментариев."
+        )
+
         # Проверяем длину текста
-        if len(prompt_text) > 1000:
-            warning_msg = ("Текст слишком длинный. Он будет обрезан до 1000 символов "
-                           "для экономии памяти и ускорения обработки.")
+        if len(enhanced_prompt) > 500:  # Уменьшаем максимальную длину
+            warning_msg = "Текст слишком длинный. Он будет обрезан до 500 символов."
             self.logger.warning(warning_msg)
             QMessageBox.warning(self, "Предупреждение", warning_msg)
-            prompt_text = prompt_text[:1000]
-            self.prompt_field.setPlainText(prompt_text)
+            enhanced_prompt = enhanced_prompt[:500]
 
         # Обновляем параметры
         params = model_config["params"].copy()
@@ -208,7 +280,7 @@ class HuggingFaceDialog(QDialog):
             # Создаем и запускаем worker
             worker = Worker(
                 parent=self,
-                handler=lambda: self._process_request(prompt_text, params, model_config["id"]),
+                handler=lambda: self._process_request(enhanced_prompt, params, model_config["id"]),
                 logger=self.logger
             )
             QThreadPool.globalInstance().start(worker)
