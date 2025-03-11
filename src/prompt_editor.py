@@ -1,5 +1,4 @@
 import logging
-import os
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
@@ -14,11 +13,12 @@ from PyQt6.QtWidgets import (
     QListWidgetItem,
     QTabWidget,
     QMessageBox,
-    QComboBox, QInputDialog
+    QComboBox, QInputDialog, QWidget
 )
 
 from src.category_manager import CATEGORIES, CategoryManager
 from src.huggingface_api import HuggingFaceInference
+from src.huggingface_dialog import HuggingFaceDialog
 from src.models import Variable
 from src.prompt_manager import PromptManager
 
@@ -27,16 +27,18 @@ class PromptEditor(QDialog):
     def __init__(self, prompt_manager: PromptManager, prompt_id=None):
         super().__init__()
         self.logger = logging.getLogger(__name__)
-        self.hf_api = HuggingFaceInference()
+        try:
+            self.hf_api = HuggingFaceInference()
+        except Exception as e:
+            self.logger.error(f"Ошибка инициализации HuggingFaceInference: {str(e)}", exc_info=True)
+            raise
+
         self.prompt_manager = prompt_manager
         self.prompt_id = prompt_id
         self.cat_manager = CategoryManager()
         self.setWindowTitle("Редактор промпта")
         self.setGeometry(200, 200, 800, 600)  # Увеличение размера окна
-        # Добавьте кнопку:
-        self.run_prompt_btn = QPushButton("Выполнить через Hugging Face")
-        self.run_prompt_btn.clicked.connect(self.execute_prompt)
-        # Добавьте поле вывода:
+
         self.output_field = QTextEdit()
         self.output_field.setReadOnly(True)
         self.output_field.setMinimumHeight(200)
@@ -57,12 +59,35 @@ class PromptEditor(QDialog):
 
         # Вкладки контента
         self.content_tabs = QTabWidget()
+
+        # Русская вкладка с контейнером
+        ru_container = QWidget()
+        ru_layout = QVBoxLayout()
         self.content_ru = QTextEdit()
         self.content_ru.setMinimumHeight(200)
+        ru_button_layout = QHBoxLayout()
+        self.run_ru_prompt_btn = QPushButton("Выполнить через Hugging Face")
+        self.run_ru_prompt_btn.clicked.connect(lambda: self.show_huggingface_dialog("ru"))
+        ru_button_layout.addWidget(self.run_ru_prompt_btn)
+        ru_layout.addWidget(self.content_ru)
+        ru_layout.addLayout(ru_button_layout)
+        ru_container.setLayout(ru_layout)
+
+        # Английская вкладка с контейнером
+        en_container = QWidget()
+        en_layout = QVBoxLayout()
         self.content_en = QTextEdit()
         self.content_en.setMinimumHeight(200)
-        self.content_tabs.addTab(self.content_ru, "RU контент")
-        self.content_tabs.addTab(self.content_en, "EN контент")
+        en_button_layout = QHBoxLayout()
+        self.run_en_prompt_btn = QPushButton("Execute with Hugging Face")
+        self.run_en_prompt_btn.clicked.connect(lambda: self.show_huggingface_dialog("en"))
+        en_button_layout.addWidget(self.run_en_prompt_btn)
+        en_layout.addWidget(self.content_en)
+        en_layout.addLayout(en_button_layout)
+        en_container.setLayout(en_layout)
+
+        self.content_tabs.addTab(ru_container, "RU контент")
+        self.content_tabs.addTab(en_container, "EN контент")
 
         self.tags_field = QLineEdit()
         self.variables_list = QListWidget()
@@ -80,7 +105,6 @@ class PromptEditor(QDialog):
         layout.addWidget(self.description_field)
         layout.addWidget(QLabel("Контент:"))
         layout.addWidget(self.content_tabs)
-        layout.addWidget(self.run_prompt_btn)
         layout.addWidget(QLabel("Результат:"))
         layout.addWidget(self.output_field)
         layout.addWidget(QLabel("Категория:"))
@@ -103,37 +127,44 @@ class PromptEditor(QDialog):
         if self.prompt_id:
             self.load_prompt_data()
 
-    def execute_prompt(self):
-        def update_output(response):
-            self.output_field.setText(response)
+    def show_huggingface_dialog(self, language):
+        """Показывает диалог Hugging Face и обрабатывает результат"""
+        try:
+            content_field = self.content_ru if language == "ru" else self.content_en
+            current_text = content_field.toPlainText()
 
-        def stream_handler():
-            try:
-                prompt_data = self.get_current_prompt_data()
-                messages = [{"role": "user", "content": prompt_data["content"]["ru"]}]
-                response = ""
-                for chunk in self.hf_api.client.chat.completions.create(
-                        messages=messages,
-                        stream=True
-                ):
-                    if chunk.choices and chunk.choices[0].delta.content:
-                        response += chunk.choices[0].delta.content
-                        update_output(response)
-            except Exception as e:
-                update_output(f"Ошибка: {str(e)}")
+            dialog = HuggingFaceDialog(self.hf_api, current_text, self)
+            result = dialog.exec()  # Получаем результат выполнения диалога
 
-        # Запускаем в отдельном потоке, чтобы не блокировать GUI
-        from PyQt6.QtCore import QRunnable, QThreadPool
-        class Worker(QRunnable):
-            def run(self):
-                stream_handler()
+            # Обновляем текст только если диалог был принят (нажата кнопка "Вернуть результат")
+            if result == QDialog.DialogCode.Accepted:
+                dialog_result = dialog.get_result()
+                if dialog_result:
+                    # Добавляем результат в конец текущего текста с разделителем
+                    new_text = current_text
+                    if new_text:
+                        new_text += "\n\n"
+                    new_text += dialog_result
+                    content_field.setPlainText(new_text)
+                    self.logger.debug("Результат успешно добавлен в редактор")
+                else:
+                    self.logger.warning("Получен пустой результат от диалога")
+            else:
+                self.logger.debug("Диалог был закрыт без сохранения результата")
 
-        threadpool = QThreadPool.globalInstance()
-        worker = Worker()
-        threadpool.start(worker)
+        except Exception as e:
+            self.logger.error(f"Ошибка при открытии диалога: {str(e)}", exc_info=True)
+            QMessageBox.critical(self, "Ошибка", f"Не удалось открыть диалог: {str(e)}")
 
     def get_current_prompt_data(self) -> dict:
         """Формирует данные текущего промпта из полей формы"""
+        # Получаем переменные из списка
+        variables = []
+        for i in range(self.variables_list.count()):
+            item = self.variables_list.item(i)
+            if item:
+                variables.append(item.data(Qt.ItemDataRole.UserRole))
+
         return {
             "title": self.title_field.text(),
             "description": self.description_field.toPlainText(),
@@ -142,10 +173,9 @@ class PromptEditor(QDialog):
                 "en": self.content_en.toPlainText()
             },
             "category": self.category_selector.currentData(),
-            "tags": [t.strip() for t in self.tags_field.text().split(",")],
-            "variables": [item.data(Qt.ItemDataRole.UserRole) for item in
-                          self.variables_list.items()],
-            "ai_model": "gpt-3"  # Можно заменить на текущую модель
+            "tags": [t.strip() for t in self.tags_field.text().split(",") if t.strip()],
+            "variables": variables,
+            "ai_model": "gpt-3"
         }
 
     def load_prompt_data(self):

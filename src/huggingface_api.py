@@ -2,42 +2,63 @@ import logging
 import os
 
 from huggingface_hub import InferenceClient
-from requests.exceptions import HTTPError
 
 
 class HuggingFaceInference:
     def __init__(self):
         print("Инициализация HuggingFaceInference...")
-        api_key = os.getenv("HUGGINGFACE_API_KEY")
-        if not api_key:
+        self.api_key = os.getenv("HUGGINGFACE_API_KEY")
+        if not self.api_key:
             raise ValueError("API-ключ Hugging Face не найден в переменных окружения")
-        model_name: str = "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
-        self.logger = logging.getLogger(__name__)
-        self.client = InferenceClient(
-            model=model_name,
-            provider="novita",
-            api_key=api_key
-        )
-        self.model_name = model_name
 
-    def query_model(self, messages: list[dict], stream: bool = True) -> str:
+        self.logger = logging.getLogger(__name__)
+        self.client = InferenceClient(token=self.api_key)
+        self.model_name = "mistralai/Mistral-7B-Instruct-v0.2"
+
+        self.logger.info(f"Инициализация HuggingFaceInference завершена")
+
+    def query_model(self, messages: list[dict], **kwargs) -> str:
         try:
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=messages,
-                temperature=0.5,
-                max_tokens=2048,
-                top_p=0.7,
-                stream=stream
-            )
-            response_text = ""
-            for chunk in response:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    response_text += chunk.choices[0].delta.content
-            return response_text
-        except HTTPError as e:  # Теперь ловим HTTPError
-            self.logger.error(f"Ошибка Hugging Face API: {str(e)}")
-            raise
+            prompt = self._format_messages(messages)
+
+            self.logger.info(f"Отправка запроса к модели {self.model_name}")
+            self.logger.debug(f"Промпт: {prompt[:100]}...")
+            self.logger.debug(f"Параметры запроса: {kwargs}")
+
+            try:
+                response = self.client.text_generation(
+                    prompt=prompt,
+                    model=self.model_name,
+                    **kwargs
+                )
+
+                self.logger.debug(f"Получен ответ типа: {type(response)}")
+                self.logger.debug(f"Ответ: {response}")
+
+                if isinstance(response, str):
+                    return response
+                elif hasattr(response, 'generated_text'):
+                    return response.generated_text
+                else:
+                    return str(response)
+
+            except Exception as e:
+                raise Exception(f"Ошибка при выполнении запроса: {str(e)}")
+
         except Exception as e:
-            self.logger.error(f"Неизвестная ошибка: {str(e)}")
-            raise
+            error_msg = f"Ошибка при запросе к модели: {str(e)}"
+            self.logger.error(error_msg, exc_info=True)
+            raise Exception(error_msg)
+
+    def _format_messages(self, messages: list[dict]) -> str:
+        """Форматирует сообщения в промпт для модели"""
+        formatted_messages = []
+        for message in messages:
+            role = message.get("role", "").capitalize()
+            content = message.get("content", "")
+            # Добавляем специальные токены для лучшего форматирования
+            formatted_messages.append(f"<|{role}|>: {content}")
+        # Добавляем токен для ответа ассистента
+        formatted_text = "\n".join(formatted_messages)
+        formatted_text += "\n<|Assistant|>: "
+        return formatted_text
