@@ -64,13 +64,19 @@ class PromptManager:
     def add_prompt(self, prompt_data: dict):
         # Автоматически добавляем временные метки, если их нет
         self.logger.debug("Добавление промпта: %s", prompt_data)
-        # Генерируем id, если его нет
-        if 'id' not in prompt_data:
-            prompt_data['id'] = str(uuid4())
-        prompt_data.setdefault('created_at', datetime.utcnow())
-        prompt_data.setdefault('updated_at', datetime.utcnow())
+        prompt_data = {
+            'id': prompt_data.get('id', str(uuid4())),
+            'created_at': prompt_data.get('created_at', datetime.utcnow()),
+            'updated_at': prompt_data.get('updated_at', datetime.utcnow()),
+            **prompt_data  # Остальные данные промпта
+        }
+        # Создаем и валидируем промпт
         prompt = Prompt(**prompt_data)
+
+        # Проверяем уникальность ID
         self.validate_unique(prompt.id)
+
+        # Сохраняем промпт
         self.prompts[prompt.id] = prompt
         self.storage.save_prompt(prompt)
 

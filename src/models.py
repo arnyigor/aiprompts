@@ -1,6 +1,6 @@
 # data/models.py
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 from uuid import uuid4
 
 from pydantic import BaseModel, Field, validator, ConfigDict
@@ -30,16 +30,23 @@ class Variable(BaseModel):
 class Prompt(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()), description="UUID")
     title: str
+    version: str = "1.0.0"
+    status: str = "draft"
+    is_local: bool = True
+    is_favorite: bool = False
     description: str
     content: Dict[str, str] = Field(  # Контент на разных языках
         default_factory=lambda: {"ru": "", "en": ""},
         description="Контент с поддержкой языков (ru/en)"
     )
-    category: str = "general"  # Хранит код категории
+    compatible_models: List[str] = []
+    category: str = "general"
     tags: list[str] = []
     variables: List[Variable]
-    metadata: dict = {}
-    ai_model: str
+    metadata: Dict = {}
+    rating: Dict[str, Union[float, int]] = Field(
+        default_factory=lambda: {"score": 0.0, "votes": 0}
+    )
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 

@@ -361,8 +361,11 @@ class PromptEditor(QDialog):
             QMessageBox.warning(self, "Ошибка", "Название не может быть пустым")
             return False
 
-        if not self.content_ru.toPlainText().strip() and not self.content_en.toPlainText().strip():
-            QMessageBox.warning(self, "Ошибка", "Должен быть заполнен хотя бы один язык контента")
+        # Проверяем наличие пользовательского промпта хотя бы на одном языке
+        if not (
+                self.ru_user_prompt.toPlainText().strip() or self.en_user_prompt.toPlainText().strip()):
+            QMessageBox.warning(self, "Ошибка",
+                                "Должен быть заполнен хотя бы один язык пользовательского промпта")
             return False
 
         if not self.category_selector.currentData():
@@ -428,6 +431,7 @@ class PromptEditor(QDialog):
             formatted_json = json.dumps(data, indent=2, ensure_ascii=False)
             self.json_preview.setPlainText(formatted_json)
         except Exception as e:
+            self.logger.error(f"Ошибка формирования JSON: {str(e)}", exc_info=True)
             self.json_preview.setPlainText(f"Ошибка формирования JSON: {str(e)}")
 
     def setup_flags_and_rating(self):
@@ -600,20 +604,9 @@ class PromptEditor(QDialog):
         ru_prompt_group = QGroupBox("Промпт")
         ru_prompt_layout = QVBoxLayout()
 
-        # Поле ввода системного промпта
-        ru_system_label = QLabel("Системный промпт:")
-        self.ru_system_prompt = QTextEdit()
-        self.ru_system_prompt.setPlaceholderText("Введите системный промпт...")
-        self.ru_system_prompt.setMaximumHeight(100)
-
         # Поле ввода пользовательского промпта
-        ru_user_label = QLabel("Пользовательский промпт:")
         self.ru_user_prompt = QTextEdit()
-        self.ru_user_prompt.setPlaceholderText("Введите пользовательский промпт...")
-
-        ru_prompt_layout.addWidget(ru_system_label)
-        ru_prompt_layout.addWidget(self.ru_system_prompt)
-        ru_prompt_layout.addWidget(ru_user_label)
+        self.ru_user_prompt.setPlaceholderText("Введите промпт на русском...")
         ru_prompt_layout.addWidget(self.ru_user_prompt)
         ru_prompt_group.setLayout(ru_prompt_layout)
 
@@ -651,20 +644,9 @@ class PromptEditor(QDialog):
         en_prompt_group = QGroupBox("Prompt")
         en_prompt_layout = QVBoxLayout()
 
-        # Поле ввода системного промпта
-        en_system_label = QLabel("System prompt:")
-        self.en_system_prompt = QTextEdit()
-        self.en_system_prompt.setPlaceholderText("Enter system prompt...")
-        self.en_system_prompt.setMaximumHeight(100)
-
         # Поле ввода пользовательского промпта
-        en_user_label = QLabel("User prompt:")
         self.en_user_prompt = QTextEdit()
-        self.en_user_prompt.setPlaceholderText("Enter user prompt...")
-
-        en_prompt_layout.addWidget(en_system_label)
-        en_prompt_layout.addWidget(self.en_system_prompt)
-        en_prompt_layout.addWidget(en_user_label)
+        self.en_user_prompt.setPlaceholderText("Enter your prompt...")
         en_prompt_layout.addWidget(self.en_user_prompt)
         en_prompt_group.setLayout(en_prompt_layout)
 
@@ -701,28 +683,19 @@ class PromptEditor(QDialog):
     def show_huggingface_dialog(self, language):
         """Показывает диалог Hugging Face и обрабатывает результат"""
         try:
-            # Получаем системный и пользовательский промпты
+            # Получаем пользовательский промпт
             if language == "ru":
-                system_prompt = self.ru_system_prompt.toPlainText()
                 user_prompt = self.ru_user_prompt.toPlainText()
                 result_field = self.result_ru
             else:
-                system_prompt = self.en_system_prompt.toPlainText()
                 user_prompt = self.en_user_prompt.toPlainText()
                 result_field = self.result_en
 
-            # Формируем полный промпт
-            full_prompt = ""
-            if system_prompt:
-                full_prompt += f"System: {system_prompt}\n\n"
-            if user_prompt:
-                full_prompt += f"User: {user_prompt}"
-
-            if not full_prompt.strip():
-                QMessageBox.warning(self, "Предупреждение", "Введите хотя бы один промпт")
+            if not user_prompt.strip():
+                QMessageBox.warning(self, "Предупреждение", "Введите промпт")
                 return
 
-            dialog = HuggingFaceDialog(self.hf_api, full_prompt, self)
+            dialog = HuggingFaceDialog(self.hf_api, user_prompt, self)
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 result = dialog.get_result()
                 if result:
@@ -768,105 +741,121 @@ class PromptEditor(QDialog):
 
     def load_prompt_data(self):
         """Загрузка данных существующего промпта"""
-        prompt = self.prompt_manager.get_prompt(self.prompt_id)
-        if not prompt:
-            return
+        try:
+            prompt = self.prompt_manager.get_prompt(self.prompt_id)
+            if not prompt:
+                return
 
-        # Основная информация
-        self.title_field.setText(prompt.title)
-        self.version_field.setText(prompt.version)
+            # Основная информация
+            self.title_field.setText(prompt.title)
+            self.version_field.setText(prompt.version)
 
-        index = self.status_selector.findText(prompt.status)
-        if index >= 0:
-            self.status_selector.setCurrentIndex(index)
+            index = self.status_selector.findText(prompt.status)
+            if index >= 0:
+                self.status_selector.setCurrentIndex(index)
 
-        self.is_local_checkbox.setChecked(prompt.is_local)
-        self.is_favorite_checkbox.setChecked(prompt.is_favorite)
+            self.is_local_checkbox.setChecked(prompt.is_local)
+            self.is_favorite_checkbox.setChecked(prompt.is_favorite)
 
-        if hasattr(prompt, 'rating'):
-            self.rating_score.setValue(prompt.rating.get('score', 0))
-            self.rating_votes.setValue(prompt.rating.get('votes', 0))
+            if hasattr(prompt, 'rating'):
+                self.rating_score.setValue(prompt.rating.get('score', 0))
+                self.rating_votes.setValue(prompt.rating.get('votes', 0))
 
-        self.description_field.setText(prompt.description)
+            self.description_field.setText(prompt.description)
 
-        # Контент
-        if hasattr(prompt, 'content'):
-            content = prompt.content
-            if isinstance(content, dict):
-                ru_content = content.get('ru', {})
-                en_content = content.get('en', {})
+            # Контент
+            if hasattr(prompt, 'content'):
+                content = prompt.content
+                if isinstance(content, dict):
+                    ru_content = content.get('ru', {})
+                    en_content = content.get('en', {})
 
-                self.ru_system_prompt.setText(ru_content.get('system', ''))
-                self.ru_user_prompt.setText(ru_content.get('user', ''))
-                self.en_system_prompt.setText(en_content.get('system', ''))
-                self.en_user_prompt.setText(en_content.get('user', ''))
-            else:
-                # Обратная совместимость со старым форматом
-                self.ru_user_prompt.setText(content.get('ru', ''))
-                self.en_user_prompt.setText(content.get('en', ''))
+                    # Убедимся, что ru_content и en_content являются словарями
+                    if not isinstance(ru_content, dict):
+                        ru_content = {"system": "", "user": ru_content}
+                    if not isinstance(en_content, dict):
+                        en_content = {"system": "", "user": en_content}
 
-        # Категория
-        category_code = prompt.category
-        index = self.category_selector.findData(category_code)
-        if index >= 0:
-            self.category_selector.setCurrentIndex(index)
+                    self.ru_system_prompt.setText(ru_content.get('system', ''))
+                    self.ru_user_prompt.setText(ru_content.get('user', ''))
+                    self.en_system_prompt.setText(en_content.get('system', ''))
+                    self.en_user_prompt.setText(en_content.get('user', ''))
+                else:
+                    self.logger.error("Неверный формат контента: ожидается словарь")
+                    QMessageBox.critical(self, "Ошибка",
+                                         "Неверный формат контента: ожидается словарь")
+                    return
 
-        # Модели
-        if hasattr(prompt, 'compatible_models'):
-            for i in range(self.models_list.count()):
-                item = self.models_list.item(i)
-                if item and item.text() in prompt.compatible_models:
-                    item.setSelected(True)
+            # Категория
+            category_code = prompt.category
+            index = self.category_selector.findData(category_code)
+            if index >= 0:
+                self.category_selector.setCurrentIndex(index)
 
-        # Теги
-        self.tags_field.setText(", ".join(prompt.tags))
+            # Модели
+            if hasattr(prompt, 'compatible_models'):
+                for i in range(self.models_list.count()):
+                    item = self.models_list.item(i)
+                    if item and item.text() in prompt.compatible_models:
+                        item.setSelected(True)
 
-        # Переменные
-        self.variables_list.clear()
-        for var in prompt.variables:
-            item = QListWidgetItem(f"{var['name']} ({var['type']}): {var['description']}")
-            item.setData(Qt.ItemDataRole.UserRole, var)
-            self.variables_list.addItem(item)
+            # Теги
+            self.tags_field.setText(", ".join(prompt.tags))
 
-        # Метаданные
-        if hasattr(prompt, 'metadata'):
-            metadata = prompt.metadata
-            self.author_id_field.setText(metadata.get('author', {}).get('id', ''))
-            self.author_name_field.setText(metadata.get('author', {}).get('name', ''))
-            self.source_field.setText(metadata.get('source', ''))
-            self.notes_field.setText(metadata.get('notes', ''))
+            # Переменные
+            self.variables_list.clear()
+            for var in prompt.variables:
+                item = QListWidgetItem(f"{var.name} ({var.type}): {var.description}")
+                item.setData(Qt.ItemDataRole.UserRole, var)
+                self.variables_list.addItem(item)
 
-        # Обновляем предпросмотр JSON
-        self.update_json_preview()
+            # Метаданные
+            if hasattr(prompt, 'metadata'):
+                metadata = prompt.metadata
+                self.author_id_field.setText(metadata.get('author', {}).get('id', ''))
+                self.author_name_field.setText(metadata.get('author', {}).get('name', ''))
+                self.source_field.setText(metadata.get('source', ''))
+                self.notes_field.setText(metadata.get('notes', ''))
+
+            # Обновляем предпросмотр JSON
+            self.update_json_preview()
+
+        except Exception as e:
+            self.logger.error(f"Ошибка при загрузке данных промпта: {str(e)}", exc_info=True)
+            QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить данные промпта: {str(e)}")
 
     def get_current_prompt_data(self) -> dict:
         """Получение текущих данных промпта"""
         # Получаем выбранные модели
-        selected_models = [
-            item.text() for item in self.models_list.selectedItems()
-            if item.data(Qt.ItemDataRole.UserRole) is not None  # Пропускаем заголовки провайдеров
-        ]
+        selected_models = []
+        for i in range(self.models_list.count()):
+            item = self.models_list.item(i)
+            if item and item.isSelected():
+                # Проверяем, что это не заголовок провайдера
+                if item.flags() & Qt.ItemFlag.ItemIsSelectable:
+                    selected_models.append(item.text())
 
-        # Получаем переменные
+        # Формируем контент
+        content = {
+            "ru": self.ru_user_prompt.toPlainText(),
+            "en": self.en_user_prompt.toPlainText()
+        }
+
+        # Убедимся, что теги не пустые
+        tags = [t.strip() for t in self.tags_field.text().split(",") if t.strip()]
+        if not tags:
+            tags = ["general"]
+
+        # Получаем переменные и преобразуем их в словари
         variables = []
         for i in range(self.variables_list.count()):
             item = self.variables_list.item(i)
             if item and item.data(Qt.ItemDataRole.UserRole):
-                variables.append(item.data(Qt.ItemDataRole.UserRole))
+                variable = item.data(Qt.ItemDataRole.UserRole)
+                variables.append(variable.dict())  # Преобразуем в словарь
 
-        # Формируем контент
-        content = {
-            "ru": {
-                "system": self.ru_system_prompt.toPlainText(),
-                "user": self.ru_user_prompt.toPlainText()
-            },
-            "en": {
-                "system": self.en_system_prompt.toPlainText(),
-                "user": self.en_user_prompt.toPlainText()
-            }
-        }
-
-        return {
+        # Формируем основной словарь данных
+        data = {
             "title": self.title_field.text(),
             "version": self.version_field.text(),
             "status": self.status_selector.currentText(),
@@ -879,8 +868,7 @@ class PromptEditor(QDialog):
             "description": self.description_field.toPlainText(),
             "content": content,
             "category": self.category_selector.currentData(),
-            "compatible_models": selected_models,
-            "tags": [t.strip() for t in self.tags_field.text().split(",") if t.strip()],
+            "tags": tags,
             "variables": variables,
             "metadata": {
                 "author": {
@@ -891,6 +879,12 @@ class PromptEditor(QDialog):
                 "notes": self.notes_field.toPlainText()
             }
         }
+
+        # Добавляем поддерживаемые модели только если они выбраны
+        if selected_models:
+            data["compatible_models"] = selected_models
+
+        return data
 
     def save_prompt(self):
         """Сохранение промпта с валидацией"""
@@ -904,7 +898,9 @@ class PromptEditor(QDialog):
             else:
                 self.prompt_manager.add_prompt(prompt_data)
             self.accept()
+            self.logger.error(f"Промпт: {self.prompt_id} сохранен", exc_info=True)
         except Exception as e:
+            self.logger.error(f"Ошибка сохранения: {str(e)}", exc_info=True)
             QMessageBox.critical(self, "Ошибка", str(e))
 
     def show_info(self, title, message):
