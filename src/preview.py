@@ -158,14 +158,17 @@ class PromptPreview(QDialog):
         )
 
         # Загружаем контент в табы
-        if self.prompt.content.get('ru'):
-            self.ru_content_edit.setPlainText(self.prompt.content['ru'])
+        if isinstance(self.prompt.content, dict):
+            # Для словаря с языками
+            self.ru_content_edit.setPlainText(
+                self.prompt.content.get('ru', "Нет русского контента")
+            )
+            self.en_content_edit.setPlainText(
+                self.prompt.content.get('en', "No English content")
+            )
         else:
-            self.ru_content_edit.setPlainText("Нет русского контента")
-
-        if self.prompt.content.get('en'):
-            self.en_content_edit.setPlainText(self.prompt.content['en'])
-        else:
+            # Для строкового контента
+            self.ru_content_edit.setPlainText(str(self.prompt.content))
             self.en_content_edit.setPlainText("No English content")
 
         # Variables

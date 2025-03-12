@@ -47,8 +47,12 @@ class PromptManager:
     def search_prompts(self, query: str, category: str = None) -> list[Prompt]:
         results = []
         for prompt in self.prompts.values():
-            # Извлекаем текст из контента
-            content_text = " ".join(str(v) for v in prompt.content.values())  # Объединяем все языки
+            # Извлекаем текст из контента с учетом возможных типов
+            if isinstance(prompt.content, dict):
+                content_text = " ".join(str(v) for v in prompt.content.values())
+            else:
+                content_text = str(prompt.content)
+
             # Проверяем все поля
             if (query.lower() in prompt.title.lower() or
                     query.lower() in prompt.description.lower() or

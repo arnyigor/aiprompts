@@ -19,6 +19,8 @@ from PyQt6.QtWidgets import (
 from src.category_manager import CategoryManager
 from src.huggingface_api import HuggingFaceInference
 from src.huggingface_dialog import HuggingFaceDialog
+from src.lmstudio_api import LMStudioInference
+from src.lmstudio_dialog import LMStudioDialog
 from src.model_dialog import ModelConfigDialog
 from src.prompt_manager import PromptManager
 
@@ -33,7 +35,13 @@ class PromptEditor(QDialog):
             self.hf_api = HuggingFaceInference()
         except Exception as e:
             self.logger.error(f"Ошибка инициализации HuggingFaceInference: {str(e)}", exc_info=True)
-            raise
+            self.hf_api = None
+
+        try:
+            self.lm_api = LMStudioInference()
+        except Exception as e:
+            self.logger.error(f"Ошибка инициализации LMStudioInference: {str(e)}", exc_info=True)
+            self.lm_api = None
 
         self.prompt_manager = prompt_manager
         self.prompt_id = prompt_id
@@ -530,44 +538,100 @@ class PromptEditor(QDialog):
         category_layout = self.setup_category_section()
         layout.addLayout(category_layout)
 
-        # Теги
-        layout.addWidget(QLabel("Теги (через запятую):"))
-        layout.addWidget(self.tags_field)
-
         tab.setLayout(layout)
         self.main_tabs.addTab(tab, "Контент")
 
     def setup_category_section(self):
-        """Настройка секции категорий"""
+        """Настройка секции категорий и тегов"""
+        layout = QVBoxLayout()
+
+        # Категории
         category_layout = QHBoxLayout()
+        category_layout.addWidget(QLabel("Категория:"))
 
-        # Заполнение категорий
+        # Заполняем категории второго уровня (дети general)
         self.category_selector.clear()
-        self.category_selector.addItem("Общее", "general")
-
-        # Получаем категории из менеджера категорий
         categories = self.cat_manager.get_categories()
 
-        # Сортируем категории по имени для удобства
+        # Выбираем категории, которые являются детьми general
+        main_categories = {
+            code: cat for code, cat in categories.items()
+            if cat["parent"] == "general"
+        }
+
+        # Добавляем также general как основную категорию
+        if "general" in categories:
+            main_categories["general"] = categories["general"]
+
+        # Сортируем категории по имени
         sorted_categories = sorted(
-            categories.items(),
+            main_categories.items(),
             key=lambda x: x[1]["name"]["ru"]
         )
 
-        # Добавляем категории в селектор
         for code, cat in sorted_categories:
             self.category_selector.addItem(cat["name"]["ru"], code)
 
-        # Добавляем элементы в layout
-        category_layout.addWidget(QLabel("Категория:"))
         category_layout.addWidget(self.category_selector)
+        layout.addLayout(category_layout)
+
+        # Теги
+        tags_layout = QVBoxLayout()
+        tags_layout.addWidget(QLabel("Теги:"))
+
+        # Поле для тегов
+        self.tags_field = QLineEdit()
+        self.tags_field.setPlaceholderText("Теги через запятую...")
+        tags_layout.addWidget(self.tags_field)
+
+        # Список доступных тегов
+        tags_list = QListWidget()
+        tags_list.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
+        tags_list.setMaximumHeight(150)
+
+        # Собираем все дочерние категории для тегов
+        all_child_tags = set()
+        for code, cat in categories.items():
+            if cat["parent"] and cat[
+                "parent"] != "general":  # Исключаем general и его прямых потомков
+                # Добавляем код категории как тег
+                all_child_tags.add(code)
+                # Добавляем дочерние элементы
+                all_child_tags.update(cat.get("children", []))
+
+        # Сортируем теги
+        sorted_tags = sorted(all_child_tags)
+        for tag in sorted_tags:
+            # Получаем локализованное имя тега, если это категория
+            if tag in categories:
+                tag_name = categories[tag]["name"]["ru"]
+            else:
+                tag_name = tag
+            item = QListWidgetItem(tag_name)
+            item.setData(Qt.ItemDataRole.UserRole, tag)  # Сохраняем оригинальный код тега
+            tags_list.addItem(item)
+
+        # Обработчик клика по тегу
+        def on_tag_clicked(item):
+            current_tags = [t.strip() for t in self.tags_field.text().split(",") if t.strip()]
+            new_tag = item.data(Qt.ItemDataRole.UserRole)  # Используем код тега
+            if new_tag not in current_tags:
+                if current_tags:
+                    self.tags_field.setText(f"{', '.join(current_tags)}, {new_tag}")
+                else:
+                    self.tags_field.setText(new_tag)
+
+        tags_list.itemClicked.connect(on_tag_clicked)
+        tags_layout.addWidget(tags_list)
+
+        layout.addLayout(tags_layout)
 
         # Кнопка анализа
         self.analyze_btn = QPushButton("Определить категорию")
         self.analyze_btn.clicked.connect(self.analyze_content)
-        category_layout.addWidget(self.analyze_btn)
+        layout.addWidget(self.analyze_btn)
 
-        return category_layout
+        return layout
 
     def analyze_content(self):
         """Анализ контента для определения категории"""
@@ -621,13 +685,28 @@ class PromptEditor(QDialog):
 
         # Кнопки для русской версии
         ru_buttons = QHBoxLayout()
-        ru_process_btn = QPushButton("Выполнить через Hugging Face")
-        ru_process_btn.clicked.connect(lambda: self.show_huggingface_dialog("ru"))
+        
+        # Кнопка Hugging Face
+        ru_hf_btn = QPushButton("Выполнить через Hugging Face")
+        ru_hf_btn.clicked.connect(lambda: self.show_huggingface_dialog("ru"))
+        if not self.hf_api:
+            ru_hf_btn.setEnabled(False)
+            ru_hf_btn.setToolTip("HuggingFace API недоступен")
+            
+        # Кнопка LMStudio
+        ru_lm_btn = QPushButton("Выполнить через LMStudio")
+        ru_lm_btn.clicked.connect(lambda: self.show_lmstudio_dialog("ru"))
+        if not self.lm_api:
+            ru_lm_btn.setEnabled(False)
+            ru_lm_btn.setToolTip("LMStudio API недоступен")
+            
         ru_copy_btn = QPushButton("Копировать результат в промпт")
         ru_copy_btn.clicked.connect(lambda: self.copy_result_to_prompt("ru"))
         ru_clear_btn = QPushButton("Очистить")
         ru_clear_btn.clicked.connect(lambda: self.clear_content("ru"))
-        ru_buttons.addWidget(ru_process_btn)
+        
+        ru_buttons.addWidget(ru_hf_btn)
+        ru_buttons.addWidget(ru_lm_btn)
         ru_buttons.addWidget(ru_copy_btn)
         ru_buttons.addWidget(ru_clear_btn)
 
@@ -661,13 +740,28 @@ class PromptEditor(QDialog):
 
         # Кнопки для английской версии
         en_buttons = QHBoxLayout()
-        en_process_btn = QPushButton("Execute with Hugging Face")
-        en_process_btn.clicked.connect(lambda: self.show_huggingface_dialog("en"))
+        
+        # Кнопка Hugging Face
+        en_hf_btn = QPushButton("Execute with Hugging Face")
+        en_hf_btn.clicked.connect(lambda: self.show_huggingface_dialog("en"))
+        if not self.hf_api:
+            en_hf_btn.setEnabled(False)
+            en_hf_btn.setToolTip("HuggingFace API is not available")
+            
+        # Кнопка LMStudio
+        en_lm_btn = QPushButton("Execute with LMStudio")
+        en_lm_btn.clicked.connect(lambda: self.show_lmstudio_dialog("en"))
+        if not self.lm_api:
+            en_lm_btn.setEnabled(False)
+            en_lm_btn.setToolTip("LMStudio API is not available")
+            
         en_copy_btn = QPushButton("Copy result to prompt")
         en_copy_btn.clicked.connect(lambda: self.copy_result_to_prompt("en"))
         en_clear_btn = QPushButton("Clear")
         en_clear_btn.clicked.connect(lambda: self.clear_content("en"))
-        en_buttons.addWidget(en_process_btn)
+        
+        en_buttons.addWidget(en_hf_btn)
+        en_buttons.addWidget(en_lm_btn)
         en_buttons.addWidget(en_copy_btn)
         en_buttons.addWidget(en_clear_btn)
 
@@ -711,6 +805,37 @@ class PromptEditor(QDialog):
             self.logger.error(f"Ошибка при открытии диалога: {str(e)}", exc_info=True)
             QMessageBox.critical(self, "Ошибка", f"Не удалось открыть диалог: {str(e)}")
 
+    def show_lmstudio_dialog(self, language):
+        """Показывает диалог LMStudio и обрабатывает результат"""
+        try:
+            # Получаем пользовательский промпт
+            if language == "ru":
+                user_prompt = self.ru_user_prompt.toPlainText()
+                result_field = self.result_ru
+            else:
+                user_prompt = self.en_user_prompt.toPlainText()
+                result_field = self.result_en
+
+            if not user_prompt.strip():
+                QMessageBox.warning(self, "Предупреждение", "Введите промпт")
+                return
+
+            dialog = LMStudioDialog(self.lm_api, user_prompt, self)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                result = dialog.get_result()
+                if result:
+                    result_field.setPlainText(result)
+                    self.logger.debug("Результат успешно добавлен")
+                else:
+                    self.logger.warning("Получен пустой результат от диалога")
+                    QMessageBox.warning(self, "Предупреждение", "Получен пустой результат")
+            else:
+                self.logger.debug("Диалог был закрыт без сохранения результата")
+
+        except Exception as e:
+            self.logger.error(f"Ошибка при открытии диалога LMStudio: {str(e)}", exc_info=True)
+            QMessageBox.critical(self, "Ошибка", f"Не удалось открыть диалог LMStudio: {str(e)}")
+
     def copy_result_to_prompt(self, language):
         """Копирование результата в поле промпта"""
         if language == "ru":
@@ -749,50 +874,34 @@ class PromptEditor(QDialog):
             # Основная информация
             self.title_field.setText(prompt.title)
             self.version_field.setText(prompt.version)
-
-            index = self.status_selector.findText(prompt.status)
-            if index >= 0:
-                self.status_selector.setCurrentIndex(index)
-
+            self.status_selector.setCurrentText(prompt.status)
             self.is_local_checkbox.setChecked(prompt.is_local)
             self.is_favorite_checkbox.setChecked(prompt.is_favorite)
+            self.description_field.setText(prompt.description)
 
+            # Рейтинг
             if hasattr(prompt, 'rating'):
                 self.rating_score.setValue(prompt.rating.get('score', 0))
                 self.rating_votes.setValue(prompt.rating.get('votes', 0))
 
-            self.description_field.setText(prompt.description)
-
             # Контент
             if hasattr(prompt, 'content'):
-                content = prompt.content
-                if isinstance(content, dict):
-                    ru_content = content.get('ru', {})
-                    en_content = content.get('en', {})
-
-                    # Убедимся, что ru_content и en_content являются словарями
-                    if not isinstance(ru_content, dict):
-                        ru_content = {"system": "", "user": ru_content}
-                    if not isinstance(en_content, dict):
-                        en_content = {"system": "", "user": en_content}
-
-                    self.ru_system_prompt.setText(ru_content.get('system', ''))
-                    self.ru_user_prompt.setText(ru_content.get('user', ''))
-                    self.en_system_prompt.setText(en_content.get('system', ''))
-                    self.en_user_prompt.setText(en_content.get('user', ''))
+                if isinstance(prompt.content, dict):
+                    # Новый формат (словарь с языками)
+                    self.ru_user_prompt.setText(prompt.content.get('ru', ''))
+                    self.en_user_prompt.setText(prompt.content.get('en', ''))
                 else:
-                    self.logger.error("Неверный формат контента: ожидается словарь")
-                    QMessageBox.critical(self, "Ошибка",
-                                         "Неверный формат контента: ожидается словарь")
-                    return
+                    # Старый формат (строка)
+                    self.ru_user_prompt.setText(str(prompt.content))
+                    self.en_user_prompt.clear()
 
             # Категория
-            category_code = prompt.category
-            index = self.category_selector.findData(category_code)
-            if index >= 0:
-                self.category_selector.setCurrentIndex(index)
+            if prompt.category:
+                index = self.category_selector.findData(prompt.category)
+                if index >= 0:
+                    self.category_selector.setCurrentIndex(index)
 
-            # Модели
+            # Совместимые модели
             if hasattr(prompt, 'compatible_models'):
                 for i in range(self.models_list.count()):
                     item = self.models_list.item(i)
@@ -800,22 +909,26 @@ class PromptEditor(QDialog):
                         item.setSelected(True)
 
             # Теги
-            self.tags_field.setText(", ".join(prompt.tags))
+            if prompt.tags:
+                self.tags_field.setText(", ".join(prompt.tags))
 
             # Переменные
             self.variables_list.clear()
-            for var in prompt.variables:
-                item = QListWidgetItem(f"{var.name} ({var.type}): {var.description}")
-                item.setData(Qt.ItemDataRole.UserRole, var)
-                self.variables_list.addItem(item)
+            if prompt.variables:
+                for var in prompt.variables:
+                    item = QListWidgetItem(f"{var.name} ({var.type}): {var.description}")
+                    item.setData(Qt.ItemDataRole.UserRole, var)
+                    self.variables_list.addItem(item)
 
             # Метаданные
             if hasattr(prompt, 'metadata'):
                 metadata = prompt.metadata
-                self.author_id_field.setText(metadata.get('author', {}).get('id', ''))
-                self.author_name_field.setText(metadata.get('author', {}).get('name', ''))
-                self.source_field.setText(metadata.get('source', ''))
-                self.notes_field.setText(metadata.get('notes', ''))
+                if isinstance(metadata, dict):
+                    author = metadata.get('author', {})
+                    self.author_id_field.setText(author.get('id', ''))
+                    self.author_name_field.setText(author.get('name', ''))
+                    self.source_field.setText(metadata.get('source', ''))
+                    self.notes_field.setText(metadata.get('notes', ''))
 
             # Обновляем предпросмотр JSON
             self.update_json_preview()
@@ -905,8 +1018,6 @@ class PromptEditor(QDialog):
 
     def show_info(self, title, message):
         QMessageBox.information(self, title, message)
-
-        # Добавьте этот метод в класс:
 
     def add_variable(self):
         """Добавление новой переменной через диалог"""

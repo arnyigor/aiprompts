@@ -79,6 +79,22 @@ class HuggingFaceDialog(QDialog):
                 "repetition_penalty": 1.15,
             },
             "description": "Оптимизирована для следования инструкциям и генерации качественных ответов."
+        },
+        "Gemma-3-12B-Instruct": {
+            "id": "google/gemma-3-4b-pt",
+            "params": {
+                "max_new_tokens": 256,  # Максимальное количество новых токенов
+                "temperature": 0.6,
+                # Температура генерации (более низкое значение для детерминированности)
+                "top_p": 0.9,  # Вероятностное обрезание для Nucleus Sampling
+                "repetition_penalty": 1.2,  # Штраф за повторение фраз
+            },
+            # Описание модели
+            "description": (
+                    "Мультимодальная модель от Google с поддержкой текста и изображений, "
+                    + f"128K контекстным окном и мультиязычной поддержкой (140+ языков). "
+                    + f"Подходит для задач анализа изображений, генерации текста и ответов на вопросы."
+            )
         }
     }
 
@@ -256,11 +272,11 @@ class HuggingFaceDialog(QDialog):
         )
 
         # Проверяем длину текста
-        if len(enhanced_prompt) > 500:  # Уменьшаем максимальную длину
-            warning_msg = "Текст слишком длинный. Он будет обрезан до 500 символов."
+        if len(enhanced_prompt) > 1000:  # Уменьшаем максимальную длину
+            warning_msg = "Текст слишком длинный. Он будет обрезан до 1000 символов."
             self.logger.warning(warning_msg)
             QMessageBox.warning(self, "Предупреждение", warning_msg)
-            enhanced_prompt = enhanced_prompt[:500]
+            enhanced_prompt = enhanced_prompt[:1000]
 
         # Обновляем параметры
         params = model_config["params"].copy()

@@ -35,9 +35,9 @@ class Prompt(BaseModel):
     is_local: bool = True
     is_favorite: bool = False
     description: str
-    content: Dict[str, str] = Field(  # Контент на разных языках
+    content: Union[str, Dict[str, str]] = Field(
         default_factory=lambda: {"ru": "", "en": ""},
-        description="Контент с поддержкой языков (ru/en)"
+        description="Контент в виде строки или словаря с поддержкой языков (ru/en)"
     )
     compatible_models: List[str] = []
     category: str = "general"
@@ -58,9 +58,16 @@ class Prompt(BaseModel):
 
     @validator('content')
     def check_content(cls, v):
-        if not v.get('ru') and not v.get('en'):
-            raise ValueError("Контент должен содержать русскую или английскую версию")
-        return v
+        if isinstance(v, str):
+            # Если передана строка, возвращаем её как есть
+            return v
+        elif isinstance(v, dict):
+            # Если передан словарь, проверяем наличие хотя бы одной языковой версии
+            if not v.get('ru') and not v.get('en'):
+                raise ValueError("Контент должен содержать русскую или английскую версию")
+            return v
+        else:
+            raise ValueError("Контент должен быть строкой или словарем")
 
     @validator('tags')
     def check_tags(cls, v):
