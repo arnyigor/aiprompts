@@ -1,8 +1,6 @@
 from collections import defaultdict, Counter
 from typing import Dict, List, Optional
 
-from nltk.stem import SnowballStemmer
-
 from src.models import Category
 
 CATEGORIES = {
@@ -213,8 +211,35 @@ BLACKLIST = {
     "technology": ["музыка", "кино"]
 }
 
-STEMMER = SnowballStemmer("russian")
+def simple_russian_stemmer(word: str) -> str:
+    """Простой стеммер для русского языка"""
+    word = word.lower().strip()
+    if len(word) <= 3:
+        return word
 
+    # Список популярных окончаний
+    endings = [
+        'ами', 'ями', 'ого', 'его', 'ому', 'ему',
+        'ых', 'ий', 'ый', 'ой', 'ей', 'ай',
+        'ть', 'еть', 'уть', 'ешь', 'нно',
+        'ет', 'ют', 'ут', 'ат', 'ял',
+        'ал', 'ла', 'на', 'ны', 'ть',
+        'ем', 'им', 'ам', 'ом', 'ах',
+        'ях', 'ую', 'ю', 'у', 'а',
+        'я', 'о', 'е', 'ы', 'и'
+    ]
+    
+    result = word
+    for ending in endings:
+        if len(result) > len(ending) + 2 and result.endswith(ending):
+            result = result[:-len(ending)]
+            break
+    
+    return result
+
+def stem_text(text: str) -> str:
+    """Стемминг текста"""
+    return " ".join([simple_russian_stemmer(word) for word in text.split()])
 
 class CategoryManager:
     """
@@ -303,8 +328,8 @@ class CategoryManager:
         return self._sort_and_filter_scores(scores)
 
     def _stem_text(self, text: str) -> str:
-        """Лемматизация/стемминг текста"""
-        return " ".join([STEMMER.stem(word) for word in text.lower().split()])
+        """Стемминг текста"""
+        return stem_text(text)
 
     def _count_words(self, text: str) -> Dict[str, int]:
         """Подсчет частоты слов"""
@@ -315,7 +340,7 @@ class CategoryManager:
         for category, data in self.keywords.items():
             category_weight = data.get("weight", 1.0)
             for word in data["keywords"]:
-                stemmed_word = STEMMER.stem(word)
+                stemmed_word = simple_russian_stemmer(word)
                 if stemmed_word in word_counts:
                     scores[category] += category_weight * word_counts[stemmed_word]
 
@@ -325,7 +350,7 @@ class CategoryManager:
         for child, child_keywords in children.items():
             child_weight = 1.5  # Подкатегории важнее
             for word in child_keywords:
-                stemmed_word = STEMMER.stem(word)
+                stemmed_word = simple_russian_stemmer(word)
                 if stemmed_word in word_counts:
                     scores[child] += child_weight * word_counts[stemmed_word]
                     # Увеличиваем родительскую категорию
