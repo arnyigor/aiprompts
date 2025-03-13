@@ -1,0 +1,29 @@
+{
+  "id": "63ddfd15-0071-4d20-bcb0-d2e74f7454a4",
+  "title": "Как убедиться, что мой инвестиционный портфель в России достаточно див...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как убедиться, что мой инвестиционный портфель в России достаточно диверсифицирован?",
+    "en": "How can I make sure my investment portfolio is diversified?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.453154",
+  "updated_at": "2025-03-13T07:11:02.304511"
+}

@@ -1,0 +1,32 @@
+{
+  "id": "a1df4391-1261-4af1-9f58-d53cbc484d99",
+  "title": "Какие этические вопросы возникают при разработке и использовании ИИ и ...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какие этические вопросы возникают при разработке и использовании ИИ и робототехники?",
+    "en": "What are some ethical considerations in the development and use of AI and robotics?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "Code Llama",
+    "Copilot",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "ai",
+    "development"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.497154",
+  "updated_at": "2025-03-13T07:11:02.491510"
+}

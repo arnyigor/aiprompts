@@ -1,0 +1,29 @@
+{
+  "id": "77c441b7-4064-40a7-ba03-08b5fec79491",
+  "title": "Что такое темная материя и как её обнаруживают?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Что такое темная материя и как её обнаруживают?",
+    "en": "What is dark matter and how is it detected?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.506155",
+  "updated_at": "2025-03-13T07:11:02.530511"
+}

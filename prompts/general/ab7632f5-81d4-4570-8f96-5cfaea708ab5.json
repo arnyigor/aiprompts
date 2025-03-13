@@ -1,0 +1,29 @@
+{
+  "id": "ab7632f5-81d4-4570-8f96-5cfaea708ab5",
+  "title": "Какую роль играли женщины во время Гражданской войны в России?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какую роль играли женщины во время Гражданской войны в России?",
+    "en": "I’d love to learn more about the role of women in the Russian Civil War. Can you tell me more about that?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.473154",
+  "updated_at": "2025-03-13T07:11:02.389511"
+}

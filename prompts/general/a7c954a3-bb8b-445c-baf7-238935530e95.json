@@ -1,0 +1,29 @@
+{
+  "id": "a7c954a3-bb8b-445c-baf7-238935530e95",
+  "title": "Каково будущее автономных транспортных средств и как оно повлияет на т...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Каково будущее автономных транспортных средств и как оно повлияет на транспорт и логистику?",
+    "en": "What is the future of autonomous vehicles and how will it impact transportation and logistics?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.498155",
+  "updated_at": "2025-03-13T07:11:02.494511"
+}

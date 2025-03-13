@@ -1,0 +1,31 @@
+{
+  "id": "ad1e0bbd-9e12-4501-890d-9c83ea976c1a",
+  "title": "Как тестирование на совместимость с браузерами влияет на разработку?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как тестирование на совместимость с браузерами влияет на разработку?",
+    "en": "How does making sure a website works on different browsers impact web development and what can be done to make that happen?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "Code Llama",
+    "Copilot",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "development"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.458154",
+  "updated_at": "2025-03-13T07:11:02.324511"
+}

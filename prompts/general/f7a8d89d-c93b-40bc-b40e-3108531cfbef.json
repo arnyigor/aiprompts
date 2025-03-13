@@ -1,0 +1,29 @@
+{
+  "id": "f7a8d89d-c93b-40bc-b40e-3108531cfbef",
+  "title": "Диабет — распространённое заболевание. В чём различие между типами 1 и...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Диабет — распространённое заболевание. В чём различие между типами 1 и 2?",
+    "en": "Diabetes is a common condition. What’s the difference between types 1 and 2?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.478155",
+  "updated_at": "2025-03-13T07:11:02.406511"
+}

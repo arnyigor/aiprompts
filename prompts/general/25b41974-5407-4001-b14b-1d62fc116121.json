@@ -1,0 +1,29 @@
+{
+  "id": "25b41974-5407-4001-b14b-1d62fc116121",
+  "title": "Какие комиксы или графические романы стоит прочитать?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какие комиксы или графические романы стоит прочитать?",
+    "en": "What comics or graphic novels are worth reading?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "design"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.460155",
+  "updated_at": "2025-03-13T07:11:02.332510"
+}

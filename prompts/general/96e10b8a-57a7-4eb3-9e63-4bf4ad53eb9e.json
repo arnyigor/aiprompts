@@ -1,0 +1,32 @@
+{
+  "id": "96e10b8a-57a7-4eb3-9e63-4bf4ad53eb9e",
+  "title": "Напиши смешной скрипт про (тема)",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Напиши смешной скрипт про (тема)",
+    "en": "Write a comedy script about (subject)"
+  },
+  "compatible_models": [
+    "Claude-2",
+    "Claude-3",
+    "GPT-3.5",
+    "GPT-4",
+    "Gemini-Pro"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.470154",
+  "updated_at": "2025-03-13T07:11:02.376510"
+}

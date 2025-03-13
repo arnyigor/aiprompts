@@ -1,0 +1,29 @@
+{
+  "id": "4dca0649-7c91-4308-8472-2b59cdb7a714",
+  "title": "Как компактно собрать вещи для поездки на Байкал?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как компактно собрать вещи для поездки на Байкал?",
+    "en": "How to pack efficiently for a trip to Lake Baikal?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "ai"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.500154",
+  "updated_at": "2025-03-13T07:11:02.502511"
+}

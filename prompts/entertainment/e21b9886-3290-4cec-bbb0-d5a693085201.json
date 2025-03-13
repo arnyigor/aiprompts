@@ -1,0 +1,30 @@
+{
+  "id": "e21b9886-3290-4cec-bbb0-d5a693085201",
+  "title": "Лучшие игры для фанатов киберпанка — на Xbox. Давайте рассмотрим эти ф...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Лучшие игры для фанатов киберпанка — на Xbox. Давайте рассмотрим эти футуристические проекты",
+    "en": "The best cyberpunk games are on Xbox. Let’s check out these futuristic titles"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4",
+    "Midjourney"
+  ],
+  "category": "entertainment",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.492155",
+  "updated_at": "2025-03-13T07:11:02.469510"
+}

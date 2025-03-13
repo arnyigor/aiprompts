@@ -1,0 +1,29 @@
+{
+  "id": "66f059a2-3792-4eba-8ce7-348d48a7e4e4",
+  "title": "Как найти лучшие гастрономические направления в Москве и Петербурге?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как найти лучшие гастрономические направления в Москве и Петербурге?",
+    "en": "How to find the best food destinations in Moscow and Saint Petersburg?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "ai"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.500154",
+  "updated_at": "2025-03-13T07:11:02.503510"
+}

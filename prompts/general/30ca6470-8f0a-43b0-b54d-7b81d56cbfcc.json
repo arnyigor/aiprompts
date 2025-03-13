@@ -1,0 +1,29 @@
+{
+  "id": "30ca6470-8f0a-43b0-b54d-7b81d56cbfcc",
+  "title": "Можете порекомендовать стратегии, чтобы прекратить избыточное лаять у ...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Можете порекомендовать стратегии, чтобы прекратить избыточное лаять у собак?",
+    "en": "Can you recommend some strategies for stopping excessive barking in dogs?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.493154",
+  "updated_at": "2025-03-13T07:11:02.473511"
+}

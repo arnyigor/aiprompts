@@ -1,0 +1,32 @@
+{
+  "id": "7a0782ca-bfad-402d-bb63-1870af5e5ec9",
+  "title": "Напиши письмо-запрос к роману (название), где (суть сюжета)",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Напиши письмо-запрос к роману (название), где (суть сюжета)",
+    "en": "Write a query letter for a novel called (title) about (premise)"
+  },
+  "compatible_models": [
+    "Claude-2",
+    "Claude-3",
+    "GPT-3.5",
+    "GPT-4",
+    "Gemini-Pro"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.462154",
+  "updated_at": "2025-03-13T07:11:02.342511"
+}

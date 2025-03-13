@@ -5,7 +5,7 @@ from PyQt6.QtGui import QTextCursor
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QGroupBox,
     QFormLayout, QLineEdit, QSpinBox,
-    QDoubleSpinBox, QPushButton, QTextEdit, QMessageBox, QComboBox, QApplication
+    QDoubleSpinBox, QPushButton, QTextEdit, QMessageBox, QComboBox, QApplication, QCheckBox, QLabel
 )
 
 
@@ -45,7 +45,7 @@ class LMStudioDialog(QDialog):
         self.logger = logging.getLogger(__name__)
         self.lm_api = lm_api
         self.result = None
-        self.current_worker = None  # Сохраняем ссылку на текущий worker
+        self.current_worker = None
 
         # Настройка окна
         self.setWindowTitle("Запрос к LMStudio")
@@ -55,11 +55,16 @@ class LMStudioDialog(QDialog):
         layout = QVBoxLayout()
 
         # Группа настроек API
-        api_group = QGroupBox("Настройки API")
+        api_group = QGroupBox("Настройки LMStudio")
         api_layout = QFormLayout()
 
         self.api_url = QLineEdit("http://localhost:1234/v1")
         api_layout.addRow("URL API:", self.api_url)
+
+        # Информация о текущей модели
+        self.model_info = QLabel("Текущая модель: не определена")
+        self.model_info.setWordWrap(True)
+        api_layout.addRow(self.model_info)
 
         # Кнопка проверки соединения
         self.check_connection_btn = QPushButton("Проверить соединение")
@@ -69,9 +74,15 @@ class LMStudioDialog(QDialog):
         api_group.setLayout(api_layout)
         layout.addWidget(api_group)
 
-        # Группа параметров модели
-        params_group = QGroupBox("Параметры генерации")
+        # Группа параметров запроса
+        params_group = QGroupBox("Параметры запроса")
         params_layout = QFormLayout()
+
+        # Переключатель режима улучшения промптов
+        self.improve_mode = QCheckBox("Режим улучшения промптов")
+        self.improve_mode.setChecked(True)
+        self.improve_mode.setToolTip("Включите для автоматического улучшения структуры и качества промпта")
+        params_layout.addRow(self.improve_mode)
 
         # Системный промпт
         self.system_prompt = QTextEdit()
@@ -91,41 +102,17 @@ class LMStudioDialog(QDialog):
         ])
         params_layout.addRow("Формат чата:", self.chat_format)
 
-        self.max_tokens = QSpinBox()
-        self.max_tokens.setRange(64, 8192)
-        self.max_tokens.setValue(2048)
-        params_layout.addRow("Макс. токенов:", self.max_tokens)
-
+        # Базовые параметры генерации
         self.temperature = QDoubleSpinBox()
-        self.temperature.setRange(0.1, 2.0)
-        self.temperature.setValue(0.7)
+        self.temperature.setRange(0.0, 2.0)
         self.temperature.setSingleStep(0.1)
+        self.temperature.setValue(0.7)
         params_layout.addRow("Температура:", self.temperature)
 
-        self.top_p = QDoubleSpinBox()
-        self.top_p.setRange(0.1, 1.0)
-        self.top_p.setValue(0.95)
-        self.top_p.setSingleStep(0.05)
-        params_layout.addRow("Top P:", self.top_p)
-
-        # Дополнительные параметры
-        self.repeat_penalty = QDoubleSpinBox()
-        self.repeat_penalty.setRange(1.0, 2.0)
-        self.repeat_penalty.setValue(1.1)
-        self.repeat_penalty.setSingleStep(0.1)
-        params_layout.addRow("Штраф за повторы:", self.repeat_penalty)
-
-        self.presence_penalty = QDoubleSpinBox()
-        self.presence_penalty.setRange(-2.0, 2.0)
-        self.presence_penalty.setValue(0.0)
-        self.presence_penalty.setSingleStep(0.1)
-        params_layout.addRow("Штраф за присутствие:", self.presence_penalty)
-
-        self.frequency_penalty = QDoubleSpinBox()
-        self.frequency_penalty.setRange(-2.0, 2.0)
-        self.frequency_penalty.setValue(0.0)
-        self.frequency_penalty.setSingleStep(0.1)
-        params_layout.addRow("Штраф за частоту:", self.frequency_penalty)
+        self.max_tokens = QSpinBox()
+        self.max_tokens.setRange(64, 4096)
+        self.max_tokens.setValue(256)
+        params_layout.addRow("Макс. токенов:", self.max_tokens)
 
         params_group.setLayout(params_layout)
         layout.addWidget(params_group)
@@ -155,7 +142,7 @@ class LMStudioDialog(QDialog):
         output_group.setLayout(output_layout)
         layout.addWidget(output_group)
 
-        # Кнопки действий
+        # Кнопки управления
         button_layout = QHBoxLayout()
         self.apply_button = QPushButton("Вернуть результат в редактор")
         self.apply_button.clicked.connect(self.apply_result)
@@ -174,24 +161,58 @@ class LMStudioDialog(QDialog):
         """Проверяет соединение с LMStudio API"""
         try:
             self.lm_api.base_url = self.api_url.text()
-            if self.lm_api.check_connection():
-                QMessageBox.information(self, "Успех", "Соединение с LMStudio установлено")
-            else:
-                QMessageBox.warning(self, "Ошибка",
-                                    "Не удалось подключиться к LMStudio.\n"
-                                    "Убедитесь, что приложение запущено и API доступен.")
+            
+            # Отправляем тестовый запрос к API
+            test_messages = [{"role": "user", "content": "test"}]
+            test_params = {
+                "temperature": 0.7,
+                "max_new_tokens": 1,
+                "chat_format": "chatml",
+                "stream": False
+            }
+            
+            # Пробуем получить ответ от модели через существующий метод
+            try:
+                # Используем генератор для получения одного ответа
+                response_gen = self.lm_api.query_model(test_messages, **test_params)
+                response = next(response_gen, None)
+                
+                if response:
+                    # Получаем имя модели из логов или используем значение по умолчанию
+                    model_name = "Модель активна"
+                    self.model_info.setText(f"Текущая модель: {model_name}")
+                    QMessageBox.information(self, "Успех", 
+                        f"Соединение с LMStudio установлено\n"
+                        f"API сервер работает и модель отвечает")
+                else:
+                    self.model_info.setText("Текущая модель: не отвечает")
+                    QMessageBox.warning(self, "Предупреждение", 
+                        "Соединение установлено, но модель не отвечает\n"
+                        "Убедитесь, что модель загружена в LMStudio")
+            except StopIteration:
+                # Если генератор пустой, но ошибки нет - соединение есть
+                self.model_info.setText("Текущая модель: загружается")
+                QMessageBox.information(self, "Успех", 
+                    "Соединение с LMStudio установлено\n"
+                    "Модель может быть в процессе загрузки")
+                
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Ошибка при проверке соединения: {str(e)}")
+            self.logger.error(f"Ошибка подключения к LMStudio: {str(e)}", exc_info=True)
+            self.model_info.setText("Текущая модель: ошибка подключения")
+            QMessageBox.critical(self, "Ошибка", 
+                f"Ошибка при проверке соединения: {str(e)}\n\n"
+                "Убедитесь что:\n"
+                "1. LMStudio запущен\n"
+                "2. Модель загружена\n"
+                "3. API сервер активен (зеленый индикатор)\n"
+                "4. Порт 1234 доступен\n"
+                "5. URL API указан верно")
 
     def update_output(self, text):
         """Обновляет поле вывода"""
         try:
-            # self.logger.debug(f"update_output вызван с текстом длиной {len(str(text))} символов")
-            # self.logger.debug(f"Текущий поток: {'главный' if QThread.currentThread() is QApplication.instance().thread() else 'фоновый'}")
-            
             if self.current_worker:
                 self.current_worker.signals.update_text.emit(str(text))
-                self.logger.debug("Отправлен сигнал обновления текста")
             else:
                 self.logger.warning("current_worker не установлен")
                 
@@ -201,43 +222,81 @@ class LMStudioDialog(QDialog):
     def execute_prompt(self):
         """Отправляет запрос к модели"""
         prompt_text = self.prompt_field.toPlainText()
-        if not prompt_text.strip():
-            QMessageBox.warning(self, "Предупреждение", "Введите промпт")
+        
+        if not prompt_text:
+            QMessageBox.warning(self, "Предупреждение", "Введите текст промпта")
             return
-
-        # Отключаем кнопку и меняем текст
+            
+        # Блокируем кнопки
         self.run_button.setEnabled(False)
         self.run_button.setText("Выполняется...")
+        self.apply_button.setEnabled(False)
+        self.close_button.setEnabled(False)
+            
+        if self.improve_mode.isChecked():
+            # Добавляем инструкции для улучшения промпта
+            enhanced_prompt = (
+                "Ты - опытный эксперт по промпт-инжинирингу. Твоя задача - улучшить следующий промпт, "
+                "используя лучшие практики:\n\n"
+                "ИСХОДНЫЙ ПРОМПТ:\n"
+                f"{prompt_text}\n\n"
+                "ИНСТРУКЦИИ ПО УЛУЧШЕНИЮ:\n"
+                "1. Сделай промпт более конкретным и четким\n"
+                "2. Добавь контекст и ограничения\n"
+                "3. Структурируй информацию в логическом порядке\n"
+                "4. Используй маркеры для разделения частей промпта\n"
+                "5. Укажи желаемый формат ответа\n"
+                "6. Добавь примеры, если это уместно\n\n"
+                "ФОРМАТ ОТВЕТА:\n"
+                "### Роль и контекст\n"
+                "[Определи роль ИИ и контекст задачи]\n\n"
+                "### Основная задача\n"
+                "[Четко сформулируй, что нужно сделать]\n\n"
+                "### Ограничения и требования\n"
+                "[Укажи важные ограничения и специальные требования]\n\n"
+                "### Формат вывода\n"
+                "[Опиши, как должен быть структурирован ответ]\n\n"
+                "### Дополнительные указания\n"
+                "[Добавь уточнения или примеры при необходимости]\n\n"
+                "ВАЖНО:\n"
+                "- Сохрани исходную цель и основной смысл промпта\n"
+                "- Используй профессиональный, но понятный язык\n"
+                "- Добавь конкретные метрики или критерии успеха\n"
+                "- Учитывай возможные ограничения модели\n\n"
+                "Пожалуйста, верни только улучшенную версию промпта, следуя указанному формату, "
+                "без дополнительных пояснений или комментариев."
+            )
+        else:
+            enhanced_prompt = prompt_text
 
+        # Создаем и запускаем worker
         try:
-            # Обновляем URL API
+            # Обновляем URL API перед запуском
             self.lm_api.base_url = self.api_url.text()
-
-            # Создаем и запускаем worker
-            self.current_worker = Worker(
+            
+            worker = Worker(
                 parent=self,
-                handler=lambda: self._process_request(prompt_text),
+                handler=lambda: self._process_request(enhanced_prompt),
                 logger=self.logger
             )
-            QThreadPool.globalInstance().start(self.current_worker)
-
+            self.current_worker = worker
+            QThreadPool.globalInstance().start(worker)
+            
         except Exception as e:
             self.logger.error(f"Ошибка при запуске worker: {str(e)}", exc_info=True)
             self.update_output(f"Ошибка при запуске обработчика: {str(e)}")
-            self.run_button.setEnabled(True)
-            self.run_button.setText("Выполнить")
+            self._enable_buttons()
+
+    def _enable_buttons(self):
+        """Включает все кнопки"""
+        self.run_button.setEnabled(True)
+        self.run_button.setText("Выполнить")
+        self.close_button.setEnabled(True)
 
     def _process_request(self, prompt_text: str):
         """Обработка запроса к модели"""
         try:
             self.logger.debug("Начало обработки запроса")
-            self.logger.debug(f"Текущий поток: {'главный' if QThread.currentThread() is QApplication.instance().thread() else 'фоновый'}")
-            
-            # Блокируем кнопки через сигналы
-            QTimer.singleShot(0, lambda: self.run_button.setEnabled(False))
-            QTimer.singleShot(0, lambda: self.apply_button.setEnabled(False))
-            QTimer.singleShot(0, lambda: self.close_button.setEnabled(False))
-            self.logger.debug("Кнопки заблокированы")
             
             messages = []
             
@@ -251,45 +310,56 @@ class LMStudioDialog(QDialog):
             params = {
                 "temperature": self.temperature.value(),
                 "max_new_tokens": self.max_tokens.value(),
-                "top_p": self.top_p.value(),
-                "repeat_penalty": self.repeat_penalty.value(),
-                "presence_penalty": self.presence_penalty.value(),
-                "frequency_penalty": self.frequency_penalty.value(),
-                "chat_format": self.chat_format.currentText().lower()
+                "chat_format": self.chat_format.currentText().lower(),
+                "stop": None  # Отключаем принудительную остановку
             }
             
             self.logger.debug("Получение ответа от модели...")
-            # Получаем генератор ответов
             response_generator = self.lm_api.query_model(messages, **params)
             
-            # Собираем полный ответ из частей
             full_response = ""
-            chunks_processed = 0
+            chunk_counter = 0
+            update_frequency = 5  # Обновляем каждые N чанков
+            is_truncated = False  # Флаг обрезания ответа
+            
             try:
                 for chunk in response_generator:
-                    if chunk:  # Проверяем, что chunk не пустой
-                        chunks_processed += 1
+                    if chunk:
+                        # Проверяем на специальные токены завершения
+                        if "<|endoftext|>" in chunk or "</s>" in chunk:
+                            is_truncated = True
+                            chunk = chunk.replace("<|endoftext|>", "").replace("</s>", "")
+                            
                         full_response += chunk
-                        # self.logger.debug(f"Обработан чанк {chunks_processed}, длина ответа: {len(full_response)}")
-                        # Обновляем текст через сигнал
-                        self.update_output(full_response)
-                        QThread.msleep(10)  # Небольшая задержка для обработки UI
+                        chunk_counter += 1
+                        
+                        # Обновляем UI каждые update_frequency чанков
+                        if chunk_counter % update_frequency == 0:
+                            self.update_output(full_response)
+                            QThread.msleep(10)  # Небольшая задержка для обработки UI
+                
+                # Финальное обновление UI
+                if full_response:
+                    self.logger.debug(f"Получен полный ответ длиной {len(full_response)} символов")
+                    self.result = full_response.strip()
+                    
+                    # Добавляем предупреждение, если ответ был обрезан
+                    if is_truncated:
+                        self.logger.warning("Ответ был обрезан")
+                        self.result += "\n\n[Внимание: ответ был обрезан. Попробуйте увеличить максимальное количество токенов]"
+                    
+                    self.update_output(self.result)
+                    
+                    if self.current_worker:
+                        self.current_worker.signals.enable_apply.emit()
+                else:
+                    error_msg = "Не удалось получить ответ от модели"
+                    self.logger.error(error_msg)
+                    self.update_output(error_msg)
+                    
             except Exception as e:
                 self.logger.error(f"Ошибка при получении частей ответа: {str(e)}", exc_info=True)
                 raise
-                
-            self.logger.debug(f"Обработка завершена. Всего обработано чанков: {chunks_processed}")
-            self.logger.debug(f"Итоговая длина ответа: {len(full_response)}")
-            
-            if full_response:
-                self.logger.debug("Сохранение результата и активация кнопки применения")
-                self.result = full_response
-                if self.current_worker:
-                    self.current_worker.signals.enable_apply.emit()
-            else:
-                error_msg = "Не удалось получить ответ от модели"
-                self.logger.error(error_msg)
-                self.update_output(error_msg)
                 
         except Exception as e:
             error_msg = str(e)
@@ -297,11 +367,7 @@ class LMStudioDialog(QDialog):
             self.update_output(f"Произошла ошибка: {error_msg}")
             
         finally:
-            self.logger.debug("Восстановление состояния кнопок")
-            # Восстанавливаем состояние кнопок через сигналы
-            QTimer.singleShot(0, lambda: self.run_button.setEnabled(True))
-            QTimer.singleShot(0, lambda: self.close_button.setEnabled(True))
-            QTimer.singleShot(0, lambda: self.run_button.setText("Выполнить"))
+            self._enable_buttons()
 
     def apply_result(self):
         """Возвращает результат в редактор промптов"""

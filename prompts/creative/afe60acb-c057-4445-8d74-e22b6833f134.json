@@ -1,0 +1,32 @@
+{
+  "id": "afe60acb-c057-4445-8d74-e22b6833f134",
+  "title": "Можете описать значение русского лубка в историческом контексте?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Можете описать значение русского лубка в историческом контексте?",
+    "en": "Can you describe the significance of Russian lubok in a historical context?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "DALL-E-3",
+    "GPT-4",
+    "Midjourney"
+  ],
+  "category": "creative",
+  "tags": [
+    "content",
+    "writing"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.482154",
+  "updated_at": "2025-03-13T07:11:02.424510"
+}

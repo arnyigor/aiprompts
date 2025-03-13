@@ -1,0 +1,32 @@
+{
+  "id": "4ae647de-50f6-4602-aef8-7e5e69f948bc",
+  "title": "Создай 7 слоганов для продвижения онлайн-курсов",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Создай 7 слоганов для продвижения онлайн-курсов",
+    "en": "Develop 7 catchy and clever taglines promoting online education courses"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "Code Llama",
+    "Copilot",
+    "GPT-4",
+    "Gemini-Pro"
+  ],
+  "category": "education",
+  "tags": [
+    "education"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.445154",
+  "updated_at": "2025-03-13T07:11:02.266796"
+}

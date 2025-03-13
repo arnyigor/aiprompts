@@ -1,0 +1,29 @@
+{
+  "id": "324e7ad9-573f-414f-b055-3f8c6ceb3851",
+  "title": "Создайте оригинальную блюзовую песню о событии, изменившем жизнь",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Создайте оригинальную блюзовую песню о событии, изменившем жизнь",
+    "en": "Produce an original blues song about a life-changing event"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.488154",
+  "updated_at": "2025-03-13T07:11:02.449511"
+}

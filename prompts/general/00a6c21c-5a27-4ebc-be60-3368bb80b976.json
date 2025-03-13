@@ -1,0 +1,30 @@
+{
+  "id": "00a6c21c-5a27-4ebc-be60-3368bb80b976",
+  "title": "Можете рассказать, в чем разница между реализмом и социалистическим ре...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Можете рассказать, в чем разница между реализмом и социалистическим реализмом?",
+    "en": "Can you explain the difference between Realism and Socialist Realism?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "ai",
+    "social"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.480154",
+  "updated_at": "2025-03-13T07:11:02.417510"
+}

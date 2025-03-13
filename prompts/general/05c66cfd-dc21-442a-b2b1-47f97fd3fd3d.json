@@ -1,0 +1,29 @@
+{
+  "id": "05c66cfd-dc21-442a-b2b1-47f97fd3fd3d",
+  "title": "Я слышал об инвестиционных фондах, но не до конца понимаю, что это так...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Я слышал об инвестиционных фондах, но не до конца понимаю, что это такое. Можете объяснить простыми словами?",
+    "en": "I’ve heard about mutual funds but I’m not sure what they are. Can you explain it in simple terms?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "ai"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.453154",
+  "updated_at": "2025-03-13T07:11:02.301511"
+}

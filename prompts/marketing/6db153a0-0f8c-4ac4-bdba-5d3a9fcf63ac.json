@@ -1,0 +1,32 @@
+{
+  "id": "6db153a0-0f8c-4ac4-bdba-5d3a9fcf63ac",
+  "title": "Дай инструкции для маркетингового плана романа (жанр, суть)",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Дай инструкции для маркетингового плана романа (жанр, суть)",
+    "en": "Give steps to write a marketing plan for a (genre) novel about (premise)"
+  },
+  "compatible_models": [
+    "Claude-2",
+    "Claude-3",
+    "GPT-3.5",
+    "GPT-4",
+    "Gemini-Pro"
+  ],
+  "category": "marketing",
+  "tags": [
+    "marketing"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.463155",
+  "updated_at": "2025-03-13T07:11:02.346511"
+}

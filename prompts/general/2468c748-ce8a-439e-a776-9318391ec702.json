@@ -1,0 +1,29 @@
+{
+  "id": "2468c748-ce8a-439e-a776-9318391ec702",
+  "title": "Какие породы собак лучше всего подходят для пожилых людей?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какие породы собак лучше всего подходят для пожилых людей?",
+    "en": "What dog breeds are best for seniors?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.495154",
+  "updated_at": "2025-03-13T07:11:02.479511"
+}

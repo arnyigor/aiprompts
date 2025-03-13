@@ -1,0 +1,29 @@
+{
+  "id": "cd6ab1a4-0854-403c-9bef-e32513de5f41",
+  "title": "Покажи уникальную красоту пустыни. Отрази песчаные дюны, ночное небо и...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Покажи уникальную красоту пустыни. Отрази песчаные дюны, ночное небо и адаптации жизни в суровых условиях",
+    "en": "Desert dunes: Depict the unique beauty of desert landscapes with hyper-realistic precision. Imagine the sweeping sand dunes, the surreal night skies, and the fascinating adaptations of life in arid conditions, all captured with a level of detail that makes the scene come alive, revealing the hidden allure of the desert"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "ai"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.449156",
+  "updated_at": "2025-03-13T07:11:02.286795"
+}

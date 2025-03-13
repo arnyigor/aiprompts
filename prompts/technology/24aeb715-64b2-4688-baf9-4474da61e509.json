@@ -1,0 +1,31 @@
+{
+  "id": "24aeb715-64b2-4688-baf9-4474da61e509",
+  "title": "Какой HTML код для (цель)?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какой HTML код для (цель)?",
+    "en": "What is the HTML code for (purpose or function)?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "Code Llama",
+    "Copilot",
+    "GPT-4"
+  ],
+  "category": "technology",
+  "tags": [
+    "ml"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.456154",
+  "updated_at": "2025-03-13T07:11:02.315511"
+}

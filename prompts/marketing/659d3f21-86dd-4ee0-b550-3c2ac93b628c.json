@@ -1,0 +1,32 @@
+{
+  "id": "659d3f21-86dd-4ee0-b550-3c2ac93b628c",
+  "title": "Как часто обновлять контент для SEO?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как часто обновлять контент для SEO?",
+    "en": "How often should I update and add new content if I want sustained high rankings on search engines?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4",
+    "Gemini-Pro"
+  ],
+  "category": "marketing",
+  "tags": [
+    "content",
+    "ai",
+    "marketing"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.443157",
+  "updated_at": "2025-03-13T07:11:02.258795"
+}

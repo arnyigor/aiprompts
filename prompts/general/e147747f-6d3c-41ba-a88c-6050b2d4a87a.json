@@ -1,0 +1,31 @@
+{
+  "id": "e147747f-6d3c-41ba-a88c-6050b2d4a87a",
+  "title": "Что такое квантовые вычисления и чем они отличаются от классических?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Что такое квантовые вычисления и чем они отличаются от классических?",
+    "en": "What is quantum computing and how is it different from classical computing?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "Code Llama",
+    "Copilot",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.497154",
+  "updated_at": "2025-03-13T07:11:02.489511"
+}

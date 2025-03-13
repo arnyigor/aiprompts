@@ -1,0 +1,29 @@
+{
+  "id": "7c5fa68e-4913-4e8d-aeb0-f50fe77b8a42",
+  "title": "Мне нужно решить, покупать или арендовать автомобиль. Можете помочь вз...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Мне нужно решить, покупать или арендовать автомобиль. Можете помочь взвесить варианты?",
+    "en": "Should I buy or lease a car? Can you help me weigh the options?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.453154",
+  "updated_at": "2025-03-13T07:11:02.302511"
+}

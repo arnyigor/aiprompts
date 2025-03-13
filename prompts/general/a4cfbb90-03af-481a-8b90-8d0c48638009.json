@@ -1,0 +1,29 @@
+{
+  "id": "a4cfbb90-03af-481a-8b90-8d0c48638009",
+  "title": "Как приготовить легкое и хрустящее тесто для темпуры?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как приготовить легкое и хрустящее тесто для темпуры?",
+    "en": "How do you make a light and crispy tempura batter?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.486155",
+  "updated_at": "2025-03-13T07:11:02.442510"
+}

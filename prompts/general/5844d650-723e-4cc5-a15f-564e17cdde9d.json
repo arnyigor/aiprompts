@@ -1,0 +1,32 @@
+{
+  "id": "5844d650-723e-4cc5-a15f-564e17cdde9d",
+  "title": "Напиши 10 слоганов для приложения для молодежи",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Напиши 10 слоганов для приложения для молодежи",
+    "en": "Write 10 creative and persuasive taglines for an app targeted to young adults"
+  },
+  "compatible_models": [
+    "Claude-2",
+    "Claude-3",
+    "GPT-3.5",
+    "GPT-4",
+    "Gemini-Pro"
+  ],
+  "category": "general",
+  "tags": [
+    "creative"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.444154",
+  "updated_at": "2025-03-13T07:11:02.262795"
+}

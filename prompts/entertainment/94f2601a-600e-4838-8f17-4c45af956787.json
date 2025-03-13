@@ -1,0 +1,30 @@
+{
+  "id": "94f2601a-600e-4838-8f17-4c45af956787",
+  "title": "Любите приключения? Nintendo Switch предложит вам лучшие игры для наст...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Любите приключения? Nintendo Switch предложит вам лучшие игры для настоящих искателей",
+    "en": "Love adventures? Nintendo Switch offers the best games for real explorers"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4",
+    "Midjourney"
+  ],
+  "category": "entertainment",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.491155",
+  "updated_at": "2025-03-13T07:11:02.464510"
+}

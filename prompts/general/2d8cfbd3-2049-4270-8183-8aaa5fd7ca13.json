@@ -1,0 +1,29 @@
+{
+  "id": "2d8cfbd3-2049-4270-8183-8aaa5fd7ca13",
+  "title": "В чем разница между вирусом, бактерией и грибком?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "В чем разница между вирусом, бактерией и грибком?",
+    "en": "What is the difference between a virus, bacterium, and fungus?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.508154",
+  "updated_at": "2025-03-13T07:11:02.537511"
+}

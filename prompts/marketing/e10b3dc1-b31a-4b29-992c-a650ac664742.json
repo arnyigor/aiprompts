@@ -1,0 +1,46 @@
+{
+  "id": "e10b3dc1-b31a-4b29-992c-a650ac664742",
+  "title": "Я застрял с постами о [тема] в социальных сетях. Можешь предложить кре...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Я застрял с постами о [тема] в социальных сетях. Можешь предложить креативные идеи для [платформа]?",
+    "en": "I’m feeling stuck with my social media posts about [topic]. Could you generate some creative ideas for me to use on [social media platform]?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4",
+    "Gemini-Pro"
+  ],
+  "category": "marketing",
+  "tags": [
+    "content",
+    "creative",
+    "writing",
+    "social"
+  ],
+  "variables": [
+    {
+      "name": "social_media_platform",
+      "type": "string",
+      "description": "тема / social media platform",
+      "examples": []
+    },
+    {
+      "name": "topic",
+      "type": "string",
+      "description": "платформа / topic",
+      "examples": []
+    }
+  ],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.434154",
+  "updated_at": "2025-03-13T07:11:02.214971"
+}

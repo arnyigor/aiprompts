@@ -1,0 +1,29 @@
+{
+  "id": "30634658-286a-4da1-b7dd-0b558beeb5c0",
+  "title": "Кто входит в топ-5 футболистов 21 века?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Кто входит в топ-5 футболистов 21 века?",
+    "en": "Who are the top 5 footballers of the 21st century?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.503154",
+  "updated_at": "2025-03-13T07:11:02.518511"
+}

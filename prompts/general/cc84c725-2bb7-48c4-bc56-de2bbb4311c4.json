@@ -1,0 +1,29 @@
+{
+  "id": "cc84c725-2bb7-48c4-bc56-de2bbb4311c4",
+  "title": "Какие книги по древней истории стоит добавить в свой список чтения?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какие книги по древней истории стоит добавить в свой список чтения?",
+    "en": "What books on ancient history should I add to my reading list?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.461154",
+  "updated_at": "2025-03-13T07:11:02.337511"
+}

@@ -1,0 +1,35 @@
+{
+  "id": "0254b490-b225-4f96-ac5d-44f9a18cba2b",
+  "title": "Нарисуй интернет-магазин в стиле ретро. Представь дизайн в духе 60-х, ...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Нарисуй интернет-магазин в стиле ретро. Представь дизайн в духе 60-х, 70-х или 80-х годов с винтажной графикой, классическими товарами и интерфейсом из ранней эпохи интернета",
+    "en": "Retro online store: Take a nostalgic journey into the past and design an online store with a retro flair. Picture a digital marketplace that captures the essence of the 60s, 70s, or 80s, complete with vintage graphics, classic product designs, and a user interface that harks back to the early days of the internet"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "Code Llama",
+    "Copilot",
+    "DALL-E-3",
+    "GPT-4",
+    "Midjourney",
+    "Stable Diffusion"
+  ],
+  "category": "creative",
+  "tags": [
+    "design",
+    "ai"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.448154",
+  "updated_at": "2025-03-13T07:11:02.282795"
+}

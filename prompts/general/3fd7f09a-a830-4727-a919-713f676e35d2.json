@@ -1,0 +1,29 @@
+{
+  "id": "3fd7f09a-a830-4727-a919-713f676e35d2",
+  "title": "Какие лучшие места для рыбалки в России?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какие лучшие места для рыбалки в России?",
+    "en": "What are the best fishing destinations in Russia?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.502154",
+  "updated_at": "2025-03-13T07:11:02.513510"
+}

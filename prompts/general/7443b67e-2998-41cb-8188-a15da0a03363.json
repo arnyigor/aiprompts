@@ -1,0 +1,29 @@
+{
+  "id": "7443b67e-2998-41cb-8188-a15da0a03363",
+  "title": "Зачем использовать CSS препроцессоры, такие как Sass и Less?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Зачем использовать CSS препроцессоры, такие как Sass и Less?",
+    "en": "Why do people use CSS preprocessors like Sass and Less?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.456154",
+  "updated_at": "2025-03-13T07:11:02.317511"
+}

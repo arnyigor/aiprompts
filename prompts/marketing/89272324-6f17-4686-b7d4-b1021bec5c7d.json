@@ -1,0 +1,30 @@
+{
+  "id": "89272324-6f17-4686-b7d4-b1021bec5c7d",
+  "title": "AR/VR: их роль в маркетинге",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "AR/VR: их роль в маркетинге",
+    "en": "The impact of virtual and augmented reality on marketing"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4",
+    "Gemini-Pro"
+  ],
+  "category": "marketing",
+  "tags": [
+    "marketing"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.447154",
+  "updated_at": "2025-03-13T07:11:02.279795"
+}

@@ -1,0 +1,41 @@
+{
+  "id": "da66505a-671c-4457-bb94-d3fe976cb190",
+  "title": "Напиши подпись, которая вызовет вовлеченность на посте в Facebook о [с...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Напиши подпись, которая вызовет вовлеченность на посте в Facebook о [событие]",
+    "en": "Write a caption that sparks engagement on a Facebook post about [event]"
+  },
+  "compatible_models": [
+    "Claude-2",
+    "Claude-3",
+    "GPT-3.5",
+    "GPT-4",
+    "Gemini-Pro"
+  ],
+  "category": "marketing",
+  "tags": [
+    "content",
+    "writing",
+    "social"
+  ],
+  "variables": [
+    {
+      "name": "event",
+      "type": "string",
+      "description": "событие / event",
+      "examples": []
+    }
+  ],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.436154",
+  "updated_at": "2025-03-13T07:11:02.230991"
+}

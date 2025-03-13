@@ -1,0 +1,29 @@
+{
+  "id": "05747fc4-399d-4a16-a85a-fd26d856a60b",
+  "title": "Как посмотреть на (тема) с забавной стороны?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как посмотреть на (тема) с забавной стороны?",
+    "en": "What are some funny ways to think about (topic)?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.471154",
+  "updated_at": "2025-03-13T07:11:02.378511"
+}

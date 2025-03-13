@@ -1,0 +1,30 @@
+{
+  "id": "3fe2963d-64a7-4637-aff5-6dab1cb72602",
+  "title": "Какие инновации привнесли российские художники в жанр портрета?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какие инновации привнесли российские художники в жанр портрета?",
+    "en": "What innovations have Russian artists brought to the portrait genre?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "ai",
+    "creative"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.483154",
+  "updated_at": "2025-03-13T07:11:02.427510"
+}

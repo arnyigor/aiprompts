@@ -1,0 +1,31 @@
+{
+  "id": "7a7a90c3-f333-4e4a-ba37-823f41f37c95",
+  "title": "Разработай мир и его жителей для романа",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Разработай мир и его жителей для романа",
+    "en": "Design a world and its inhabitants for a novel"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "Code Llama",
+    "Copilot",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "design"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.463155",
+  "updated_at": "2025-03-13T07:11:02.344510"
+}

@@ -1,0 +1,29 @@
+{
+  "id": "6a5b699b-c84e-4c8a-89eb-13b568266f6b",
+  "title": "Что происходит на сервере и устройстве пользователя при загрузке сайта...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Что происходит на сервере и устройстве пользователя при загрузке сайта?",
+    "en": "Can you break down the difference between what happens on the server and what happens on the user’s device when a website loads?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.456154",
+  "updated_at": "2025-03-13T07:11:02.316511"
+}

@@ -1,0 +1,30 @@
+{
+  "id": "1bb3dc02-7a17-4875-abdc-1cdc9ba8129b",
+  "title": "Что главное для успешного маркетинга?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Что главное для успешного маркетинга?",
+    "en": "What’s essential for a successful marketing effort?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4",
+    "Gemini-Pro"
+  ],
+  "category": "marketing",
+  "tags": [
+    "marketing"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.451154",
+  "updated_at": "2025-03-13T07:11:02.293511"
+}

@@ -1,0 +1,29 @@
+{
+  "id": "455099d6-5ebf-4788-8416-989d1f28aa21",
+  "title": "Как часто нужно водить кошку на осмотр к ветеринару?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как часто нужно водить кошку на осмотр к ветеринару?",
+    "en": "How often should you take your cat for check-ups at the vet?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.495154",
+  "updated_at": "2025-03-13T07:11:02.481511"
+}

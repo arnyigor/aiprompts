@@ -1,0 +1,29 @@
+{
+  "id": "4edae908-0a31-4ac5-95f8-567958bff8cd",
+  "title": "Как культурное наследие Золотого века русской литературы влияет на сов...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как культурное наследие Золотого века русской литературы влияет на современную Россию?",
+    "en": "How does the cultural heritage of the Golden Age of Russian Literature affect modern Russia?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.476154",
+  "updated_at": "2025-03-13T07:11:02.400511"
+}

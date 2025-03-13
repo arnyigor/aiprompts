@@ -1,0 +1,31 @@
+{
+  "id": "98362183-43c0-4871-9792-3e5cd0b58839",
+  "title": "Каково строение и функция сердца в системе кровообращения?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Каково строение и функция сердца в системе кровообращения?",
+    "en": "What is the structure and function of the heart in the circulatory system?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "Code Llama",
+    "Copilot",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "creative"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.509155",
+  "updated_at": "2025-03-13T07:11:02.540511"
+}

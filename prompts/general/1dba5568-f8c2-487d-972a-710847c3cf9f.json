@@ -1,0 +1,31 @@
+{
+  "id": "1dba5568-f8c2-487d-972a-710847c3cf9f",
+  "title": "Разработайте уникальный саундтрек, отражающий эмоции (вставьте эмоцию)",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Разработайте уникальный саундтрек, отражающий эмоции (вставьте эмоцию)",
+    "en": "Design a unique soundtrack that reflects the emotions of (insert emotion)"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "Code Llama",
+    "Copilot",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "design"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.489155",
+  "updated_at": "2025-03-13T07:11:02.454510"
+}

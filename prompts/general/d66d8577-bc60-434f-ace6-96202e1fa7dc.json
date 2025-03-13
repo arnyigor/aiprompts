@@ -1,0 +1,29 @@
+{
+  "id": "d66d8577-bc60-434f-ace6-96202e1fa7dc",
+  "title": "Как правильно готовить стейк, чтобы он был нежным и вкусным?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как правильно готовить стейк, чтобы он был нежным и вкусным?",
+    "en": "How do you properly cook a steak to achieve the perfect tenderness and flavor?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.483154",
+  "updated_at": "2025-03-13T07:11:02.430511"
+}

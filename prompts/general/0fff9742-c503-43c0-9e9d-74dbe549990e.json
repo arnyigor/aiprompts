@@ -1,0 +1,29 @@
+{
+  "id": "0fff9742-c503-43c0-9e9d-74dbe549990e",
+  "title": "Представь гиперреалистичный закат над оживленным городским пейзажем. П...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Представь гиперреалистичный закат над оживленным городским пейзажем. Покажи драматичную игру света и тени, отражающуюся на небоскребах и оживленных улицах",
+    "en": "Cityscape sunset: Envision a hyper-realistic sunset descending over a bustling cityscape. Capture the dramatic interplay of light and shadow, reflecting off skyscrapers and busy streets"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.447154",
+  "updated_at": "2025-03-13T07:11:02.280795"
+}

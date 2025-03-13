@@ -1,0 +1,29 @@
+{
+  "id": "dcbe9e37-2017-4e8f-9161-7230c4abf38c",
+  "title": "Создай список источников для дальнейшего чтения по теме (тема).",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Создай список источников для дальнейшего чтения по теме (тема).",
+    "en": "Generate a list of sources for further reading about (topic)."
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.467154",
+  "updated_at": "2025-03-13T07:11:02.361510"
+}

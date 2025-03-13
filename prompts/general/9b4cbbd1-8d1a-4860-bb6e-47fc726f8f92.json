@@ -1,0 +1,29 @@
+{
+  "id": "9b4cbbd1-8d1a-4860-bb6e-47fc726f8f92",
+  "title": "Медитация набирает популярность. Знаешь ли ты её ключевые преимущества...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Медитация набирает популярность. Знаешь ли ты её ключевые преимущества?",
+    "en": "Meditation is becoming popular. Do you know its key benefits?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.477154",
+  "updated_at": "2025-03-13T07:11:02.405511"
+}

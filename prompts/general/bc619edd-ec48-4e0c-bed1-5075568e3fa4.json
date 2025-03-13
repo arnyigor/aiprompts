@@ -1,0 +1,29 @@
+{
+  "id": "bc619edd-ec48-4e0c-bed1-5075568e3fa4",
+  "title": "Для любителей ужастиков Xbox предлагает впечатляющий выбор. Давайте по...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Для любителей ужастиков Xbox предлагает впечатляющий выбор. Давайте погрузимся в самый мрак",
+    "en": "Xbox offers an impressive selection for horror fans. Let’s dive into the darkest ones"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.491155",
+  "updated_at": "2025-03-13T07:11:02.462511"
+}

@@ -1,0 +1,32 @@
+{
+  "id": "6bbbf426-f008-43f4-8619-ebc885208835",
+  "title": "Какие посты в соцсетях усиливают вовлеченность в блог?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какие посты в соцсетях усиливают вовлеченность в блог?",
+    "en": "Which social posts boost blog engagement?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4",
+    "Gemini-Pro"
+  ],
+  "category": "marketing",
+  "tags": [
+    "content",
+    "writing",
+    "social"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.440154",
+  "updated_at": "2025-03-13T07:11:02.244796"
+}

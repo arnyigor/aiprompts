@@ -1,0 +1,31 @@
+{
+  "id": "8930c493-f48e-4fae-a673-0d2b9efee479",
+  "title": "Почему важна доступность в веб-дизайне и как ее достичь?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Почему важна доступность в веб-дизайне и как ее достичь?",
+    "en": "Why is accessibility important in web design and how can it be achieved?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "DALL-E-3",
+    "GPT-4",
+    "Midjourney"
+  ],
+  "category": "creative",
+  "tags": [
+    "design"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.457154",
+  "updated_at": "2025-03-13T07:11:02.323510"
+}

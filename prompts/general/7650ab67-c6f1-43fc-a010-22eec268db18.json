@@ -1,0 +1,29 @@
+{
+  "id": "7650ab67-c6f1-43fc-a010-22eec268db18",
+  "title": "Как отслеживать ключевые слова и ссылки конкурентов?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как отслеживать ключевые слова и ссылки конкурентов?",
+    "en": "How to keep track of competitors’ keywords and backlinks to stay ahead of them in SERPs (Search Engine Results Pages)"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.443157",
+  "updated_at": "2025-03-13T07:11:02.257795"
+}

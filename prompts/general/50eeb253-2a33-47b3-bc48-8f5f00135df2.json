@@ -1,0 +1,32 @@
+{
+  "id": "50eeb253-2a33-47b3-bc48-8f5f00135df2",
+  "title": "Что такое AJAX и как его используют в веб-разработке?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Что такое AJAX и как его используют в веб-разработке?",
+    "en": "Can you explain what AJAX is and how it’s used in web development?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "Code Llama",
+    "Copilot",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "ai",
+    "development"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.457154",
+  "updated_at": "2025-03-13T07:11:02.320510"
+}

@@ -1,0 +1,29 @@
+{
+  "id": "8e7a6396-6b21-40a7-b726-a13ec1945e39",
+  "title": "Как современные российские художники используют “найденные объекты” в ...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как современные российские художники используют “найденные объекты” в своих работах?",
+    "en": "How do contemporary Russian artists use \"found objects\" in their works?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "creative"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.482154",
+  "updated_at": "2025-03-13T07:11:02.425510"
+}

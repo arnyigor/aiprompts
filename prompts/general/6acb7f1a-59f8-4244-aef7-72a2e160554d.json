@@ -1,0 +1,29 @@
+{
+  "id": "6acb7f1a-59f8-4244-aef7-72a2e160554d",
+  "title": "Какие события привели к началу Великой Отечественной войны?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какие события привели к началу Великой Отечественной войны?",
+    "en": "I’d like to know more about the events that led to the Great Patriotic War. Can you fill me in on that?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.474154",
+  "updated_at": "2025-03-13T07:11:02.391510"
+}

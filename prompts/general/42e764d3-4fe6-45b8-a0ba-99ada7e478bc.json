@@ -1,0 +1,29 @@
+{
+  "id": "42e764d3-4fe6-45b8-a0ba-99ada7e478bc",
+  "title": "Как путешествовать на Дальний Восток без больших затрат?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как путешествовать на Дальний Восток без больших затрат?",
+    "en": "How to travel to the Russian Far East without breaking the bank?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.502154",
+  "updated_at": "2025-03-13T07:11:02.511510"
+}

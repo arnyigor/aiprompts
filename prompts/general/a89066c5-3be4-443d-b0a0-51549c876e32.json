@@ -1,0 +1,29 @@
+{
+  "id": "a89066c5-3be4-443d-b0a0-51549c876e32",
+  "title": "Как приготовить вкусную и воздушную яичницу-болтунью?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как приготовить вкусную и воздушную яичницу-болтунью?",
+    "en": "How do you make a delicious and fluffy scrambled egg?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.485154",
+  "updated_at": "2025-03-13T07:11:02.438510"
+}

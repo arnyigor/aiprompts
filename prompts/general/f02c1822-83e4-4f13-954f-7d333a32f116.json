@@ -1,0 +1,30 @@
+{
+  "id": "f02c1822-83e4-4f13-954f-7d333a32f116",
+  "title": "Можете объяснить процесс фотосинтеза в растениях?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Можете объяснить процесс фотосинтеза в растениях?",
+    "en": "Can you explain the process of photosynthesis in plants?"
+  },
+  "compatible_models": [
+    "DALL-E-3",
+    "Midjourney",
+    "Stable Diffusion"
+  ],
+  "category": "general",
+  "tags": [
+    "ai"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.508154",
+  "updated_at": "2025-03-13T07:11:02.537511"
+}

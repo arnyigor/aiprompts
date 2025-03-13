@@ -1,0 +1,29 @@
+{
+  "id": "c5e79112-559e-4c80-bf15-6ba44e37e9dd",
+  "title": "Как монгольское иго повлияло на развитие российской государственности?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как монгольское иго повлияло на развитие российской государственности?",
+    "en": "The Mongol invasion has had a lasting impact on Russian history, hasn’t it? Can you tell me more about that?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "legal",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.475155",
+  "updated_at": "2025-03-13T07:11:02.394511"
+}

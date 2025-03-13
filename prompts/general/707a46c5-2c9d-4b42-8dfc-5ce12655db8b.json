@@ -1,0 +1,29 @@
+{
+  "id": "707a46c5-2c9d-4b42-8dfc-5ce12655db8b",
+  "title": "Как приготовить сытный и насыщенный суп для холодного зимнего дня?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как приготовить сытный и насыщенный суп для холодного зимнего дня?",
+    "en": "How do you make a hearty and filling soup for a cold winter day?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "creative"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.485154",
+  "updated_at": "2025-03-13T07:11:02.435510"
+}

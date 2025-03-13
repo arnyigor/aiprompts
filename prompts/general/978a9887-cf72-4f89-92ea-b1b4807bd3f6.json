@@ -1,0 +1,31 @@
+{
+  "id": "978a9887-cf72-4f89-92ea-b1b4807bd3f6",
+  "title": "Сгенерируйте оригинальный бит, сильно вдохновленный классической рэп-м...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Сгенерируйте оригинальный бит, сильно вдохновленный классической рэп-музыкой",
+    "en": "Generate an original beat heavily inspired by classic rap music"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "Code Llama",
+    "Copilot",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.489155",
+  "updated_at": "2025-03-13T07:11:02.454510"
+}

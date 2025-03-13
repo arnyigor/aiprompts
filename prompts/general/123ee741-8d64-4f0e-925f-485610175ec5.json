@@ -1,0 +1,31 @@
+{
+  "id": "123ee741-8d64-4f0e-925f-485610175ec5",
+  "title": "Как WebAssembly влияет на веб-разработку и какие его преимущества?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как WebAssembly влияет на веб-разработку и какие его преимущества?",
+    "en": "Can you discuss the role of WebAssembly in web development and its benefits?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "Code Llama",
+    "Copilot",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "development"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.458154",
+  "updated_at": "2025-03-13T07:11:02.325510"
+}

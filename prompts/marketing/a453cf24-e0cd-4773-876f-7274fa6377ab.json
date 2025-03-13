@@ -1,0 +1,44 @@
+{
+  "id": "a453cf24-e0cd-4773-876f-7274fa6377ab",
+  "title": "Напиши пост в соцсетях, который продемонстрирует уникальные особенност...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Напиши пост в соцсетях, который продемонстрирует уникальные особенности и функциональность нашего [продукта/услуги] в увлекательной форме",
+    "en": "Write a social media post that showcases the unique features and functionality of our [product/service] in an engaging way. Use a combination of visuals and text to illustrate the product/service in action, and highlight the unique benefits that set it apart from competitors. Use storytelling to bring the product/service to life and make it relatable to the target audience"
+  },
+  "compatible_models": [
+    "Claude-2",
+    "Claude-3",
+    "Code Llama",
+    "Copilot",
+    "GPT-3.5",
+    "GPT-4",
+    "Gemini-Pro"
+  ],
+  "category": "marketing",
+  "tags": [
+    "creative",
+    "content",
+    "writing",
+    "social"
+  ],
+  "variables": [
+    {
+      "name": "product_service",
+      "type": "string",
+      "description": "продукта/услуги / product/service",
+      "examples": []
+    }
+  ],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.437154",
+  "updated_at": "2025-03-13T07:11:02.233808"
+}

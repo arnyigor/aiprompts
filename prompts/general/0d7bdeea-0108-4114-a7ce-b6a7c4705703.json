@@ -1,0 +1,29 @@
+{
+  "id": "0d7bdeea-0108-4114-a7ce-b6a7c4705703",
+  "title": "Изобрази тропический пейзаж с яркими красками. Покажи закатные пляжи, ...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Изобрази тропический пейзаж с яркими красками. Покажи закатные пляжи, пышную флору и фауну, спокойные леса и подводный мир",
+    "en": "Tropical tapestry: Render a hyper-realistic and vibrant depiction of tropical landscapes. Envision a scene where the vivid colors of sunset beaches, lush flora and fauna, serene rainforests, and dynamic marine life beneath turquoise waters are brought to life with meticulous detail, inviting the viewer into a world of exotic beauty"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "ai"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.449156",
+  "updated_at": "2025-03-13T07:11:02.286795"
+}

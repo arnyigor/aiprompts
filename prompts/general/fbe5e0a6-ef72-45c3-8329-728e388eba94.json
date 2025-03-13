@@ -1,0 +1,29 @@
+{
+  "id": "fbe5e0a6-ef72-45c3-8329-728e388eba94",
+  "title": "Рацион питания важен для здоровья. Какие продукты помогут укрепить сер...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Рацион питания важен для здоровья. Какие продукты помогут укрепить сердце?",
+    "en": "Your diet is important for health. What foods support heart health?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "creative"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.477154",
+  "updated_at": "2025-03-13T07:11:02.403511"
+}

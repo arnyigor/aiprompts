@@ -1,0 +1,29 @@
+{
+  "id": "cae0b6e4-4e6a-4ac3-8479-201d2f1ee43f",
+  "title": "Как Московское княжество стало центром объединения русских земель?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как Московское княжество стало центром объединения русских земель?",
+    "en": "I’m interested in the history of the Grand Duchy of Moscow. Can you walk me through its rise to power?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.473154",
+  "updated_at": "2025-03-13T07:11:02.390511"
+}

@@ -1,0 +1,31 @@
+{
+  "id": "c17a814b-5563-48f6-9ce5-6d22a1f54b9a",
+  "title": "Что такое технология 5G и какие её последствия для будущего коммуникац...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Что такое технология 5G и какие её последствия для будущего коммуникаций?",
+    "en": "What is 5G technology and what are its implications for the future of communication?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "Code Llama",
+    "Copilot",
+    "GPT-4"
+  ],
+  "category": "technology",
+  "tags": [
+    "technology"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.496154",
+  "updated_at": "2025-03-13T07:11:02.487510"
+}

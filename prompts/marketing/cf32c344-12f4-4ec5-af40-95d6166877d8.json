@@ -1,0 +1,41 @@
+{
+  "id": "cf32c344-12f4-4ec5-af40-95d6166877d8",
+  "title": "Напиши остроумную и цепляющую подпись для поста в Twitter, рекламирующ...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Напиши остроумную и цепляющую подпись для поста в Twitter, рекламирующего [продукт/услугу]",
+    "en": "Develop a witty and attention-grabbing caption for a Twitter post promoting [product/service]"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "Code Llama",
+    "Copilot",
+    "GPT-4",
+    "Gemini-Pro"
+  ],
+  "category": "marketing",
+  "tags": [
+    "content",
+    "writing",
+    "social"
+  ],
+  "variables": [
+    {
+      "name": "product_service",
+      "type": "string",
+      "description": "продукт/услугу / product/service",
+      "examples": []
+    }
+  ],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.436154",
+  "updated_at": "2025-03-13T07:11:02.230991"
+}

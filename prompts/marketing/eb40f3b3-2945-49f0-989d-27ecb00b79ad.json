@@ -1,0 +1,30 @@
+{
+  "id": "eb40f3b3-2945-49f0-989d-27ecb00b79ad",
+  "title": "Подскажи подписи, которые привлекут моих подписчиков на моё событие в ...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Подскажи подписи, которые привлекут моих подписчиков на моё событие в соцсетях",
+    "en": "Can you suggest captions that will entice my followers to attend my event on social media?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4",
+    "Gemini-Pro"
+  ],
+  "category": "marketing",
+  "tags": [
+    "social"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.436154",
+  "updated_at": "2025-03-13T07:11:02.228991"
+}

@@ -1,0 +1,29 @@
+{
+  "id": "020941ed-57b6-437f-a03b-f7b508ac978f",
+  "title": "Какова роль ИИ в автоматизации процессов и оптимизации операций в разл...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какова роль ИИ в автоматизации процессов и оптимизации операций в различных отраслях?",
+    "en": "What is the role of AI in automating processes and optimizing operations in various industries?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "ai"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.498155",
+  "updated_at": "2025-03-13T07:11:02.493511"
+}

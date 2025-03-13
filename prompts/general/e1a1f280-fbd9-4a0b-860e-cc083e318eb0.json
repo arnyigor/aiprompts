@@ -1,0 +1,29 @@
+{
+  "id": "e1a1f280-fbd9-4a0b-860e-cc083e318eb0",
+  "title": "Кто топ-5 атлетов в мире прямо сейчас?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Кто топ-5 атлетов в мире прямо сейчас?",
+    "en": "Who are the top 5 athletes in the world right now?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.505154",
+  "updated_at": "2025-03-13T07:11:02.524511"
+}

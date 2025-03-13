@@ -1,0 +1,29 @@
+{
+  "id": "0c4eb569-8b37-4eb6-8289-62ac52fe8a87",
+  "title": "Как готический стиль проявился в российской архитектуре?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как готический стиль проявился в российской архитектуре?",
+    "en": "How did the Gothic style manifest in Russian architecture?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.482154",
+  "updated_at": "2025-03-13T07:11:02.424510"
+}

@@ -1,0 +1,29 @@
+{
+  "id": "520a6a93-e00c-4726-82d4-b7c98efec9cc",
+  "title": "Как панк-культура 1990-х годов повлияла на независимое искусство в Рос...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как панк-культура 1990-х годов повлияла на независимое искусство в России?",
+    "en": "How did the punk culture of the 1990s influence independent art in Russia?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "creative"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.481154",
+  "updated_at": "2025-03-13T07:11:02.422511"
+}

@@ -1,0 +1,32 @@
+{
+  "id": "3d2a94d0-d21b-4361-afef-5a5bc8483608",
+  "title": "Напиши историю о героях, объединяющихся против зла",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Напиши историю о героях, объединяющихся против зла",
+    "en": "Write a story about unlikely heroes uniting to fight evil"
+  },
+  "compatible_models": [
+    "Claude-2",
+    "Claude-3",
+    "GPT-3.5",
+    "GPT-4",
+    "Gemini-Pro"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.464154",
+  "updated_at": "2025-03-13T07:11:02.350511"
+}

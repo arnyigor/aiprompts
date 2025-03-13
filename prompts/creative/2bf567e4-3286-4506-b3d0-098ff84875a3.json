@@ -1,0 +1,32 @@
+{
+  "id": "2bf567e4-3286-4506-b3d0-098ff84875a3",
+  "title": "Изобрази гиперреалистичную винтажную натюрмортную композицию. Включи с...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Изобрази гиперреалистичную винтажную натюрмортную композицию. Включи старинные предметы, такие как карманные часы, ржавый ключ и увядшую розу, передающие текстуры и историю",
+    "en": "Vintage still life: Depict a hyper-realistic still life arrangement. Imagine vintage items like an old pocket watch, a rusty key, and a wilted rose, each object rich in texture and history, telling its own silent story"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "DALL-E-3",
+    "GPT-4",
+    "Midjourney"
+  ],
+  "category": "creative",
+  "tags": [
+    "content",
+    "writing"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.448154",
+  "updated_at": "2025-03-13T07:11:02.281795"
+}

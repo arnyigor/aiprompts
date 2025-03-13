@@ -1,0 +1,29 @@
+{
+  "id": "0948c658-c22f-48ad-ac18-4ca5f64324e3",
+  "title": "Какие меры первой помощи при инсульте особенно актуальны в российских ...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какие меры первой помощи при инсульте особенно актуальны в российских условиях?",
+    "en": "What first aid measures for stroke are most relevant in Russia?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "ai"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.479154",
+  "updated_at": "2025-03-13T07:11:02.413511"
+}

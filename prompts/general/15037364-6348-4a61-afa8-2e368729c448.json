@@ -1,0 +1,29 @@
+{
+  "id": "15037364-6348-4a61-afa8-2e368729c448",
+  "title": "Изобрази древнеегипетскую эстетику с яркими иероглифами, сфинксоподобн...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Изобрази древнеегипетскую эстетику с яркими иероглифами, сфинксоподобными структурами и артефактами, отражающими верования той эпохи",
+    "en": "Ancient Egypt: Explore vividly colored hieroglyphs, Sphinx-like structures, and artifacts reminiscent of an era dominated by pharaohs and complex spiritual beliefs"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "creative"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.449156",
+  "updated_at": "2025-03-13T07:11:02.284795"
+}

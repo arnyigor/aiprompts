@@ -1,0 +1,29 @@
+{
+  "id": "fd08437b-552e-468e-858b-12b5754e120f",
+  "title": "Как инфляция влияет на инвестиции в России, и что можно сделать, чтобы...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как инфляция влияет на инвестиции в России, и что можно сделать, чтобы минимизировать риски?",
+    "en": "I’m worried about inflation affecting my investments. Can you give me some insights on that?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.453154",
+  "updated_at": "2025-03-13T07:11:02.303510"
+}

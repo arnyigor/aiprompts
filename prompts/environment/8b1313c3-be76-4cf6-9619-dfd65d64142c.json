@@ -1,0 +1,32 @@
+{
+  "id": "8b1313c3-be76-4cf6-9619-dfd65d64142c",
+  "title": "Создай 8 призывов к действию для каршеринга на эко-автомобилях",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Создай 8 призывов к действию для каршеринга на эко-автомобилях",
+    "en": "Construct 8 persuasive calls-to-action related to eco-friendly car-sharing programs"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "Code Llama",
+    "Copilot",
+    "GPT-4",
+    "Gemini-Pro"
+  ],
+  "category": "environment",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.445154",
+  "updated_at": "2025-03-13T07:11:02.267795"
+}

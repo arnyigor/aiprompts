@@ -1,0 +1,29 @@
+{
+  "id": "b5ec13b5-9805-4dff-a245-ff5f52efdc81",
+  "title": "Какие автобиографии вдохновляют на перемены в жизни?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какие автобиографии вдохновляют на перемены в жизни?",
+    "en": "What autobiographies inspire life changes?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.459155",
+  "updated_at": "2025-03-13T07:11:02.328511"
+}

@@ -1,0 +1,31 @@
+{
+  "id": "10d8e02a-539c-4227-84c5-8845a9af6836",
+  "title": "Что такое квантовая механика и чем она отличается от классической меха...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Что такое квантовая механика и чем она отличается от классической механики?",
+    "en": "What is quantum mechanics and how does it differ from classical mechanics?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "Code Llama",
+    "Copilot",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.507155",
+  "updated_at": "2025-03-13T07:11:02.531511"
+}

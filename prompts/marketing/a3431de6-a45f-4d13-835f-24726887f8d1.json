@@ -1,0 +1,30 @@
+{
+  "id": "a3431de6-a45f-4d13-835f-24726887f8d1",
+  "title": "Дай 10 SEO-заголовков для блога о X",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Дай 10 SEO-заголовков для блога о X",
+    "en": "Give me 10 SEO-optimized titles for a blog post about X"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4",
+    "Gemini-Pro"
+  ],
+  "category": "marketing",
+  "tags": [
+    "marketing"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.440154",
+  "updated_at": "2025-03-13T07:11:02.246795"
+}

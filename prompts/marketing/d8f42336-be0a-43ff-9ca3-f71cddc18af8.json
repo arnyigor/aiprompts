@@ -1,0 +1,45 @@
+{
+  "id": "d8f42336-be0a-43ff-9ca3-f71cddc18af8",
+  "title": "У меня проблемы с придумыванием идей для контента о [тема] в социальны...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "У меня проблемы с придумыванием идей для контента о [тема] в социальных сетях. Можешь помочь с мозговым штурмом идей для [платформа]?",
+    "en": "I’m struggling to come up with ideas for my social media content about [topic]. Can you brainstorm some ideas with me for [social media platform]?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4",
+    "Gemini-Pro"
+  ],
+  "category": "marketing",
+  "tags": [
+    "content",
+    "ai",
+    "social"
+  ],
+  "variables": [
+    {
+      "name": "social_media_platform",
+      "type": "string",
+      "description": "тема / social media platform",
+      "examples": []
+    },
+    {
+      "name": "topic",
+      "type": "string",
+      "description": "платформа / topic",
+      "examples": []
+    }
+  ],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.434154",
+  "updated_at": "2025-03-13T07:11:02.216971"
+}

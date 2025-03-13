@@ -1,0 +1,29 @@
+{
+  "id": "09ab69f4-aa96-43d1-86d6-89bd6463e8b7",
+  "title": "Сгенерируйте мелодическую тему для песни с этим припевом (вставьте при...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Сгенерируйте мелодическую тему для песни с этим припевом (вставьте припев)",
+    "en": "Generate a melodic theme for a song with this chorus (paste in chorus)"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.487154",
+  "updated_at": "2025-03-13T07:11:02.445510"
+}

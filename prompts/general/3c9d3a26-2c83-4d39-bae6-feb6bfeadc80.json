@@ -1,0 +1,30 @@
+{
+  "id": "3c9d3a26-2c83-4d39-bae6-feb6bfeadc80",
+  "title": "Нарисуй гиперреалистичный портрет пожилого человека с изрезанными морщ...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Нарисуй гиперреалистичный портрет пожилого человека с изрезанными морщинами чертами. Пусть каждая линия рассказывает историю его жизни, на фоне мягкого, задумчивого антуража",
+    "en": "Weathered wisdom: Create a hyper-realistically detailed close-up portrait. Focus on an old man with weathered features, each line telling a story of a life fully lived, set against a soft, thoughtful background"
+  },
+  "compatible_models": [
+    "DALL-E-3",
+    "Midjourney",
+    "Stable Diffusion"
+  ],
+  "category": "general",
+  "tags": [
+    "ai"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.448154",
+  "updated_at": "2025-03-13T07:11:02.281795"
+}

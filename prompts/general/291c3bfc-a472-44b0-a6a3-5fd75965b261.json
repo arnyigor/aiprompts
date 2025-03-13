@@ -1,0 +1,29 @@
+{
+  "id": "291c3bfc-a472-44b0-a6a3-5fd75965b261",
+  "title": "Какую книгу ты посоветуешь для начала знакомства с научной фантастикой...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какую книгу ты посоветуешь для начала знакомства с научной фантастикой?",
+    "en": "What book would you recommend to start exploring science fiction?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "creative"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.459155",
+  "updated_at": "2025-03-13T07:11:02.327510"
+}

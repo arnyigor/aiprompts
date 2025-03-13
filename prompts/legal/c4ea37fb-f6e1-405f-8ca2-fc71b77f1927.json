@@ -1,0 +1,29 @@
+{
+  "id": "c4ea37fb-f6e1-405f-8ca2-fc71b77f1927",
+  "title": "Игры на выживание проверяют нервы на прочность. Давайте обсудим лучшие...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Игры на выживание проверяют нервы на прочность. Давайте обсудим лучшие из них за последние годы",
+    "en": "Survival games test your nerves. Let’s discuss the best ones from recent years"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "legal",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.490155",
+  "updated_at": "2025-03-13T07:11:02.457511"
+}

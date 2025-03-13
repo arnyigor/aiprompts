@@ -1,0 +1,32 @@
+{
+  "id": "e24afa25-5bfa-4062-97f4-ea1b4069b031",
+  "title": "Напиши редакционную статью по актуальной проблеме, связанной с (тема).",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Напиши редакционную статью по актуальной проблеме, связанной с (тема).",
+    "en": "Write an editorial about a current issue related to (topic)."
+  },
+  "compatible_models": [
+    "Claude-2",
+    "Claude-3",
+    "GPT-3.5",
+    "GPT-4",
+    "Gemini-Pro"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.467154",
+  "updated_at": "2025-03-13T07:11:02.363510"
+}

@@ -1,0 +1,31 @@
+{
+  "id": "448f54a8-6fb7-4596-bec3-3f1d4cd53ee1",
+  "title": "Как хранить и извлекать данные для сайта, используя базы данных и API?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как хранить и извлекать данные для сайта, используя базы данных и API?",
+    "en": "Can you talk about the various ways to store and retrieve data for a website, like databases and APIs?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "Code Llama",
+    "Copilot",
+    "GPT-4"
+  ],
+  "category": "technology",
+  "tags": [
+    "data"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.457154",
+  "updated_at": "2025-03-13T07:11:02.322511"
+}

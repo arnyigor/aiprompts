@@ -1,0 +1,29 @@
+{
+  "id": "1734946c-30c9-4b7b-852e-47d8ed72cee0",
+  "title": "Какие самые обязательные для посещения места в России?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какие самые обязательные для посещения места в России?",
+    "en": "What are the top must-visit destinations in Russia?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.499154",
+  "updated_at": "2025-03-13T07:11:02.499511"
+}

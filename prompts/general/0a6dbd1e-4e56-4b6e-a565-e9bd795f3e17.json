@@ -1,0 +1,29 @@
+{
+  "id": "0a6dbd1e-4e56-4b6e-a565-e9bd795f3e17",
+  "title": "Какие симптомы остеопороза важно знать?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какие симптомы остеопороза важно знать?",
+    "en": "What are the key symptoms of osteoporosis?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.479154",
+  "updated_at": "2025-03-13T07:11:02.411510"
+}

@@ -1,0 +1,32 @@
+{
+  "id": "77ea9bc0-ff39-4167-afa4-e3dcf7d0c895",
+  "title": "Представь, как звучание музыки может выглядеть в визуальной форме. Исп...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Представь, как звучание музыки может выглядеть в визуальной форме. Используй цвета и формы для передачи ритма и мелодии",
+    "en": "Soundscape: You know how music sounds, but can you imagine how it would look if it had a visual form? Try to translate auditory perception into visual art. Use colors and shapes to represent rhythm, melody, and harmony"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "DeepL",
+    "GPT-4",
+    "Google Translate"
+  ],
+  "category": "general",
+  "tags": [
+    "translation",
+    "creative"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.450155",
+  "updated_at": "2025-03-13T07:11:02.288501"
+}

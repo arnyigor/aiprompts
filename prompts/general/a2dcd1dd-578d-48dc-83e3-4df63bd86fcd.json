@@ -1,0 +1,29 @@
+{
+  "id": "a2dcd1dd-578d-48dc-83e3-4df63bd86fcd",
+  "title": "Как защитить свои инвестиции в России от рыночных колебаний?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как защитить свои инвестиции в России от рыночных колебаний?",
+    "en": "How can I protect my investments from market ups and downs?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.454154",
+  "updated_at": "2025-03-13T07:11:02.307510"
+}

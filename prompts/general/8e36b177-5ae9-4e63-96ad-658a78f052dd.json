@@ -1,0 +1,29 @@
+{
+  "id": "8e36b177-5ae9-4e63-96ad-658a78f052dd",
+  "title": "Какие лучшие места для наблюдения за дикой природой в заповедниках Рос...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какие лучшие места для наблюдения за дикой природой в заповедниках России?",
+    "en": "What are the best wildlife viewing destinations in Russia’s nature reserves?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.500154",
+  "updated_at": "2025-03-13T07:11:02.504511"
+}

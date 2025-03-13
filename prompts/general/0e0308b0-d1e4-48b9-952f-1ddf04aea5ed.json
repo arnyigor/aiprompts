@@ -1,0 +1,30 @@
+{
+  "id": "0e0308b0-d1e4-48b9-952f-1ddf04aea5ed",
+  "title": "Как происходит фотосинтез и как он обеспечивает энергией живые организ...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как происходит фотосинтез и как он обеспечивает энергией живые организмы?",
+    "en": "What is the process of photosynthesis and how does it provide energy for living organisms?"
+  },
+  "compatible_models": [
+    "DALL-E-3",
+    "Midjourney",
+    "Stable Diffusion"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.510155",
+  "updated_at": "2025-03-13T07:11:02.542511"
+}

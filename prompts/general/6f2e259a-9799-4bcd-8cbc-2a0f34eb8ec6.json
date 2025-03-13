@@ -1,0 +1,29 @@
+{
+  "id": "6f2e259a-9799-4bcd-8cbc-2a0f34eb8ec6",
+  "title": "Какие связи существовали между Российской и Персидской империями в XVI...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какие связи существовали между Российской и Персидской империями в XVIII веке?",
+    "en": "The Persian Empire was a major player in world history, wasn’t it? Can you tell me more about its role in Russia?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.476154",
+  "updated_at": "2025-03-13T07:11:02.399511"
+}

@@ -1,0 +1,30 @@
+{
+  "id": "d1781faa-d232-42d3-92a9-316646f04dd9",
+  "title": "Игры на PS5 предлагают потрясающие истории о супергероях. Вот лучшие и...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Игры на PS5 предлагают потрясающие истории о супергероях. Вот лучшие из них",
+    "en": "PS5 games offer amazing superhero stories. Here are the best ones"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4",
+    "Midjourney"
+  ],
+  "category": "entertainment",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.493154",
+  "updated_at": "2025-03-13T07:11:02.471510"
+}

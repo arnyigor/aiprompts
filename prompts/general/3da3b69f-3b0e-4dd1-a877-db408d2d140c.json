@@ -1,0 +1,31 @@
+{
+  "id": "3da3b69f-3b0e-4dd1-a877-db408d2d140c",
+  "title": "Саранжируйте современный танцевальный трек с влиянием классической муз...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Саранжируйте современный танцевальный трек с влиянием классической музыки",
+    "en": "Arrange a modern dance track with influences from classical music"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "Code Llama",
+    "Copilot",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.489155",
+  "updated_at": "2025-03-13T07:11:02.454510"
+}

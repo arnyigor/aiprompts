@@ -1,0 +1,29 @@
+{
+  "id": "01048e4b-7edc-4536-8595-3bd31faa53f1",
+  "title": "Кто лучшие лыжники в мире прямо сейчас?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Кто лучшие лыжники в мире прямо сейчас?",
+    "en": "Who are the best skiers in the world right now?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.505154",
+  "updated_at": "2025-03-13T07:11:02.525511"
+}

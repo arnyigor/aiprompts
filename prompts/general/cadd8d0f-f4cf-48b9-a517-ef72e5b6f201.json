@@ -1,0 +1,29 @@
+{
+  "id": "cadd8d0f-f4cf-48b9-a517-ef72e5b6f201",
+  "title": "Приведи пример XYZ",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Приведи пример XYZ",
+    "en": "Provide an example of XYZ"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.438155",
+  "updated_at": "2025-03-13T07:11:02.235808"
+}

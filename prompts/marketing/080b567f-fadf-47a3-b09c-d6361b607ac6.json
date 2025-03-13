@@ -1,0 +1,30 @@
+{
+  "id": "080b567f-fadf-47a3-b09c-d6361b607ac6",
+  "title": "Клиентский опыт: зачем он важен для маркетинга?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Клиентский опыт: зачем он важен для маркетинга?",
+    "en": "The role of customer experience in modern marketing strategies"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4",
+    "Gemini-Pro"
+  ],
+  "category": "marketing",
+  "tags": [
+    "marketing"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.447154",
+  "updated_at": "2025-03-13T07:11:02.276796"
+}

@@ -1,0 +1,29 @@
+{
+  "id": "f343911d-1fe3-4209-9542-7dddadb94e93",
+  "title": "Хроническая боль может быть изнуряющей. Какие методы её облегчения наи...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Хроническая боль может быть изнуряющей. Какие методы её облегчения наиболее эффективны?",
+    "en": "Chronic pain can be debilitating. What are the best ways to manage it?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "ai"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.478155",
+  "updated_at": "2025-03-13T07:11:02.408510"
+}

@@ -1,0 +1,31 @@
+{
+  "id": "f1eb4725-1748-4353-a7fe-8728ae261bec",
+  "title": "Какие риски безопасности нужно учитывать при создании сайта?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какие риски безопасности нужно учитывать при создании сайта?",
+    "en": "What are some of the security risks developers need to be aware of when building a website?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "Code Llama",
+    "Copilot",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.457154",
+  "updated_at": "2025-03-13T07:11:02.319511"
+}

@@ -1,0 +1,29 @@
+{
+  "id": "071fa803-50c4-4cb3-8cb1-4ebadb394289",
+  "title": "Какой подход лучше всего использовать для написания работы?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какой подход лучше всего использовать для написания работы?",
+    "en": "What would be the best approach to writing a paper?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "writing"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.467154",
+  "updated_at": "2025-03-13T07:11:02.364510"
+}

@@ -1,0 +1,29 @@
+{
+  "id": "d01c9f1f-2992-4f27-b883-5a228e150bc3",
+  "title": "Стоит ли инвестировать в PPC-кампании для видимости?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Стоит ли инвестировать в PPC-кампании для видимости?",
+    "en": "Is it worth investing in pay-per-click campaigns for better visibility with search engines like Google and Bing?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "ai"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.442154",
+  "updated_at": "2025-03-13T07:11:02.255795"
+}

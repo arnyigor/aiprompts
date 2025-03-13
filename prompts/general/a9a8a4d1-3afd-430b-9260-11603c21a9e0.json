@@ -1,0 +1,30 @@
+{
+  "id": "a9a8a4d1-3afd-430b-9260-11603c21a9e0",
+  "title": "В чем разница между фотосинтезом и клеточным дыханием?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "В чем разница между фотосинтезом и клеточным дыханием?",
+    "en": "What is the difference between photosynthesis and cellular respiration?"
+  },
+  "compatible_models": [
+    "DALL-E-3",
+    "Midjourney",
+    "Stable Diffusion"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.507155",
+  "updated_at": "2025-03-13T07:11:02.532511"
+}

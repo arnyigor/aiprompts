@@ -1,0 +1,29 @@
+{
+  "id": "1a900272-15a6-4c55-95ee-4691d688cf6c",
+  "title": "Какие самые необычные варианты размещения в России?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какие самые необычные варианты размещения в России?",
+    "en": "What are the most unique accommodations in Russia?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.501154",
+  "updated_at": "2025-03-13T07:11:02.507511"
+}

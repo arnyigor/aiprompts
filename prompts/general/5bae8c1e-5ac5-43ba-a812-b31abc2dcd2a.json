@@ -1,0 +1,29 @@
+{
+  "id": "5bae8c1e-5ac5-43ba-a812-b31abc2dcd2a",
+  "title": "Какие книги по кулинарии лучше всего объясняют процесс приготовления?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какие книги по кулинарии лучше всего объясняют процесс приготовления?",
+    "en": "What cookbooks explain the cooking process best?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "ai"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.460155",
+  "updated_at": "2025-03-13T07:11:02.331511"
+}

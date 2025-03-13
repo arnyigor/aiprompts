@@ -1,0 +1,29 @@
+{
+  "id": "34701329-3670-4d40-ad49-66103f805e96",
+  "title": "Почему стоит использовать CSS фреймворки, такие как Bootstrap?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Почему стоит использовать CSS фреймворки, такие как Bootstrap?",
+    "en": "What’s the appeal of using a CSS framework like Bootstrap?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.457154",
+  "updated_at": "2025-03-13T07:11:02.319511"
+}

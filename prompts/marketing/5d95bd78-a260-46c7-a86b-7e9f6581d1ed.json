@@ -1,0 +1,30 @@
+{
+  "id": "5d95bd78-a260-46c7-a86b-7e9f6581d1ed",
+  "title": "Использовать ли AMP для SEO?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Использовать ли AMP для SEO?",
+    "en": "Should I consider using Accelerated Mobile Pages (AMP) as an SEO strategy?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4",
+    "Gemini-Pro"
+  ],
+  "category": "marketing",
+  "tags": [
+    "marketing"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.442154",
+  "updated_at": "2025-03-13T07:11:02.256795"
+}

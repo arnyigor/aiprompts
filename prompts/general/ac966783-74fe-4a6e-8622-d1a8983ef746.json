@@ -1,0 +1,29 @@
+{
+  "id": "ac966783-74fe-4a6e-8622-d1a8983ef746",
+  "title": "Какие есть вкусные и полезные способы использовать тофу в приготовлени...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Какие есть вкусные и полезные способы использовать тофу в приготовлении пищи?",
+    "en": "What are some delicious and healthy ways to use tofu in cooking?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.486155",
+  "updated_at": "2025-03-13T07:11:02.441510"
+}

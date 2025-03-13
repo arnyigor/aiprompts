@@ -1,0 +1,30 @@
+{
+  "id": "323e2add-9d34-4264-9af1-b5e9a959f71f",
+  "title": "Создай кинематографическую панораму футуристического мегаполиса на рас...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Создай кинематографическую панораму футуристического мегаполиса на рассвете. Ранний свет отбрасывает длинные тени и подчеркивает изысканную архитектуру",
+    "en": "Futuristic dawn: Generate a high-definition, cinematic panorama. Picture a futuristic metropolis awakening at dawn, with the early light casting long shadows and illuminating the advanced architectural marvels"
+  },
+  "compatible_models": [
+    "DALL-E-3",
+    "Midjourney",
+    "Stable Diffusion"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.448154",
+  "updated_at": "2025-03-13T07:11:02.280795"
+}

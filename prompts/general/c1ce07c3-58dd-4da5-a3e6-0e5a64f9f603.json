@@ -1,0 +1,29 @@
+{
+  "id": "c1ce07c3-58dd-4da5-a3e6-0e5a64f9f603",
+  "title": "Как работают вакцины и почему они важны для общественного здоровья?",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Как работают вакцины и почему они важны для общественного здоровья?",
+    "en": "How do vaccines work and why are they important for public health?"
+  },
+  "compatible_models": [
+    "Claude-3",
+    "GPT-4"
+  ],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.507155",
+  "updated_at": "2025-03-13T07:11:02.534510"
+}

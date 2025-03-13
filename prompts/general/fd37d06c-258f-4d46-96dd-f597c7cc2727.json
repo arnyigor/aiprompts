@@ -1,0 +1,31 @@
+{
+  "id": "fd37d06c-258f-4d46-96dd-f597c7cc2727",
+  "title": "Изобрази гиперреалистичный осенний пейзаж. Покажи теплые оттенки, пада...",
+  "version": "1.0.0",
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "description": "Русский",
+  "content": {
+    "ru": "Изобрази гиперреалистичный осенний пейзаж. Покажи теплые оттенки, падающие листья и богатство природы, вдохновленное масляной живописью",
+    "en": "Autumn's embrace: Capture the essence of autumn in a hyper-realistic style. Visualize a scene where the warm hues of russet, gold, and burgundy blend seamlessly, portraying the rich tapestry of falling leaves, dense forest canopies, and bountiful harvests, all echoing the intricate details and depth of an oil painting"
+  },
+  "compatible_models": [
+    "DALL-E-3",
+    "Midjourney",
+    "Stable Diffusion"
+  ],
+  "category": "general",
+  "tags": [
+    "ml",
+    "ai"
+  ],
+  "variables": [],
+  "metadata": {},
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-03-13T07:10:58.449156",
+  "updated_at": "2025-03-13T07:11:02.285795"
+}
