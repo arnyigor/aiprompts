@@ -27,10 +27,9 @@ def main():
     logger.debug("QApplication инициализировано")
 
     # Определяем базовый путь для промптов
-    if sys.platform == 'darwin':  # macOS
-        base_path = Path.home() / "Library" / "Application Support" / "AiPromptManager" / "prompts"
-    else:
-        base_path = Path("prompts")
+    # Используем директорию рядом со скриптом
+    script_dir = Path(__file__).parent.parent  # Поднимаемся на уровень выше src
+    base_path = script_dir / "prompts"
     
     logger.debug(f"Базовый путь для промптов: {base_path}")
     base_path.mkdir(parents=True, exist_ok=True)
