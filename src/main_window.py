@@ -21,9 +21,6 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Prompt Manager")
         self.setGeometry(100, 100, 800, 600)
 
-        # Создаем меню
-        self.create_menu()
-
         # Фильтры
         self.lang_filter = QComboBox()
         self.lang_filter.addItems(["Все", "RU", "EN"])
@@ -138,24 +135,6 @@ class MainWindow(QMainWindow):
 
         # Load initial data
         self.load_prompts()
-
-    def create_menu(self):
-        """Создание главного меню"""
-        menubar = self.menuBar()
-        
-        # Меню Файл
-        file_menu = menubar.addMenu("Файл")
-        
-        # Пункт API ключи
-        api_keys_action = file_menu.addAction("API ключи")
-        api_keys_action.triggered.connect(self.show_api_keys_dialog)
-        
-        # Разделитель
-        file_menu.addSeparator()
-        
-        # Пункт Выход
-        exit_action = file_menu.addAction("Выход")
-        exit_action.triggered.connect(self.close)
 
     def toggle_sort_direction(self):
         """Переключение направления сортировки"""

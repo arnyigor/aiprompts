@@ -24,6 +24,7 @@ from src.lmstudio_dialog import LMStudioDialog
 from src.model_dialog import ModelConfigDialog
 from src.prompt_manager import PromptManager
 from src.settings import Settings
+from src.api_keys_dialog import ApiKeysDialog
 
 
 class PromptEditor(QDialog):
@@ -702,6 +703,12 @@ class PromptEditor(QDialog):
             ru_hf_btn.clicked.connect(self.add_huggingface_key)
             ru_hf_btn.setStyleSheet("background-color: #4CAF50; color: white;")
             
+        # Кнопка управления API ключами
+        ru_manage_keys_btn = QPushButton("⚙️")
+        ru_manage_keys_btn.setFixedWidth(30)
+        ru_manage_keys_btn.setToolTip("Управление API ключами")
+        ru_manage_keys_btn.clicked.connect(self.show_api_keys_dialog)
+            
         # Кнопка LMStudio
         ru_lm_btn = QPushButton("Выполнить через LMStudio")
         ru_lm_btn.clicked.connect(lambda: self.show_lmstudio_dialog("ru"))
@@ -715,6 +722,7 @@ class PromptEditor(QDialog):
         ru_clear_btn.clicked.connect(lambda: self.clear_content("ru"))
         
         ru_buttons.addWidget(ru_hf_btn)
+        ru_buttons.addWidget(ru_manage_keys_btn)
         ru_buttons.addWidget(ru_lm_btn)
         ru_buttons.addWidget(ru_copy_btn)
         ru_buttons.addWidget(ru_clear_btn)
@@ -759,6 +767,12 @@ class PromptEditor(QDialog):
             en_hf_btn.clicked.connect(self.add_huggingface_key)
             en_hf_btn.setStyleSheet("background-color: #4CAF50; color: white;")
             
+        # Кнопка управления API ключами
+        en_manage_keys_btn = QPushButton("⚙️")
+        en_manage_keys_btn.setFixedWidth(30)
+        en_manage_keys_btn.setToolTip("Manage API Keys")
+        en_manage_keys_btn.clicked.connect(self.show_api_keys_dialog)
+            
         # Кнопка LMStudio
         en_lm_btn = QPushButton("Execute with LMStudio")
         en_lm_btn.clicked.connect(lambda: self.show_lmstudio_dialog("en"))
@@ -772,6 +786,7 @@ class PromptEditor(QDialog):
         en_clear_btn.clicked.connect(lambda: self.clear_content("en"))
         
         en_buttons.addWidget(en_hf_btn)
+        en_buttons.addWidget(en_manage_keys_btn)
         en_buttons.addWidget(en_lm_btn)
         en_buttons.addWidget(en_copy_btn)
         en_buttons.addWidget(en_clear_btn)
@@ -1179,3 +1194,12 @@ class PromptEditor(QDialog):
         except Exception as e:
             self.logger.error(f"Ошибка при сохранении API ключа: {str(e)}", exc_info=True)
             QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить API ключ: {str(e)}")
+
+    def show_api_keys_dialog(self):
+        """Показать диалог управления API ключами"""
+        dialog = ApiKeysDialog(self.settings, self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            # Пересоздаем API клиенты
+            self.hf_api = HuggingFaceInference(self.settings)
+            # Обновляем UI
+            self.update_api_buttons()
