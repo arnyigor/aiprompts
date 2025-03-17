@@ -2,20 +2,27 @@
 import logging
 
 from PyQt6.QtWidgets import QMainWindow, QListWidget, QVBoxLayout, QWidget, QPushButton, \
-    QHBoxLayout, QLineEdit, QLabel, QMessageBox, QComboBox
+    QHBoxLayout, QLineEdit, QLabel, QMessageBox, QComboBox, QCheckBox
+from PyQt6.QtCore import Qt
 
 from src.preview import PromptPreview
 from src.prompt_editor import PromptEditor
 from src.prompt_manager import PromptManager
+from src.settings import Settings
+from src.api_keys_dialog import ApiKeysDialog
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, prompt_manager: PromptManager):
+    def __init__(self, prompt_manager: PromptManager, settings: Settings):
         super().__init__()
         self.logger = logging.getLogger(__name__)
         self.prompt_manager = prompt_manager
+        self.settings = settings
         self.setWindowTitle("Prompt Manager")
         self.setGeometry(100, 100, 800, 600)
+
+        # Создаем меню
+        self.create_menu()
 
         # Фильтры
         self.lang_filter = QComboBox()
@@ -131,6 +138,24 @@ class MainWindow(QMainWindow):
 
         # Load initial data
         self.load_prompts()
+
+    def create_menu(self):
+        """Создание главного меню"""
+        menubar = self.menuBar()
+        
+        # Меню Файл
+        file_menu = menubar.addMenu("Файл")
+        
+        # Пункт API ключи
+        api_keys_action = file_menu.addAction("API ключи")
+        api_keys_action.triggered.connect(self.show_api_keys_dialog)
+        
+        # Разделитель
+        file_menu.addSeparator()
+        
+        # Пункт Выход
+        exit_action = file_menu.addAction("Выход")
+        exit_action.triggered.connect(self.close)
 
     def toggle_sort_direction(self):
         """Переключение направления сортировки"""
@@ -327,7 +352,7 @@ class MainWindow(QMainWindow):
     def open_editor(self):
         self.logger.debug("Открытие редактора...")
         try:
-            editor = PromptEditor(self.prompt_manager)
+            editor = PromptEditor(self.prompt_manager, self.settings)
             if editor.exec():
                 self.logger.info("Данные сохранены, обновление списка")
                 self.load_prompts()
@@ -377,7 +402,7 @@ class MainWindow(QMainWindow):
             # Редактирование промптов
             edited_count = 0
             for prompt_id, title in prompts_to_edit:
-                editor = PromptEditor(self.prompt_manager, prompt_id)
+                editor = PromptEditor(self.prompt_manager, self.settings, prompt_id)
                 if editor.exec():
                     self.logger.info(f"Промпт {prompt_id} успешно отредактирован")
                     edited_count += 1
@@ -493,3 +518,7 @@ class MainWindow(QMainWindow):
         except Exception as e:
             self.logger.error(f"Ошибка при удалении: {str(e)}", exc_info=True)
             QMessageBox.critical(self, "Ошибка", "Не удалось выполнить удаление")
+
+    def show_api_keys_dialog(self):
+        dialog = ApiKeysDialog(self.settings, self)
+        dialog.exec()

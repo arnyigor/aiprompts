@@ -1,57 +1,48 @@
 # main.py
-import sys
 import logging
+import sys
 from pathlib import Path
+
 from PyQt6.QtWidgets import QApplication
-from src.prompt_manager import PromptManager
-from src.template_manager import TemplateManager
+
 from src.main_window import MainWindow
+from src.prompt_manager import PromptManager
+from src.settings import Settings
 
 
-def main():
-    # Настройка логирования
+def setup_logging():
     logging.basicConfig(
-        level=logging.DEBUG,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         handlers=[
             logging.StreamHandler(),
             logging.FileHandler('app.log', encoding='utf-8')
         ]
     )
-    
+
+
+def main():
+    setup_logging()
     logger = logging.getLogger(__name__)
-    logger.debug(f"Запуск приложения на платформе: {sys.platform}")
 
-    # Инициализация компонентов
-    app = QApplication(sys.argv)
-    logger.debug("QApplication инициализировано")
-
-    # Определяем базовый путь для промптов
-    # Используем директорию рядом со скриптом
-    script_dir = Path(__file__).parent.parent  # Поднимаемся на уровень выше src
-    base_path = script_dir / "prompts"
-    
-    logger.debug(f"Базовый путь для промптов: {base_path}")
-    base_path.mkdir(parents=True, exist_ok=True)
-
-    # Менеджеры
     try:
-        prompt_manager = PromptManager(str(base_path))
-        template_manager = TemplateManager()
-        logger.debug("Менеджеры инициализированы")
-    except Exception as e:
-        logger.error("Ошибка инициализации менеджеров", exc_info=True)
-        raise
+        # Определяем базовый путь как директорию рядом со скриптом
+        base_path = Path(__file__).parent.parent
+        prompts_dir = base_path / "prompts"
+        prompts_dir.mkdir(exist_ok=True)
 
-    # Основное окно
-    try:
-        main_window = MainWindow(prompt_manager)
-        main_window.show()
-        logger.debug("Главное окно создано и отображено")
+        # Инициализируем настройки
+        settings = Settings()
+
+        app = QApplication(sys.argv)
+        prompt_manager = PromptManager(prompts_dir)
+        window = MainWindow(prompt_manager, settings)
+        window.show()
         sys.exit(app.exec())
+
     except Exception as e:
-        logger.error("Ошибка в приложении", exc_info=True)
-        raise
+        logger.error(f"Критическая ошибка: {str(e)}", exc_info=True)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

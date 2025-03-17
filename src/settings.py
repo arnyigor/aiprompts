@@ -3,7 +3,15 @@ import logging
 from pathlib import Path
 import os
 import sys
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+import secrets
+from base64 import urlsafe_b64encode, urlsafe_b64decode
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
+from src.key_encryption import KeyEncryption
+from cryptography.fernet import Fernet
 
 class Settings:
     def __init__(self):
@@ -11,6 +19,8 @@ class Settings:
         self.settings_dir = self._get_settings_dir()
         self.settings_dir.mkdir(parents=True, exist_ok=True)
         self.settings_file = self.settings_dir / 'settings.json'
+        self.api_keys_file = self.settings_dir / '.keystore'
+        self.key_encryption = KeyEncryption()
         
         # Структура настроек по умолчанию
         self.default_settings = {
@@ -28,8 +38,25 @@ class Settings:
             }
         }
         
+        # Структура API ключей по умолчанию
+        self.default_api_keys = {
+            "huggingface": {
+                "key": None,
+                "salt": None
+            },
+            "openai": {
+                "key": None,
+                "salt": None
+            },
+            "anthropic": {
+                "key": None,
+                "salt": None
+            }
+        }
+        
         # Загружаем настройки
         self.settings = self.load_settings()
+        self.api_keys = self.load_api_keys()
 
     def _get_settings_dir(self) -> Path:
         """Определяет путь для хранения настроек в зависимости от ОС"""
@@ -162,4 +189,163 @@ class Settings:
     def clear_local_updated_at(self):
         """Очистка всех записей о локальном времени изменения"""
         self.settings["local_updated_at"] = {}
-        self.save_settings() 
+        self.save_settings()
+
+    def load_api_keys(self) -> Dict[str, dict]:
+        """Загрузка зашифрованных API ключей из файла"""
+        try:
+            if self.api_keys_file.exists():
+                with open(self.api_keys_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            else:
+                # Если файл не существует, создаем его
+                api_keys = self.default_api_keys.copy()
+                self.save_api_keys(api_keys)
+                return api_keys
+        except Exception as e:
+            self.logger.error(f"Ошибка загрузки API ключей: {str(e)}", exc_info=True)
+            return self.default_api_keys.copy()
+
+    def save_api_keys(self, api_keys: Dict[str, dict]):
+        """Сохранение зашифрованных API ключей в файл"""
+        try:
+            with open(self.api_keys_file, 'w', encoding='utf-8') as f:
+                json.dump(api_keys, f, indent=2)
+            
+            # Устанавливаем права доступа только для текущего пользователя
+            if sys.platform != 'win32':
+                self.api_keys_file.chmod(0o600)
+                
+        except Exception as e:
+            self.logger.error(f"Ошибка сохранения API ключей: {str(e)}", exc_info=True)
+
+    def _derive_master_key(self) -> bytes:
+        """Получение мастер-ключа для шифрования API ключей"""
+        # Получаем или создаем соль для мастер-ключа
+        master_salt_file = self.settings_dir / '.master_salt'
+        if not master_salt_file.exists():
+            master_salt = secrets.token_bytes(32)
+            with open(master_salt_file, 'wb') as f:
+                f.write(master_salt)
+            if sys.platform != 'win32':
+                master_salt_file.chmod(0o600)
+        else:
+            with open(master_salt_file, 'rb') as f:
+                master_salt = f.read()
+
+        # Используем имя пользователя и путь к директории как основу для ключа
+        user = os.environ.get('USERNAME') or os.environ.get('USER') or 'default'
+        base = (user + str(self.settings_dir)).encode()
+        
+        # Используем Scrypt для получения ключа (более устойчив к перебору)
+        kdf = Scrypt(
+            salt=master_salt,
+            length=32,
+            n=2**16,  # CPU/память параметр
+            r=8,      # размер блока
+            p=1,      # параллелизм
+        )
+        return kdf.derive(base)
+
+    def _encrypt_key(self, key: str) -> tuple[str, str, str]:
+        """Шифрование API ключа"""
+        if not key:
+            return None, None, None
+            
+        try:
+            # Получаем мастер-ключ
+            master_key = self._derive_master_key()
+            
+            # Создаем AESGCM шифровальщик
+            aesgcm = AESGCM(master_key)
+            
+            # Генерируем случайные соль и nonce
+            salt = secrets.token_bytes(16)
+            nonce = secrets.token_bytes(12)
+            
+            # Шифруем ключ
+            key_bytes = key.encode()
+            encrypted_key = aesgcm.encrypt(nonce, key_bytes, None)
+            
+            # Кодируем в base64 для хранения
+            return (
+                urlsafe_b64encode(encrypted_key).decode(),
+                urlsafe_b64encode(salt).decode(),
+                urlsafe_b64encode(nonce).decode()
+            )
+        except Exception as e:
+            self.logger.error(f"Ошибка шифрования ключа: {str(e)}", exc_info=True)
+            raise
+
+    def _decrypt_key(self, encrypted_key: str, salt: str, nonce: str) -> Optional[str]:
+        """Расшифровка API ключа"""
+        if not all([encrypted_key, salt, nonce]):
+            return None
+            
+        try:
+            # Получаем мастер-ключ
+            master_key = self._derive_master_key()
+            
+            # Создаем AESGCM дешифровщик
+            aesgcm = AESGCM(master_key)
+            
+            # Декодируем из base64
+            encrypted_bytes = urlsafe_b64decode(encrypted_key)
+            nonce_bytes = urlsafe_b64decode(nonce)
+            
+            # Расшифровываем ключ
+            decrypted_key = aesgcm.decrypt(nonce_bytes, encrypted_bytes, None)
+            return decrypted_key.decode()
+            
+        except Exception as e:
+            self.logger.error(f"Ошибка расшифровки ключа: {str(e)}", exc_info=True)
+            return None
+
+    def get_api_key(self, service: str) -> Optional[str]:
+        """Получение API ключа для сервиса"""
+        try:
+            service_data = self.api_keys.get(service, {})
+            if not service_data or not service_data.get("key"):
+                return None
+                
+            encrypted_key = service_data.get("key")
+            salt = service_data.get("salt")
+            nonce = service_data.get("nonce")
+            
+            return self._decrypt_key(encrypted_key, salt, nonce)
+                
+        except Exception as e:
+            self.logger.error(f"Ошибка получения API ключа: {str(e)}", exc_info=True)
+            return None
+
+    def set_api_key(self, service: str, key: str):
+        """Установка API ключа для сервиса"""
+        try:
+            if not key:
+                self.remove_api_key(service)
+                return
+                
+            # Шифруем ключ
+            encrypted_key, salt, nonce = self._encrypt_key(key)
+            
+            # Сохраняем зашифрованный ключ и метаданные
+            self.api_keys[service] = {
+                "key": encrypted_key,
+                "salt": salt,
+                "nonce": nonce
+            }
+            
+            self.save_api_keys(self.api_keys)
+            
+        except Exception as e:
+            self.logger.error(f"Ошибка установки API ключа: {str(e)}", exc_info=True)
+            raise
+
+    def remove_api_key(self, service: str):
+        """Удаление API ключа"""
+        if service in self.api_keys:
+            self.api_keys[service] = {
+                "key": None,
+                "salt": None
+            }
+            self.save_api_keys(self.api_keys) 

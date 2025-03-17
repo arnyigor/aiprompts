@@ -23,16 +23,18 @@ from src.lmstudio_api import LMStudioInference
 from src.lmstudio_dialog import LMStudioDialog
 from src.model_dialog import ModelConfigDialog
 from src.prompt_manager import PromptManager
+from src.settings import Settings
 
 
 class PromptEditor(QDialog):
-    def __init__(self, prompt_manager: PromptManager, prompt_id=None):
+    def __init__(self, prompt_manager: PromptManager, settings: Settings, prompt_id=None):
         super().__init__()
 
         # Базовая инициализация
         self.logger = logging.getLogger(__name__)
+        self.settings = settings
         try:
-            self.hf_api = HuggingFaceInference()
+            self.hf_api = HuggingFaceInference(self.settings)
         except Exception as e:
             self.logger.error(f"Ошибка инициализации HuggingFaceInference: {str(e)}", exc_info=True)
             self.hf_api = None
@@ -691,12 +693,14 @@ class PromptEditor(QDialog):
         # Кнопки для русской версии
         ru_buttons = QHBoxLayout()
         
-        # Кнопка Hugging Face
-        ru_hf_btn = QPushButton("Выполнить через Hugging Face")
-        ru_hf_btn.clicked.connect(lambda: self.show_huggingface_dialog("ru"))
-        if not self.hf_api:
-            ru_hf_btn.setEnabled(False)
-            ru_hf_btn.setToolTip("HuggingFace API недоступен")
+        # Кнопки Hugging Face
+        if self.hf_api:
+            ru_hf_btn = QPushButton("Выполнить через Hugging Face")
+            ru_hf_btn.clicked.connect(lambda: self.show_huggingface_dialog("ru"))
+        else:
+            ru_hf_btn = QPushButton("Добавить API ключ Hugging Face")
+            ru_hf_btn.clicked.connect(self.add_huggingface_key)
+            ru_hf_btn.setStyleSheet("background-color: #4CAF50; color: white;")
             
         # Кнопка LMStudio
         ru_lm_btn = QPushButton("Выполнить через LMStudio")
@@ -746,12 +750,14 @@ class PromptEditor(QDialog):
         # Кнопки для английской версии
         en_buttons = QHBoxLayout()
         
-        # Кнопка Hugging Face
-        en_hf_btn = QPushButton("Execute with Hugging Face")
-        en_hf_btn.clicked.connect(lambda: self.show_huggingface_dialog("en"))
-        if not self.hf_api:
-            en_hf_btn.setEnabled(False)
-            en_hf_btn.setToolTip("HuggingFace API is not available")
+        # Кнопки Hugging Face
+        if self.hf_api:
+            en_hf_btn = QPushButton("Execute with Hugging Face")
+            en_hf_btn.clicked.connect(lambda: self.show_huggingface_dialog("en"))
+        else:
+            en_hf_btn = QPushButton("Add Hugging Face API Key")
+            en_hf_btn.clicked.connect(self.add_huggingface_key)
+            en_hf_btn.setStyleSheet("background-color: #4CAF50; color: white;")
             
         # Кнопка LMStudio
         en_lm_btn = QPushButton("Execute with LMStudio")
@@ -1091,3 +1097,85 @@ class PromptEditor(QDialog):
         item = QListWidgetItem(f"{name} ({var_type}): {description}")
         item.setData(Qt.ItemDataRole.UserRole, var_data)
         self.variables_list.addItem(item)
+
+    def update_api_buttons(self):
+        """Обновление кнопок API после изменения ключа"""
+        try:
+            # Пересоздаем контент с обновленными кнопками
+            self.content_tabs.clear()
+            self.setup_content_tabs()
+            
+        except Exception as e:
+            self.logger.error(f"Ошибка при обновлении кнопок API: {str(e)}", exc_info=True)
+
+    def add_huggingface_key(self):
+        """Добавление или обновление API ключа Hugging Face"""
+        try:
+            # Получаем текущий ключ
+            current_key = self.settings.get_api_key("huggingface")
+            
+            # Создаем диалог для ввода ключа
+            dialog = QDialog(self)
+            dialog.setWindowTitle("API ключ Hugging Face")
+            layout = QVBoxLayout()
+            
+            # Поле для ввода ключа
+            key_label = QLabel("Введите API ключ:")
+            key_input = QLineEdit()
+            key_input.setEchoMode(QLineEdit.EchoMode.Password)
+            if current_key:
+                key_input.setPlaceholderText("Введите новый ключ для обновления")
+            else:
+                key_input.setPlaceholderText("Введите API ключ")
+            
+            # Кнопка показать/скрыть ключ
+            show_key = QPushButton("Показать ключ")
+            show_key.setCheckable(True)
+            show_key.clicked.connect(lambda: key_input.setEchoMode(
+                QLineEdit.EchoMode.Normal if show_key.isChecked() 
+                else QLineEdit.EchoMode.Password
+            ))
+            
+            # Кнопки управления
+            buttons = QHBoxLayout()
+            save_btn = QPushButton("Сохранить")
+            cancel_btn = QPushButton("Отмена")
+            
+            # Добавляем виджеты в layout
+            layout.addWidget(key_label)
+            layout.addWidget(key_input)
+            layout.addWidget(show_key)
+            buttons.addWidget(save_btn)
+            buttons.addWidget(cancel_btn)
+            layout.addLayout(buttons)
+            
+            dialog.setLayout(layout)
+            
+            # Подключаем обработчики
+            save_btn.clicked.connect(dialog.accept)
+            cancel_btn.clicked.connect(dialog.reject)
+            
+            # Показываем диалог
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                new_key = key_input.text().strip()
+                if new_key:
+                    # Сохраняем ключ
+                    self.settings.set_api_key("huggingface", new_key)
+                    
+                    # Пересоздаем API клиент
+                    self.hf_api = HuggingFaceInference(self.settings)
+                    
+                    # Обновляем UI
+                    self.update_api_buttons()
+                    
+                    QMessageBox.information(
+                        self,
+                        "Успех",
+                        "API ключ успешно сохранен и применен"
+                    )
+                else:
+                    QMessageBox.warning(self, "Ошибка", "API ключ не может быть пустым")
+                    
+        except Exception as e:
+            self.logger.error(f"Ошибка при сохранении API ключа: {str(e)}", exc_info=True)
+            QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить API ключ: {str(e)}")

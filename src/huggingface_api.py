@@ -2,14 +2,16 @@ import logging
 import os
 
 from huggingface_hub import InferenceClient
+from src.settings import Settings
 
 
 class HuggingFaceInference:
-    def __init__(self):
+    def __init__(self, settings: Settings):
         print("Инициализация HuggingFaceInference...")
-        self.api_key = os.getenv("HUGGINGFACE_API_KEY")
+        self.settings = settings
+        self.api_key = self.settings.get_api_key("huggingface")
         if not self.api_key:
-            raise ValueError("API-ключ Hugging Face не найден в переменных окружения")
+            raise ValueError("API-ключ Hugging Face не найден в настройках")
 
         self.logger = logging.getLogger(__name__)
         self.client = InferenceClient(token=self.api_key)
