@@ -431,6 +431,11 @@ class PromptEditor(QDialog):
         self.source_field.textChanged.connect(self.update_json_preview)
         self.notes_field.textChanged.connect(self.update_json_preview)
 
+        # Переменные
+        self.variables_list.model().rowsInserted.connect(self.update_json_preview)
+        self.variables_list.model().rowsRemoved.connect(self.update_json_preview)
+        self.variables_list.itemChanged.connect(self.update_json_preview)
+
     def update_json_preview(self):
         """Обновление предпросмотра JSON"""
         try:
@@ -897,9 +902,25 @@ class PromptEditor(QDialog):
 
             # Категория
             if prompt.category:
-                index = self.category_selector.findData(prompt.category)
+                # Получаем все категории
+                categories = self.cat_manager.get_categories()
+                category = prompt.category
+                
+                # Если категория является подкатегорией, находим её родителя
+                if category in categories and categories[category]["parent"] != "general":
+                    parent = categories[category]["parent"]
+                    if parent and parent != "general":
+                        category = parent
+                
+                # Ищем индекс категории в селекторе
+                index = self.category_selector.findData(category)
                 if index >= 0:
                     self.category_selector.setCurrentIndex(index)
+                else:
+                    # Если категория не найдена, устанавливаем general
+                    index = self.category_selector.findData("general")
+                    if index >= 0:
+                        self.category_selector.setCurrentIndex(index)
 
             # Совместимые модели
             if hasattr(prompt, 'compatible_models'):
@@ -959,13 +980,20 @@ class PromptEditor(QDialog):
         if not tags:
             tags = ["general"]
 
-        # Получаем переменные и преобразуем их в словари
+        # Получаем переменные
         variables = []
         for i in range(self.variables_list.count()):
             item = self.variables_list.item(i)
-            if item and item.data(Qt.ItemDataRole.UserRole):
+            if item:
                 variable = item.data(Qt.ItemDataRole.UserRole)
-                variables.append(variable.dict())  # Преобразуем в словарь
+                if variable:
+                    # Переменная уже является словарем
+                    variables.append(variable)
+
+        # Получаем категорию
+        category = self.category_selector.currentData()
+        if not category:
+            category = "general"
 
         # Формируем основной словарь данных
         data = {
@@ -980,7 +1008,7 @@ class PromptEditor(QDialog):
             },
             "description": self.description_field.toPlainText(),
             "content": content,
-            "category": self.category_selector.currentData(),
+            "category": category,
             "tags": tags,
             "variables": variables,
             "metadata": {

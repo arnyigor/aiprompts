@@ -1,10 +1,20 @@
 # data/storage.py
+import json
 import logging
-import shutil
 from pathlib import Path
 from typing import List, Optional
+from datetime import datetime
 
 from src.models import Prompt
+from src.settings import Settings
+
+
+class DateTimeEncoder(json.JSONEncoder):
+    """Кастомный JSON энкодер для обработки datetime объектов"""
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 
 class LocalStorage:
@@ -14,21 +24,45 @@ class LocalStorage:
         self.storage_path.mkdir(exist_ok=True)
         self.base_path = Path(base_path)
         self.base_path.mkdir(parents=True, exist_ok=True)
+        self.settings = Settings()
 
     def save_prompt(self, prompt: Prompt):
         try:
+            # Сохраняем локальные настройки
+            self.settings.set_local(prompt.id, bool(prompt.is_local))
+            self.settings.set_favorite(prompt.id, bool(prompt.is_favorite))
+
+            # Устанавливаем флаги в False перед сохранением
+            prompt_dict = prompt.model_dump()
+            prompt_dict["is_local"] = bool(False)
+            prompt_dict["is_favorite"] = bool(False)
+
+            # Проверяем и устанавливаем категорию
+            if not prompt_dict.get("category"):
+                prompt_dict["category"] = "general"
+
             # Формируем путь с учётом категории
-            category_dir = self._get_category_dir(prompt.category)
+            category_dir = self._get_category_dir(prompt_dict["category"])
             file_path = category_dir / f"{prompt.id}.json"
 
-            json_data = prompt.model_dump_json(indent=2)
             with open(file_path, "w", encoding="utf-8") as f:
-                f.write(json_data)
+                json.dump(prompt_dict, f, indent=2, ensure_ascii=False, cls=DateTimeEncoder)
+
         except Exception as e:
             self.logger.error(f"Ошибка сохранения промпта {prompt.id}: {str(e)}", exc_info=True)
+            raise
 
     def load_prompt(self, prompt_id: str) -> Optional[Prompt]:
         """Ищет промпт в корневой папке и всех категориях"""
+        prompt = self._load_prompt_base(prompt_id)
+        if prompt:
+            # Добавляем локальные настройки
+            prompt.is_local = self.settings.is_local(prompt_id)
+            prompt.is_favorite = self.settings.is_favorite(prompt_id)
+        return prompt
+
+    def _load_prompt_base(self, prompt_id: str) -> Optional[Prompt]:
+        """Базовая загрузка промпта без локальных настроек"""
         # Сначала проверяем корневую папку (для случаев без категорий)
         root_file = self.storage_path / f"{prompt_id}.json"
         if root_file.exists():
@@ -46,14 +80,20 @@ class LocalStorage:
     def _load_from_path(self, file_path: Path) -> Optional[Prompt]:
         """Вспомогательный метод для загрузки и очистки данных"""
         try:
-            raw_data = file_path.read_bytes()
-            content = raw_data.decode('utf-8', errors='replace')
-            cleaned_content = content.replace('\ufffd', '').replace('\x98', '')
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                
+            # Проверяем и устанавливаем категорию
+            if not data.get("category"):
+                data["category"] = "general"
+                
+            # Конвертируем строки ISO в datetime
+            if "created_at" in data and isinstance(data["created_at"], str):
+                data["created_at"] = datetime.fromisoformat(data["created_at"])
+            if "updated_at" in data and isinstance(data["updated_at"], str):
+                data["updated_at"] = datetime.fromisoformat(data["updated_at"])
 
-            # Автоматическое пересохранение при проблемах с кодировкой
-            self._resave_if_needed(file_path, raw_data, cleaned_content)
-
-            return Prompt.model_validate_json(cleaned_content)
+            return Prompt.model_validate(data)
         except Exception as e:
             self.logger.error(f"Ошибка загрузки {file_path.name}: {str(e)}")
             return None
@@ -66,6 +106,9 @@ class LocalStorage:
                 try:
                     prompt = self.load_prompt(file_path.stem)
                     if prompt:
+                        # Проверяем категорию
+                        if not prompt.category:
+                            prompt.category = "general"
                         prompts.append(prompt)
                 except Exception as e:
                     self.logger.error(f"Ошибка чтения {file_path.name}: {str(e)}")
@@ -77,6 +120,9 @@ class LocalStorage:
                     try:
                         prompt = self.load_prompt(file_path.stem)
                         if prompt:
+                            # Проверяем и устанавливаем категорию из пути
+                            if not prompt.category or prompt.category != category_dir.name:
+                                prompt.category = category_dir.name
                             prompts.append(prompt)
                     except Exception as e:
                         self.logger.error(f"Ошибка чтения {file_path.name}: {str(e)}")

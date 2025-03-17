@@ -21,6 +21,12 @@ class MainWindow(QMainWindow):
         self.lang_filter = QComboBox()
         self.lang_filter.addItems(["Все", "RU", "EN"])
         
+        # Фильтр избранного
+        self.favorite_filter = QPushButton("⭐")
+        self.favorite_filter.setCheckable(True)
+        self.favorite_filter.setFixedWidth(30)
+        self.favorite_filter.setToolTip("Показать избранное")
+        
         # Сортировка
         self.sort_combo = QComboBox()
         self.sort_combo.addItems(["По названию", "По дате создания", "По категории"])
@@ -66,6 +72,12 @@ class MainWindow(QMainWindow):
         lang_layout.addWidget(self.lang_filter)
         filters_layout.addLayout(lang_layout)
         
+        # Favorite filter
+        fav_layout = QVBoxLayout()
+        fav_layout.addWidget(QLabel("Избранное:"))
+        fav_layout.addWidget(self.favorite_filter)
+        filters_layout.addLayout(fav_layout)
+        
         # Category filter
         cat_layout = QVBoxLayout()
         cat_layout.addWidget(QLabel("Категория:"))
@@ -110,6 +122,7 @@ class MainWindow(QMainWindow):
         self.delete_button.clicked.connect(self.delete_selected)
         self.search_field.textChanged.connect(self.filter_prompts)
         self.lang_filter.currentTextChanged.connect(self.filter_prompts)
+        self.favorite_filter.clicked.connect(self.filter_prompts)
         self.category_filter.currentTextChanged.connect(self.filter_prompts)
         self.tag_filter.currentTextChanged.connect(self.filter_prompts)
         self.sort_combo.currentTextChanged.connect(self.filter_prompts)
@@ -201,7 +214,7 @@ class MainWindow(QMainWindow):
         try:
             # Получаем все промпты
             prompts = self.prompt_manager.list_prompts()
-            self.logger.debug(f"filter_prompts: Начало фильтрации, всего промптов: {len(prompts)}")
+            # self.logger.debug(f"filter_prompts: Начало фильтрации, всего промптов: {len(prompts)}")
             filtered_prompts = []
             
             # Применяем фильтры
@@ -209,12 +222,17 @@ class MainWindow(QMainWindow):
             category_filter = self.category_filter.currentText()
             lang_filter = self.lang_filter.currentText()
             tag_filter = self.tag_filter.currentText()
+            show_favorites = self.favorite_filter.isChecked()
             
-            self.logger.debug(f"filter_prompts: Параметры фильтрации: поиск='{search_query}', категория='{category_filter}', тег='{tag_filter}', язык='{lang_filter}'")
+            # self.logger.debug(f"filter_prompts: Параметры фильтрации: поиск='{search_query}', категория='{category_filter}', тег='{tag_filter}', язык='{lang_filter}', избранное={show_favorites}")
             
             for prompt in prompts:
                 # Проверяем все условия фильтрации
                 matches = True
+                
+                # Фильтр по избранному
+                if show_favorites and not getattr(prompt, 'is_favorite', False):
+                    matches = False
                 
                 # Фильтр по поисковому запросу
                 if search_query:
@@ -262,7 +280,7 @@ class MainWindow(QMainWindow):
                 self.prompt_list.addItem(item_text)
             
             # Проверяем, что промпты добавились после фильтрации
-            self.logger.debug(f"filter_prompts: Количество элементов в списке после фильтрации: {self.prompt_list.count()}")
+            # self.logger.debug(f"filter_prompts: Количество элементов в списке после фильтрации: {self.prompt_list.count()}")
             
             # Обновляем статистику
             total_prompts = len(prompts)

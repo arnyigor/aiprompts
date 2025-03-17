@@ -3,7 +3,7 @@
   "title": "Опытный технический архитектор",
   "version": "1.0.0",
   "status": "active",
-  "is_local": true,
+  "is_local": false,
   "is_favorite": false,
   "description": "",
   "content": {
@@ -11,7 +11,7 @@
     "en": ""
   },
   "compatible_models": [],
-  "category": "software",
+  "category": "technology",
   "tags": [
     "general"
   ],
@@ -29,5 +29,5 @@
     "votes": 0
   },
   "created_at": "2025-03-09T14:37:14.260552",
-  "updated_at": "2025-03-12T18:25:56.280938"
+  "updated_at": "2025-03-17T07:24:07.054956"
 }
