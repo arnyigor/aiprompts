@@ -16,20 +16,35 @@ class PromptManager:
 
     def __init__(self, storage_path="prompts"):
         self.logger = logging.getLogger(__name__)
+        self.logger.debug(f"Инициализация PromptManager с путем: {storage_path}")
+        
         self.cat_manager = CategoryManager()
         self.storage = LocalStorage(storage_path)
-        self.prompts = {p.id: p for p in self.storage.list_prompts()}
+        self.prompts = {}  # Инициализируем пустым словарем
         self.storage_path = Path(storage_path)
-        self.load_all_prompts()
+        
+        try:
+            self.load_all_prompts()
+        except Exception as e:
+            self.logger.error(f"Ошибка при начальной загрузке промптов: {str(e)}", exc_info=True)
 
     def load_all_prompts(self):
         """Загрузка всех промптов в кэш при старте"""
-        for prompt in self.storage.list_prompts():
-            self.prompts[prompt.id] = prompt
-        self.logger.info(f"Загружено {len(self.prompts)} промптов")
+        self.logger.debug("Начало загрузки всех промптов")
+        try:
+            prompts = self.storage.list_prompts()
+            self.logger.debug(f"Получено промптов от storage: {len(prompts)}")
+            
+            for prompt in prompts:
+                self.prompts[prompt.id] = prompt
+                
+            self.logger.info(f"Загружено {len(self.prompts)} промптов")
+        except Exception as e:
+            self.logger.error(f"Ошибка при загрузке промптов: {str(e)}", exc_info=True)
 
     def list_prompts(self) -> list[Prompt]:
-        """Загружает промпты в кэш при первом вызове"""
+        """Возвращает список всех промптов"""
+        self.logger.debug(f"Запрошен список промптов, в кэше: {len(self.prompts)}")
         return list(self.prompts.values())
 
     def get_prompt(self, prompt_id: str) -> Optional[Prompt]:

@@ -21,7 +21,14 @@ class LocalStorage:
     def __init__(self, base_path: str = "prompts"):
         self.logger = logging.getLogger(__name__)
         self.storage_path = Path(base_path)
-        self.storage_path.mkdir(exist_ok=True)
+        self.logger.debug(f"Инициализация LocalStorage с путем: {self.storage_path.absolute()}")
+        
+        try:
+            self.storage_path.mkdir(exist_ok=True)
+            self.logger.debug(f"Директория создана/существует: {self.storage_path.absolute()}")
+        except Exception as e:
+            self.logger.error(f"Ошибка создания директории {self.storage_path}: {str(e)}", exc_info=True)
+        
         self.base_path = Path(base_path)
         self.base_path.mkdir(parents=True, exist_ok=True)
         self.settings = Settings()
@@ -106,9 +113,19 @@ class LocalStorage:
             return None
 
     def list_prompts(self) -> List[Prompt]:
+        self.logger.debug(f"Начало загрузки промптов из {self.storage_path}")
         prompts = []
+        
+        # Проверяем существование директории
+        if not self.storage_path.exists():
+            self.logger.error(f"Директория {self.storage_path} не существует")
+            return prompts
+            
         # Ищем в корне (для совместимости с существующими файлами)
-        for file_path in self.storage_path.glob("*.json"):
+        root_files = list(self.storage_path.glob("*.json"))
+        self.logger.debug(f"Найдено файлов в корне: {len(root_files)}")
+        
+        for file_path in root_files:
             if not file_path.is_dir():
                 try:
                     prompt = self.load_prompt(file_path.stem)
@@ -117,22 +134,30 @@ class LocalStorage:
                         if not prompt.category:
                             prompt.category = "general"
                         prompts.append(prompt)
+                        self.logger.debug(f"Загружен промпт: {file_path.name}")
                 except Exception as e:
-                    self.logger.error(f"Ошибка чтения {file_path.name}: {str(e)}")
+                    self.logger.error(f"Ошибка чтения {file_path.name}: {str(e)}", exc_info=True)
 
         # Ищем во всех категориях
-        for category_dir in self.storage_path.iterdir():
-            if category_dir.is_dir():
-                for file_path in category_dir.glob("*.json"):
-                    try:
-                        prompt = self.load_prompt(file_path.stem)
-                        if prompt:
-                            # Проверяем и устанавливаем категорию из пути
-                            if not prompt.category or prompt.category != category_dir.name:
-                                prompt.category = category_dir.name
-                            prompts.append(prompt)
-                    except Exception as e:
-                        self.logger.error(f"Ошибка чтения {file_path.name}: {str(e)}")
+        categories = [d for d in self.storage_path.iterdir() if d.is_dir()]
+        self.logger.debug(f"Найдено категорий: {len(categories)}")
+        
+        for category_dir in categories:
+            category_files = list(category_dir.glob("*.json"))
+            self.logger.debug(f"В категории {category_dir.name} найдено файлов: {len(category_files)}")
+            
+            for file_path in category_files:
+                try:
+                    prompt = self.load_prompt(file_path.stem)
+                    if prompt:
+                        # Проверяем и устанавливаем категорию из пути
+                        if not prompt.category or prompt.category != category_dir.name:
+                            prompt.category = category_dir.name
+                        prompts.append(prompt)
+                except Exception as e:
+                    self.logger.error(f"Ошибка чтения {file_path.name}: {str(e)}", exc_info=True)
+                    
+        self.logger.debug(f"Всего загружено промптов: {len(prompts)}")
         return prompts
 
     def _resave_if_needed(self, file_path: Path, original_data: bytes, cleaned_content: str):
