@@ -32,6 +32,10 @@ class LocalStorage:
             self.settings.set_local(prompt.id, bool(prompt.is_local))
             self.settings.set_favorite(prompt.id, bool(prompt.is_favorite))
 
+            # Сохраняем локальное время изменения
+            current_time = datetime.now().isoformat()
+            self.settings.set_local_updated_at(prompt.id, current_time)
+
             # Устанавливаем флаги в False перед сохранением
             prompt_dict = prompt.model_dump()
             prompt_dict["is_local"] = bool(False)
@@ -59,6 +63,9 @@ class LocalStorage:
             # Добавляем локальные настройки
             prompt.is_local = self.settings.is_local(prompt_id)
             prompt.is_favorite = self.settings.is_favorite(prompt_id)
+            
+            # updated_at остается как есть из файла промпта
+            # Оно будет обновляться только при синхронизации с сервера
         return prompt
 
     def _load_prompt_base(self, prompt_id: str) -> Optional[Prompt]:
@@ -173,5 +180,7 @@ class LocalStorage:
 
         if file_path.exists():
             file_path.unlink()
+            # Удаляем информацию о локальном времени изменения
+            self.settings.remove_local_updated_at(prompt_id)
         else:
             raise FileNotFoundError(f"Файл промпта {prompt_id} не найден")

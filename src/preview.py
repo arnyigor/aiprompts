@@ -51,8 +51,16 @@ class PromptPreview(QDialog):
         meta_row2.addWidget(self.category_label)
         meta_row2.addWidget(self.tags_label)
 
+        # Третья строка метаданных - даты
+        meta_row3 = QHBoxLayout()
+        self.created_at_label = QLabel()
+        self.updated_at_label = QLabel()
+        meta_row3.addWidget(self.created_at_label)
+        meta_row3.addWidget(self.updated_at_label)
+
         meta_layout.addLayout(meta_row1)
         meta_layout.addLayout(meta_row2)
+        meta_layout.addLayout(meta_row3)
         layout.addLayout(meta_layout)
 
         # Поддерживаемые модели
@@ -151,6 +159,12 @@ class PromptPreview(QDialog):
         self.category_label.setText(f"Категория: {self.prompt.category}")
         self.tags_label.setText(f"Теги: {', '.join(self.prompt.tags)}")
 
+        # Даты создания и изменения
+        created_at = self.prompt.created_at.strftime("%d.%m.%Y %H:%M") if self.prompt.created_at else "Не указано"
+        updated_at = self.prompt.updated_at.strftime("%d.%m.%Y %H:%M") if self.prompt.updated_at else "Не указано"
+        self.created_at_label.setText(f"Создан: {created_at}")
+        self.updated_at_label.setText(f"Изменен: {updated_at}")
+
         # Поддерживаемые модели
         self.models_text.setPlainText(
             ', '.join(
@@ -230,6 +244,8 @@ class PromptPreview(QDialog):
     Категория: {self.prompt.category}
     Теги: {', '.join(self.prompt.tags)}
     Рейтинг: {self.prompt.rating['score']} ({self.prompt.rating['votes']} голосов)
+    Создан: {self.prompt.created_at.strftime("%d.%m.%Y %H:%M") if self.prompt.created_at else "Не указано"}
+    Изменен: {self.prompt.updated_at.strftime("%d.%m.%Y %H:%M") if self.prompt.updated_at else "Не указано"}
 
     Описание:
     {self.prompt.description}

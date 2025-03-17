@@ -16,6 +16,7 @@ class Settings:
         self.default_settings = {
             "favorites": {},  # id промпта: True/False
             "local_prompts": {},  # id промпта: True/False
+            "local_updated_at": {},  # id промпта: локальное время изменения в ISO формате
             "window": {
                 "size": [800, 600],
                 "position": [100, 100]
@@ -59,8 +60,20 @@ class Settings:
         try:
             if self.settings_file.exists():
                 with open(self.settings_file, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            return self.default_settings.copy()
+                    loaded_settings = json.load(f)
+                    # Обновляем загруженные настройки значениями по умолчанию для отсутствующих ключей
+                    settings = self.default_settings.copy()
+                    settings.update(loaded_settings)
+                    return settings
+            else:
+                # Если файл не существует, создаем его с настройками по умолчанию
+                settings = self.default_settings.copy()
+                try:
+                    with open(self.settings_file, 'w', encoding='utf-8') as f:
+                        json.dump(settings, f, indent=2, ensure_ascii=False)
+                except Exception as e:
+                    self.logger.warning(f"Не удалось создать файл настроек: {str(e)}", exc_info=True)
+                return settings
         except Exception as e:
             self.logger.error(f"Ошибка загрузки настроек: {str(e)}", exc_info=True)
             return self.default_settings.copy()
@@ -68,10 +81,17 @@ class Settings:
     def save_settings(self):
         """Сохранение настроек в файл"""
         try:
+            # Убеждаемся, что директория существует
+            self.settings_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Сохраняем настройки
             with open(self.settings_file, 'w', encoding='utf-8') as f:
                 json.dump(self.settings, f, indent=2, ensure_ascii=False)
         except Exception as e:
             self.logger.error(f"Ошибка сохранения настроек: {str(e)}", exc_info=True)
+            # Выводим дополнительную информацию для отладки
+            self.logger.debug(f"Путь к файлу настроек: {self.settings_file}")
+            self.logger.debug(f"Текущие настройки: {self.settings}")
 
     def is_favorite(self, prompt_id: str) -> bool:
         """Проверка, является ли промпт избранным"""
@@ -123,4 +143,23 @@ class Settings:
             self.settings["filters"]["last_category"],
             self.settings["filters"]["last_tag"],
             self.settings["filters"]["last_language"]
-        ) 
+        )
+
+    def get_local_updated_at(self, prompt_id: str) -> str:
+        """Получение локального времени изменения файла"""
+        return self.settings["local_updated_at"].get(prompt_id)
+
+    def set_local_updated_at(self, prompt_id: str, updated_at: str):
+        """Установка локального времени изменения файла"""
+        self.settings["local_updated_at"][prompt_id] = updated_at
+        self.save_settings()
+
+    def remove_local_updated_at(self, prompt_id: str):
+        """Удаление записи о локальном времени изменения"""
+        self.settings["local_updated_at"].pop(prompt_id, None)
+        self.save_settings()
+
+    def clear_local_updated_at(self):
+        """Очистка всех записей о локальном времени изменения"""
+        self.settings["local_updated_at"] = {}
+        self.save_settings() 
