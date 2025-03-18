@@ -2,13 +2,13 @@
   "id": "2f1ab185-b60e-45c8-a459-3eb4e3807676",
   "title": "Напиши письмо для привлечения клиентов к (продукту/услуге/бизнесу)",
   "version": "1.0.0",
-  "status": "draft",
-  "is_local": true,
+  "status": "active",
+  "is_local": false,
   "is_favorite": false,
   "description": "Русский",
   "content": {
-    "ru": "Напиши письмо для привлечения клиентов к (продукту/услуге/бизнесу)",
-    "en": "Write a lead-generation email for (product, service, or business)"
+    "ru": "Напиши письмо для привлечения клиентов к [service]",
+    "en": "Write a lead-generation email for [service]"
   },
   "compatible_models": [
     "Claude-2",
@@ -22,12 +22,26 @@
     "business",
     "ai"
   ],
-  "variables": [],
-  "metadata": {},
+  "variables": [
+    {
+      "name": "service",
+      "type": "string",
+      "description": "сервис для применения",
+      "examples": []
+    }
+  ],
+  "metadata": {
+    "author": {
+      "id": "",
+      "name": ""
+    },
+    "source": "",
+    "notes": ""
+  },
   "rating": {
     "score": 0.0,
     "votes": 0
   },
   "created_at": "2025-03-13T07:10:58.450155",
-  "updated_at": "2025-03-13T07:11:02.290511"
+  "updated_at": "2025-03-18T04:12:22.629092"
 }

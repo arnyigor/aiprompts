@@ -1,6 +1,9 @@
 import logging
+import re
+from typing import List
 
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import (
     QDialog,
     QTextEdit,
@@ -13,18 +16,178 @@ from PyQt6.QtWidgets import (
     QListWidgetItem,
     QTabWidget,
     QMessageBox,
-    QComboBox, QInputDialog, QCheckBox, QDoubleSpinBox, QSpinBox, QGroupBox, QWidget, QFormLayout
+    QComboBox, QCheckBox, QDoubleSpinBox, QSpinBox, QGroupBox, QWidget, QFormLayout,
+    QMenu
 )
 
 from src.category_manager import CategoryManager
-from src.huggingface_api import HuggingFaceInference
+from src.huggingface_api import HuggingFaceAPI
 from src.huggingface_dialog import HuggingFaceDialog
 from src.lmstudio_api import LMStudioInference
 from src.lmstudio_dialog import LMStudioDialog
 from src.model_dialog import ModelConfigDialog
+from src.models import Variable
 from src.prompt_manager import PromptManager
 from src.settings import Settings
-from src.api_keys_dialog import ApiKeysDialog
+
+
+class JsonPreviewDialog(QDialog):
+    """Диалог для предпросмотра JSON"""
+
+    def __init__(self, json_text, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Предпросмотр JSON")
+        self.setGeometry(300, 300, 600, 800)
+
+        layout = QVBoxLayout()
+
+        # Текстовое поле для JSON
+        self.text_edit = QTextEdit()
+        self.text_edit.setReadOnly(True)
+        self.text_edit.setPlainText(json_text)
+
+        # Кнопка закрытия
+        close_btn = QPushButton("Закрыть")
+        close_btn.clicked.connect(self.accept)
+
+        layout.addWidget(self.text_edit)
+        layout.addWidget(close_btn)
+
+        self.setLayout(layout)
+
+
+class VariableDialog(QDialog):
+    """Диалог для создания/редактирования переменной"""
+
+    def __init__(self, variable_text="", parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Редактирование переменной")
+        self.setup_ui(variable_text)
+
+    def setup_ui(self, variable_text):
+        layout = QVBoxLayout()
+
+        # Имя переменной
+        name_layout = QHBoxLayout()
+        name_label = QLabel("Имя переменной:")
+        self.name_field = QLineEdit()
+        self.name_field.setPlaceholderText("Только латинские буквы")
+        name_layout.addWidget(name_label)
+        name_layout.addWidget(self.name_field)
+
+        # Тип переменной
+        type_layout = QHBoxLayout()
+        type_label = QLabel("Тип:")
+        self.type_combo = QComboBox()
+        self.type_combo.addItems(["string", "number", "list"])
+        type_layout.addWidget(type_label)
+        type_layout.addWidget(self.type_combo)
+
+        # Описание
+        description_label = QLabel("Описание:")
+        self.description_field = QTextEdit()
+        self.description_field.setPlainText(variable_text)
+        self.description_field.setMaximumHeight(100)
+
+        # Примеры
+        examples_label = QLabel("Примеры (через запятую):")
+        self.examples_field = QLineEdit()
+
+        # Кнопки
+        buttons = QHBoxLayout()
+        save_btn = QPushButton("Сохранить")
+        save_btn.clicked.connect(self.accept)
+        cancel_btn = QPushButton("Отмена")
+        cancel_btn.clicked.connect(self.reject)
+        buttons.addWidget(save_btn)
+        buttons.addWidget(cancel_btn)
+
+        # Добавляем все в основной layout
+        layout.addLayout(name_layout)
+        layout.addLayout(type_layout)
+        layout.addWidget(description_label)
+        layout.addWidget(self.description_field)
+        layout.addWidget(examples_label)
+        layout.addWidget(self.examples_field)
+        layout.addLayout(buttons)
+
+        self.setLayout(layout)
+
+    def get_variable(self) -> Variable:
+        """Получить объект Variable из заполненных полей"""
+        try:
+            name = self.name_field.text().strip()
+            var_type = self.type_combo.currentText()
+            description = self.description_field.toPlainText().strip()
+            examples = [ex.strip() for ex in self.examples_field.text().split(",") if ex.strip()]
+
+            return Variable(
+                name=name,
+                type=var_type,
+                description=description,
+                examples=examples
+            )
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Ошибка",
+                f"Не удалось создать переменную: {str(e)}"
+            )
+            return None
+
+    def set_variable(self, variable: Variable):
+        """Заполнить поля данными из объекта Variable"""
+        self.name_field.setText(variable.name)
+        index = self.type_combo.findText(variable.type)
+        if index >= 0:
+            self.type_combo.setCurrentIndex(index)
+        self.description_field.setPlainText(variable.description)
+        if variable.examples:
+            self.examples_field.setText(", ".join(variable.examples))
+
+
+class ExampleSelectionDialog(QDialog):
+    """Диалог для выбора примеров переменной"""
+
+    def __init__(self, variable: Variable, parent=None):
+        super().__init__(parent)
+        self.variable = variable
+        self.selected_examples = []
+        self.setup_ui()
+
+    def setup_ui(self):
+        self.setWindowTitle("Выбор примеров")
+        layout = QVBoxLayout()
+
+        # Информация о переменной
+        info_text = f"Переменная: {self.variable.name} ({self.variable.type})\n{self.variable.description}"
+        info_label = QLabel(info_text)
+        info_label.setWordWrap(True)
+        layout.addWidget(info_label)
+
+        # Список примеров
+        self.examples_list = QListWidget()
+        self.examples_list.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
+        for example in self.variable.examples:
+            item = QListWidgetItem(str(example))
+            self.examples_list.addItem(item)
+        layout.addWidget(self.examples_list)
+
+        # Кнопки
+        buttons = QHBoxLayout()
+        insert_btn = QPushButton("Вставить")
+        insert_btn.clicked.connect(self.accept)
+        cancel_btn = QPushButton("Отмена")
+        cancel_btn.clicked.connect(self.reject)
+        buttons.addWidget(insert_btn)
+        buttons.addWidget(cancel_btn)
+
+        layout.addLayout(buttons)
+        self.setLayout(layout)
+
+    def get_selected_examples(self) -> List[str]:
+        """Получить выбранные примеры"""
+        return [item.text() for item in self.examples_list.selectedItems()]
 
 
 class PromptEditor(QDialog):
@@ -35,9 +198,9 @@ class PromptEditor(QDialog):
         self.logger = logging.getLogger(__name__)
         self.settings = settings
         try:
-            self.hf_api = HuggingFaceInference(self.settings)
+            self.hf_api = HuggingFaceAPI(settings=self.settings)
         except Exception as e:
-            self.logger.error(f"Ошибка инициализации HuggingFaceInference: {str(e)}", exc_info=True)
+            self.logger.error(f"Ошибка инициализации HuggingFaceAPI: {str(e)}", exc_info=True)
             self.hf_api = None
 
         try:
@@ -135,13 +298,10 @@ class PromptEditor(QDialog):
         # Добавляем вкладки в основной layout
         main_layout.addWidget(self.main_tabs)
 
-        # Добавляем предпросмотр JSON
-        json_group = QGroupBox("Предпросмотр JSON")
-        json_layout = QVBoxLayout()
-        json_layout.addWidget(self.json_preview)
-        json_group.setLayout(json_layout)
-        json_group.setMaximumHeight(200)
-        main_layout.addWidget(json_group)
+        # Кнопка предпросмотра JSON
+        json_preview_btn = QPushButton("Открыть предпросмотр JSON")
+        json_preview_btn.clicked.connect(self.show_json_preview)
+        main_layout.addWidget(json_preview_btn)
 
         # Добавляем кнопки
         buttons_layout = QHBoxLayout()
@@ -179,17 +339,9 @@ class PromptEditor(QDialog):
         notes_layout.addWidget(self.notes_field)
         notes_group.setLayout(notes_layout)
 
-        # История изменений
-        history_group = QGroupBox("История изменений")
-        history_layout = QVBoxLayout()
-        self.history_list = QListWidget()
-        history_layout.addWidget(self.history_list)
-        history_group.setLayout(history_layout)
-
         layout.addLayout(search_layout)
         layout.addLayout(form)
         layout.addWidget(notes_group)
-        layout.addWidget(history_group)
 
         tab.setLayout(layout)
         self.main_tabs.addTab(tab, "Метаданные")
@@ -199,31 +351,256 @@ class PromptEditor(QDialog):
         tab = QWidget()
         layout = QVBoxLayout()
 
-        # Список переменных
-        self.variables_list.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
-        layout.addWidget(self.variables_list)
-
-        # Кнопки управления
-        buttons_layout = QHBoxLayout()
-
-        add_btn = QPushButton("Добавить")
+        # Кнопка добавления
+        add_btn = QPushButton("Добавить переменную")
         add_btn.clicked.connect(self.add_variable)
 
-        delete_btn = QPushButton("Удалить")
-        delete_btn.clicked.connect(self.delete_variable)
+        # Список переменных
+        self.variables_list = QListWidget()
+        self.variables_list.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
+        self.variables_list.itemDoubleClicked.connect(self.edit_variable)
 
-        buttons_layout.addWidget(add_btn)
-        buttons_layout.addWidget(delete_btn)
-        layout.addLayout(buttons_layout)
+        layout.addWidget(add_btn)
+        layout.addWidget(self.variables_list)
 
         tab.setLayout(layout)
         self.main_tabs.addTab(tab, "Переменные")
 
-    def delete_variable(self):
-        """Удаление выбранной переменной"""
-        current = self.variables_list.currentItem()
-        if current:
-            self.variables_list.takeItem(self.variables_list.row(current))
+    def insert_variable(self, text_edit: QTextEdit):
+        """Вставка переменной в текстовый редактор"""
+        # Получаем список переменных
+        variables = []
+        for i in range(self.variables_list.count()):
+            item = self.variables_list.item(i)
+            if item:
+                variable = item.data(Qt.ItemDataRole.UserRole)
+                if variable:
+                    variables.append(variable)
+
+        if not variables:
+            QMessageBox.warning(self, "Предупреждение",
+                                "Сначала добавьте переменные во вкладке 'Переменные'")
+            return
+
+        # Создаем меню с переменными
+        menu = QMenu(self)
+        for var in variables:
+            action = menu.addAction(f"{var.name} ({var.type}): {var.description}")
+            action.setData(var)
+
+        # Показываем меню
+        action = menu.exec(QCursor.pos())
+        if action:
+            var = action.data()
+            text_edit.insertPlainText(f"[{var.name}]")
+
+    def undo_prompt(self, text_edit: QTextEdit):
+        """Откат промпта к предыдущему состоянию"""
+        if hasattr(text_edit, 'prompt_history') and text_edit.prompt_history:
+            previous_text = text_edit.prompt_history.pop()
+            text_edit.setPlainText(previous_text)
+
+    def detect_variables(self, text_edit: QTextEdit):
+        """Автоматическое определение переменных в тексте"""
+        import re
+
+        text = text_edit.toPlainText()
+
+        # Сначала проверяем только квадратные скобки
+        square_brackets = re.finditer(r'\[([^\]]+)\]', text)
+        square_vars = [match.group(1).strip() for match in square_brackets]
+
+        # Проверяем, все ли переменные в квадратных скобках уже существуют
+        existing_vars = set()
+        for i in range(self.variables_list.count()):
+            item = self.variables_list.item(i)
+            if item:
+                var = item.data(Qt.ItemDataRole.UserRole)
+                if var:
+                    existing_vars.add(var.name)
+
+        # Если все переменные в квадратных скобках уже существуют и других скобок нет
+        if all(var in existing_vars for var in square_vars):
+            # Проверяем наличие других типов скобок
+            other_brackets = re.finditer(r'[\(\{\<]([^\)\}\>]+)[\)\}\>]', text)
+            other_vars = [match.group(1).strip() for match in other_brackets]
+
+            if not other_vars:
+                QMessageBox.information(self, "Информация", "Все переменные уже добавлены")
+                return
+
+        # Паттерн для поиска текста в разных скобках
+        patterns = [
+            r'\[([^\]]+)\]',  # [...] 
+            r'\(([^)]+)\)',  # (...)
+            r'\{([^}]+)\}',  # {...}
+            r'<([^>]+)>',  # <...>
+        ]
+
+        found_vars = []
+        for pattern in patterns:
+            matches = re.finditer(pattern, text)
+            for match in matches:
+                var_text = match.group(1).strip()
+                # Пропускаем переменные, которые уже существуют
+                if var_text not in existing_vars:
+                    found_vars.append(var_text)
+
+        if not found_vars:
+            QMessageBox.information(self, "Информация", "Новые переменные не найдены")
+            return
+
+        # Для каждой найденной переменной показываем диалог
+        for var_text in found_vars:
+            dialog = VariableDialog(var_text, self)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                variable = dialog.get_variable()
+                if variable.name:  # Проверяем, что имя не пустое
+                    # Проверяем, что имя содержит только латинские буквы
+                    if not re.match(r'^[a-zA-Z][a-zA-Z0-9_]*$', variable.name):
+                        QMessageBox.warning(
+                            self,
+                            "Ошибка",
+                            "Имя переменной должно содержать только латинские буквы, цифры и знак подчеркивания"
+                        )
+                        continue
+
+                    # Проверяем уникальность имени
+                    exists = False
+                    for i in range(self.variables_list.count()):
+                        item = self.variables_list.item(i)
+                        if item:
+                            var = item.data(Qt.ItemDataRole.UserRole)
+                            if var and var.name == variable.name:
+                                exists = True
+                                break
+
+                    if exists:
+                        reply = QMessageBox.question(
+                            self,
+                            "Переменная существует",
+                            f"Переменная {variable.name} уже существует. Обновить?",
+                            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                        )
+                        if reply == QMessageBox.StandardButton.Yes:
+                            # Обновляем существующую переменную
+                            for i in range(self.variables_list.count()):
+                                item = self.variables_list.item(i)
+                                if item:
+                                    var = item.data(Qt.ItemDataRole.UserRole)
+                                    if var and var.name == variable.name:
+                                        item.setText(
+                                            f"{variable.name} ({variable.type}): {variable.description}")
+                                        item.setData(Qt.ItemDataRole.UserRole, variable)
+                                        break
+                    else:
+                        # Добавляем новую переменную
+                        item = QListWidgetItem(
+                            f"{variable.name} ({variable.type}): {variable.description}")
+                        item.setData(Qt.ItemDataRole.UserRole, variable)
+                        self.variables_list.addItem(item)
+
+    def add_variable(self):
+        """Добавление новой переменной"""
+        dialog = VariableDialog(parent=self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            variable = dialog.get_variable()
+            if variable.name:  # Проверяем, что имя не пустое
+                # Проверяем, что имя содержит только латинские буквы
+                if not re.match(r'^[a-zA-Z][a-zA-Z0-9_]*$', variable.name):
+                    QMessageBox.warning(
+                        self,
+                        "Ошибка",
+                        "Имя переменной должно содержать только латинские буквы, цифры и знак подчеркивания"
+                    )
+                    return
+
+                # Проверяем уникальность имени
+                for i in range(self.variables_list.count()):
+                    item = self.variables_list.item(i)
+                    if item:
+                        var = item.data(Qt.ItemDataRole.UserRole)
+                        if var and var.name == variable.name:
+                            QMessageBox.warning(
+                                self,
+                                "Ошибка",
+                                f"Переменная с именем {variable.name} уже существует"
+                            )
+                            return
+
+                # Добавляем новую переменную
+                item = QListWidgetItem(f"{variable.name} ({variable.type}): {variable.description}")
+                item.setData(Qt.ItemDataRole.UserRole, variable)
+                self.variables_list.addItem(item)
+
+    def edit_variable(self, item: QListWidgetItem):
+        """Редактирование переменной"""
+        try:
+            variable = item.data(Qt.ItemDataRole.UserRole)
+            if not variable:
+                return
+
+            dialog = VariableDialog(variable.description, self)
+            dialog.set_variable(variable)
+
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                updated_variable = dialog.get_variable()
+                if not updated_variable:  # Если произошла ошибка при создании переменной
+                    return
+
+                if not updated_variable.name:  # Проверяем, что имя не пустое
+                    QMessageBox.warning(
+                        self,
+                        "Ошибка",
+                        "Имя переменной не может быть пустым"
+                    )
+                    return
+
+                # Проверяем, что имя содержит только латинские буквы
+                if not re.match(r'^[a-zA-Z][a-zA-Z0-9_]*$', updated_variable.name):
+                    QMessageBox.warning(
+                        self,
+                        "Ошибка",
+                        "Имя переменной должно содержать только латинские буквы, цифры и знак подчеркивания"
+                    )
+                    return
+
+                # Если имя изменилось, проверяем его уникальность
+                if updated_variable.name != variable.name:
+                    for i in range(self.variables_list.count()):
+                        other_item = self.variables_list.item(i)
+                        if other_item and other_item != item:
+                            var = other_item.data(Qt.ItemDataRole.UserRole)
+                            if var and var.name == updated_variable.name:
+                                QMessageBox.warning(
+                                    self,
+                                    "Ошибка",
+                                    f"Переменная с именем {updated_variable.name} уже существует"
+                                )
+                                return
+
+                # Проверяем наличие примеров для списковых переменных
+                if updated_variable.type == "list" and not updated_variable.examples:
+                    QMessageBox.warning(
+                        self,
+                        "Ошибка",
+                        f"Для списковых переменных необходимо указать примеры"
+                    )
+                    return
+
+                # Обновляем переменную
+                item.setText(
+                    f"{updated_variable.name} ({updated_variable.type}): {updated_variable.description}")
+                if updated_variable.examples:
+                    item.setToolTip(f"Примеры: {', '.join(updated_variable.examples)}")
+                item.setData(Qt.ItemDataRole.UserRole, updated_variable)
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Ошибка",
+                f"Не удалось отредактировать переменную: {str(e)}"
+            )
 
     def create_models_tab(self):
         """Вкладка с моделями"""
@@ -317,7 +694,7 @@ class PromptEditor(QDialog):
             return
 
         # Проверяем, не является ли элемент заголовком провайдера
-        if not current_item.data(Qt.ItemDataRole.UserRole):
+        if not current_item.data(Qt.Flag.ItemIsSelectable):
             QMessageBox.warning(self, "Предупреждение", "Нельзя удалить заголовок провайдера")
             return
 
@@ -512,10 +889,6 @@ class PromptEditor(QDialog):
                 "mistral-large",
                 "mistral-medium",
                 "mistral-small"
-            ],
-            "Stability AI": [
-                "stable-diffusion-xl",
-                "stable-diffusion-2"
             ]
         }
 
@@ -525,6 +898,7 @@ class PromptEditor(QDialog):
             provider_item.setBackground(self.palette().alternateBase())
             self.models_list.addItem(provider_item)
 
+            # Добавляем модели провайдера
             for model in provider_models:
                 self.models_list.addItem(model)
 
@@ -676,6 +1050,19 @@ class PromptEditor(QDialog):
         ru_prompt_group = QGroupBox("Промпт")
         ru_prompt_layout = QVBoxLayout()
 
+        # Кнопки для работы с переменными
+        ru_var_buttons = QHBoxLayout()
+
+        ru_find_var_btn = QPushButton("Найти переменные")
+        ru_find_var_btn.clicked.connect(lambda: self.detect_variables(self.ru_user_prompt))
+
+        ru_insert_var_btn = QPushButton("Вставить переменную")
+        ru_insert_var_btn.clicked.connect(lambda: self.insert_variable(self.ru_user_prompt))
+
+        ru_var_buttons.addWidget(ru_find_var_btn)
+        ru_var_buttons.addWidget(ru_insert_var_btn)
+        ru_prompt_layout.addLayout(ru_var_buttons)
+
         # Поле ввода пользовательского промпта
         self.ru_user_prompt = QTextEdit()
         self.ru_user_prompt.setPlaceholderText("Введите промпт на русском...")
@@ -693,36 +1080,29 @@ class PromptEditor(QDialog):
 
         # Кнопки для русской версии
         ru_buttons = QHBoxLayout()
-        
+
         # Кнопки Hugging Face
         if self.hf_api:
             ru_hf_btn = QPushButton("Выполнить через Hugging Face")
             ru_hf_btn.clicked.connect(lambda: self.show_huggingface_dialog("ru"))
         else:
-            ru_hf_btn = QPushButton("Добавить API ключ Hugging Face")
-            ru_hf_btn.clicked.connect(self.add_huggingface_key)
-            ru_hf_btn.setStyleSheet("background-color: #4CAF50; color: white;")
-            
-        # Кнопка управления API ключами
-        ru_manage_keys_btn = QPushButton("⚙️")
-        ru_manage_keys_btn.setFixedWidth(30)
-        ru_manage_keys_btn.setToolTip("Управление API ключами")
-        ru_manage_keys_btn.clicked.connect(self.show_api_keys_dialog)
-            
+            ru_hf_btn = QPushButton("Выполнить через Hugging Face")
+            ru_hf_btn.setEnabled(False)
+            ru_hf_btn.setToolTip("API Hugging Face недоступен")
+
         # Кнопка LMStudio
         ru_lm_btn = QPushButton("Выполнить через LMStudio")
         ru_lm_btn.clicked.connect(lambda: self.show_lmstudio_dialog("ru"))
         if not self.lm_api:
             ru_lm_btn.setEnabled(False)
             ru_lm_btn.setToolTip("LMStudio API недоступен")
-            
+
         ru_copy_btn = QPushButton("Копировать результат в промпт")
         ru_copy_btn.clicked.connect(lambda: self.copy_result_to_prompt("ru"))
         ru_clear_btn = QPushButton("Очистить")
         ru_clear_btn.clicked.connect(lambda: self.clear_content("ru"))
-        
+
         ru_buttons.addWidget(ru_hf_btn)
-        ru_buttons.addWidget(ru_manage_keys_btn)
         ru_buttons.addWidget(ru_lm_btn)
         ru_buttons.addWidget(ru_copy_btn)
         ru_buttons.addWidget(ru_clear_btn)
@@ -732,13 +1112,26 @@ class PromptEditor(QDialog):
         ru_layout.addLayout(ru_buttons)
         ru_container.setLayout(ru_layout)
 
-        # Английская вкладка
+        # Английский контент
         en_container = QWidget()
         en_layout = QVBoxLayout()
 
         # Промпт на английском
         en_prompt_group = QGroupBox("Prompt")
         en_prompt_layout = QVBoxLayout()
+
+        # Кнопки для работы с переменными
+        en_var_buttons = QHBoxLayout()
+
+        en_find_var_btn = QPushButton("Find Variables")
+        en_find_var_btn.clicked.connect(lambda: self.detect_variables(self.en_user_prompt))
+
+        en_insert_var_btn = QPushButton("Insert Variable")
+        en_insert_var_btn.clicked.connect(lambda: self.insert_variable(self.en_user_prompt))
+
+        en_var_buttons.addWidget(en_find_var_btn)
+        en_var_buttons.addWidget(en_insert_var_btn)
+        en_prompt_layout.addLayout(en_var_buttons)
 
         # Поле ввода пользовательского промпта
         self.en_user_prompt = QTextEdit()
@@ -757,36 +1150,29 @@ class PromptEditor(QDialog):
 
         # Кнопки для английской версии
         en_buttons = QHBoxLayout()
-        
+
         # Кнопки Hugging Face
         if self.hf_api:
             en_hf_btn = QPushButton("Execute with Hugging Face")
             en_hf_btn.clicked.connect(lambda: self.show_huggingface_dialog("en"))
         else:
-            en_hf_btn = QPushButton("Add Hugging Face API Key")
-            en_hf_btn.clicked.connect(self.add_huggingface_key)
-            en_hf_btn.setStyleSheet("background-color: #4CAF50; color: white;")
-            
-        # Кнопка управления API ключами
-        en_manage_keys_btn = QPushButton("⚙️")
-        en_manage_keys_btn.setFixedWidth(30)
-        en_manage_keys_btn.setToolTip("Manage API Keys")
-        en_manage_keys_btn.clicked.connect(self.show_api_keys_dialog)
-            
+            en_hf_btn = QPushButton("Execute with Hugging Face")
+            en_hf_btn.setEnabled(False)
+            en_hf_btn.setToolTip("Hugging Face API is not available")
+
         # Кнопка LMStudio
         en_lm_btn = QPushButton("Execute with LMStudio")
         en_lm_btn.clicked.connect(lambda: self.show_lmstudio_dialog("en"))
         if not self.lm_api:
             en_lm_btn.setEnabled(False)
             en_lm_btn.setToolTip("LMStudio API is not available")
-            
+
         en_copy_btn = QPushButton("Copy result to prompt")
         en_copy_btn.clicked.connect(lambda: self.copy_result_to_prompt("en"))
         en_clear_btn = QPushButton("Clear")
         en_clear_btn.clicked.connect(lambda: self.clear_content("en"))
-        
+
         en_buttons.addWidget(en_hf_btn)
-        en_buttons.addWidget(en_manage_keys_btn)
         en_buttons.addWidget(en_lm_btn)
         en_buttons.addWidget(en_copy_btn)
         en_buttons.addWidget(en_clear_btn)
@@ -815,7 +1201,8 @@ class PromptEditor(QDialog):
                 QMessageBox.warning(self, "Предупреждение", "Введите промпт")
                 return
 
-            dialog = HuggingFaceDialog(self.hf_api, user_prompt, self)
+            dialog = HuggingFaceDialog(self.hf_api, self.settings, user_prompt, self,
+                                       from_preview=False)
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 result = dialog.get_result()
                 if result:
@@ -846,7 +1233,7 @@ class PromptEditor(QDialog):
                 QMessageBox.warning(self, "Предупреждение", "Введите промпт")
                 return
 
-            dialog = LMStudioDialog(self.lm_api, user_prompt, self)
+            dialog = LMStudioDialog(self.lm_api, user_prompt, self, from_preview=False)
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 result = dialog.get_result()
                 if result:
@@ -926,13 +1313,13 @@ class PromptEditor(QDialog):
                 # Получаем все категории
                 categories = self.cat_manager.get_categories()
                 category = prompt.category
-                
+
                 # Если категория является подкатегорией, находим её родителя
                 if category in categories and categories[category]["parent"] != "general":
                     parent = categories[category]["parent"]
                     if parent and parent != "general":
                         category = parent
-                
+
                 # Ищем индекс категории в селекторе
                 index = self.category_selector.findData(category)
                 if index >= 0:
@@ -979,6 +1366,15 @@ class PromptEditor(QDialog):
             self.logger.error(f"Ошибка при загрузке данных промпта: {str(e)}", exc_info=True)
             QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить данные промпта: {str(e)}")
 
+    def variable_to_dict(self, var: Variable) -> dict:
+        """Конвертация Variable в словарь для JSON"""
+        return {
+            "name": var.name,
+            "type": var.type,
+            "description": var.description,
+            "examples": var.examples
+        }
+
     def get_current_prompt_data(self) -> dict:
         """Получение текущих данных промпта"""
         # Получаем выбранные модели
@@ -1001,15 +1397,14 @@ class PromptEditor(QDialog):
         if not tags:
             tags = ["general"]
 
-        # Получаем переменные
+        # Получаем переменные и конвертируем их в словари
         variables = []
         for i in range(self.variables_list.count()):
             item = self.variables_list.item(i)
             if item:
                 variable = item.data(Qt.ItemDataRole.UserRole)
                 if variable:
-                    # Переменная уже является словарем
-                    variables.append(variable)
+                    variables.append(self.variable_to_dict(variable))
 
         # Получаем категорию
         category = self.category_selector.currentData()
@@ -1068,138 +1463,44 @@ class PromptEditor(QDialog):
     def show_info(self, title, message):
         QMessageBox.information(self, title, message)
 
-    def add_variable(self):
-        """Добавление новой переменной через диалог"""
-        name, ok = QInputDialog.getText(self, "Переменная", "Имя переменной:")
-        if not ok or not name:
-            return
-
-        var_type, ok = QInputDialog.getItem(
-            self,
-            "Тип переменной",
-            "Выберите тип:",
-            ["string", "number", "list"],
-            editable=False
-        )
-        if not ok:
-            return
-
-        description, ok = QInputDialog.getText(
-            self,
-            "Описание",
-            "Введите описание:"
-        )
-        if not ok:
-            return
-
-        examples = []
-        if var_type == "list":
-            examples_input, ok = QInputDialog.getText(
-                self,
-                "Примеры",
-                "Введите примеры через запятую:"
-            )
-            if ok:
-                examples = [ex.strip() for ex in examples_input.split(",")]
-
-        var_data = {
-            "name": name,
-            "type": var_type,
-            "description": description,
-            "examples": examples
-        }
-
-        item = QListWidgetItem(f"{name} ({var_type}): {description}")
-        item.setData(Qt.ItemDataRole.UserRole, var_data)
-        self.variables_list.addItem(item)
-
     def update_api_buttons(self):
         """Обновление кнопок API после изменения ключа"""
         try:
             # Пересоздаем контент с обновленными кнопками
             self.content_tabs.clear()
             self.setup_content_tabs()
-            
+
         except Exception as e:
             self.logger.error(f"Ошибка при обновлении кнопок API: {str(e)}", exc_info=True)
 
-    def add_huggingface_key(self):
-        """Добавление или обновление API ключа Hugging Face"""
+    def show_json_preview(self):
+        """Показать диалог предпросмотра JSON"""
         try:
-            # Получаем текущий ключ
-            current_key = self.settings.get_api_key("huggingface")
-            
-            # Создаем диалог для ввода ключа
-            dialog = QDialog(self)
-            dialog.setWindowTitle("API ключ Hugging Face")
-            layout = QVBoxLayout()
-            
-            # Поле для ввода ключа
-            key_label = QLabel("Введите API ключ:")
-            key_input = QLineEdit()
-            key_input.setEchoMode(QLineEdit.EchoMode.Password)
-            if current_key:
-                key_input.setPlaceholderText("Введите новый ключ для обновления")
-            else:
-                key_input.setPlaceholderText("Введите API ключ")
-            
-            # Кнопка показать/скрыть ключ
-            show_key = QPushButton("Показать ключ")
-            show_key.setCheckable(True)
-            show_key.clicked.connect(lambda: key_input.setEchoMode(
-                QLineEdit.EchoMode.Normal if show_key.isChecked() 
-                else QLineEdit.EchoMode.Password
-            ))
-            
-            # Кнопки управления
-            buttons = QHBoxLayout()
-            save_btn = QPushButton("Сохранить")
-            cancel_btn = QPushButton("Отмена")
-            
-            # Добавляем виджеты в layout
-            layout.addWidget(key_label)
-            layout.addWidget(key_input)
-            layout.addWidget(show_key)
-            buttons.addWidget(save_btn)
-            buttons.addWidget(cancel_btn)
-            layout.addLayout(buttons)
-            
-            dialog.setLayout(layout)
-            
-            # Подключаем обработчики
-            save_btn.clicked.connect(dialog.accept)
-            cancel_btn.clicked.connect(dialog.reject)
-            
-            # Показываем диалог
-            if dialog.exec() == QDialog.DialogCode.Accepted:
-                new_key = key_input.text().strip()
-                if new_key:
-                    # Сохраняем ключ
-                    self.settings.set_api_key("huggingface", new_key)
-                    
-                    # Пересоздаем API клиент
-                    self.hf_api = HuggingFaceInference(self.settings)
-                    
-                    # Обновляем UI
-                    self.update_api_buttons()
-                    
-                    QMessageBox.information(
-                        self,
-                        "Успех",
-                        "API ключ успешно сохранен и применен"
-                    )
-                else:
-                    QMessageBox.warning(self, "Ошибка", "API ключ не может быть пустым")
-                    
+            import json
+            data = self.get_current_prompt_data()
+            formatted_json = json.dumps(data, indent=2, ensure_ascii=False)
+            dialog = JsonPreviewDialog(formatted_json, self)
+            dialog.exec()
         except Exception as e:
-            self.logger.error(f"Ошибка при сохранении API ключа: {str(e)}", exc_info=True)
-            QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить API ключ: {str(e)}")
+            self.logger.error(f"Ошибка формирования JSON: {str(e)}", exc_info=True)
+            QMessageBox.critical(self, "Ошибка", f"Ошибка формирования JSON: {str(e)}")
 
-    def show_api_keys_dialog(self):
-        """Показать диалог управления API ключами"""
-        dialog = ApiKeysDialog(self.settings, self)
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            # Пересоздаем API клиенты
-            self.hf_api = HuggingFaceInference(self.settings)
-            # Обновляем UI
-            self.update_api_buttons()
+    def show_variable_context_menu(self, position):
+        """Показать контекстное меню для переменной"""
+        item = self.variables_list.itemAt(position)
+        if not item:
+            return
+
+        menu = QMenu()
+        edit_action = menu.addAction("Редактировать")
+        edit_action.triggered.connect(lambda: self.edit_variable(item))
+        delete_action = menu.addAction("Удалить")
+        delete_action.triggered.connect(lambda: self.delete_variable())
+
+        menu.exec(self.variables_list.viewport().mapToGlobal(position))
+
+    def delete_variable(self):
+        """Удаление выбранной переменной"""
+        current = self.variables_list.currentItem()
+        if current:
+            self.variables_list.takeItem(self.variables_list.row(current))

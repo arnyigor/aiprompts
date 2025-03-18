@@ -348,4 +348,16 @@ class Settings:
                 "key": None,
                 "salt": None
             }
-            self.save_api_keys(self.api_keys) 
+            self.save_api_keys(self.api_keys)
+
+    def get_config_path(self, filename: str) -> str:
+        """
+        Получает путь к файлу конфигурации
+        
+        Args:
+            filename: Имя файла конфигурации
+            
+        Returns:
+            str: Полный путь к файлу конфигурации
+        """
+        return str(self.settings_dir / filename) 

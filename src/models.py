@@ -26,6 +26,21 @@ class Variable(BaseModel):
             raise ValueError(f"Тип должен быть одним из: {allowed_types}")
         return v
 
+    @validator('examples')
+    def validate_examples(cls, v, values):
+        if not v and values.get('type') == 'list':
+            raise ValueError("Для списковых переменных необходимо указать хотя бы один пример")
+            
+        # Проверяем соответствие типу
+        if values.get('type') == 'number':
+            for example in v:
+                try:
+                    float(example)
+                except ValueError:
+                    raise ValueError(f"Пример '{example}' не является числом")
+                    
+        return v
+
 
 class Prompt(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()), description="UUID")

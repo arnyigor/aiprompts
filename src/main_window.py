@@ -130,7 +130,7 @@ class MainWindow(QMainWindow):
         self.category_filter.currentTextChanged.connect(self.filter_prompts)
         self.tag_filter.currentTextChanged.connect(self.filter_prompts)
         self.sort_combo.currentTextChanged.connect(self.filter_prompts)
-        self.prompt_list.itemDoubleClicked.connect(self.edit_selected)
+        self.prompt_list.itemDoubleClicked.connect(self.show_action_dialog)
         self.preview_button.clicked.connect(self.preview_selected)
 
         # Load initial data
@@ -142,8 +142,42 @@ class MainWindow(QMainWindow):
         self.sort_direction.setText("↓" if self.sort_ascending else "↑")
         self.filter_prompts()
 
+    def save_filter_state(self):
+        """Сохранение текущего состояния фильтров"""
+        return {
+            'search': self.search_field.text(),
+            'category': self.category_filter.currentText(),
+            'tag': self.tag_filter.currentText(),
+            'lang': self.lang_filter.currentText(),
+            'favorite': self.favorite_filter.isChecked(),
+            'sort': self.sort_combo.currentText(),
+            'sort_direction': self.sort_ascending
+        }
+
+    def restore_filter_state(self, state):
+        """Восстановление состояния фильтров"""
+        self.search_field.setText(state['search'])
+        index = self.category_filter.findText(state['category'])
+        if index >= 0:
+            self.category_filter.setCurrentIndex(index)
+        index = self.tag_filter.findText(state['tag'])
+        if index >= 0:
+            self.tag_filter.setCurrentIndex(index)
+        index = self.lang_filter.findText(state['lang'])
+        if index >= 0:
+            self.lang_filter.setCurrentIndex(index)
+        self.favorite_filter.setChecked(state['favorite'])
+        index = self.sort_combo.findText(state['sort'])
+        if index >= 0:
+            self.sort_combo.setCurrentIndex(index)
+        self.sort_ascending = state['sort_direction']
+        self.sort_direction.setText("↓" if self.sort_ascending else "↑")
+
     def load_prompts(self):
-        """Загрузка промптов в список с обновлением фильтров"""
+        """Загрузка промптов в список с сохранением фильтров"""
+        # Сохраняем текущее состояние фильтров
+        filter_state = self.save_filter_state()
+        
         # Блокируем сигналы на время обновления
         self.category_filter.blockSignals(True)
         self.tag_filter.blockSignals(True)
@@ -177,10 +211,6 @@ class MainWindow(QMainWindow):
             self.logger.debug(f"load_prompts: Найдено категорий: {len(categories)}")
             self.logger.debug(f"load_prompts: Найдено тегов: {len(tags)}")
             
-            # Сохраняем текущие выбранные значения
-            current_category = self.category_filter.currentText()
-            current_tag = self.tag_filter.currentText()
-            
             # Обновляем списки фильтров
             self.category_filter.clear()
             self.category_filter.addItem("Все категории")
@@ -190,17 +220,8 @@ class MainWindow(QMainWindow):
             self.tag_filter.addItem("Все теги")
             self.tag_filter.addItems(sorted(tags))
             
-            # Восстанавливаем выбранные значения
-            index = self.category_filter.findText(current_category)
-            if index >= 0:
-                self.category_filter.setCurrentIndex(index)
-                
-            index = self.tag_filter.findText(current_tag)
-            if index >= 0:
-                self.tag_filter.setCurrentIndex(index)
-            
-            # Устанавливаем начальную сортировку в комбобоксе
-            self.sort_combo.setCurrentText("По названию")
+            # Восстанавливаем состояние фильтров
+            self.restore_filter_state(filter_state)
             
             # Обновляем заголовок окна со статистикой
             total_prompts = len(prompts)
@@ -212,6 +233,9 @@ class MainWindow(QMainWindow):
             self.tag_filter.blockSignals(False)
             self.lang_filter.blockSignals(False)
             self.sort_combo.blockSignals(False)
+            
+            # Применяем фильтры к обновленному списку
+            self.filter_prompts()
 
     def filter_prompts(self):
         """Фильтрация и сортировка промптов"""
@@ -320,7 +344,7 @@ class MainWindow(QMainWindow):
                 prompt_id = item.text().split('(')[-1].rstrip(')')
                 prompt = self.prompt_manager.get_prompt(prompt_id)
                 if prompt:
-                    preview = PromptPreview(prompt)
+                    preview = PromptPreview(prompt, self.settings)
                     preview.exec()
                 else:
                     QMessageBox.warning(self, "Ошибка", f"Промпт {prompt_id} не найден")
@@ -501,3 +525,36 @@ class MainWindow(QMainWindow):
     def show_api_keys_dialog(self):
         dialog = ApiKeysDialog(self.settings, self)
         dialog.exec()
+
+    def show_action_dialog(self, item):
+        """Показывает диалог выбора действия при двойном клике"""
+        prompt_id = item.text().split('(')[-1].rstrip(')')
+        dialog = QMessageBox(self)
+        dialog.setWindowTitle("Выберите действие")
+        dialog.setText(f"Выберите действие для промпта:\n{item.text()}")
+        edit_button = dialog.addButton("Редактировать", QMessageBox.ButtonRole.AcceptRole)
+        preview_button = dialog.addButton("Просмотреть", QMessageBox.ButtonRole.AcceptRole)
+        dialog.addButton("Отмена", QMessageBox.ButtonRole.RejectRole)
+        
+        dialog.exec()
+        clicked_button = dialog.clickedButton()
+        
+        if clicked_button == edit_button:
+            try:
+                editor = PromptEditor(self.prompt_manager, self.settings, prompt_id)
+                if editor.exec():
+                    self.load_prompts()
+            except Exception as e:
+                self.logger.error(f"Ошибка при редактировании: {str(e)}", exc_info=True)
+                QMessageBox.critical(self, "Ошибка", "Не удалось открыть редактор")
+        elif clicked_button == preview_button:
+            try:
+                prompt = self.prompt_manager.get_prompt(prompt_id)
+                if prompt:
+                    preview = PromptPreview(prompt, self.settings)
+                    preview.exec()
+                else:
+                    QMessageBox.warning(self, "Ошибка", f"Промпт {prompt_id} не найден")
+            except Exception as e:
+                self.logger.error(f"Ошибка предпросмотра: {str(e)}", exc_info=True)
+                QMessageBox.critical(self, "Ошибка", "Не удалось открыть предпросмотр")

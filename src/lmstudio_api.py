@@ -44,7 +44,7 @@ class LMStudioInference:
     def __init__(self, base_url: str = "http://localhost:1234/v1"):
         self.logger = logging.getLogger(__name__)
         self.base_url = base_url
-        self.logger.info("Инициализация LMStudioInference...")
+        # self.logger.info("Инициализация LMStudioInference...")
 
     def format_messages(self, messages: List[Dict[str, str]], chat_format: str = "chatml") -> str:
         """
@@ -122,17 +122,20 @@ class LMStudioInference:
             self.logger.error(f"Ошибка при обработке потокового ответа: {str(e)}", exc_info=True)
             raise
 
-    def query_model(self, messages: List[Dict[str, str]], **kwargs) -> Union[
-        str, Generator[str, None, None]]:
+    def query_model(self, messages: List[Dict[str, str]], **kwargs) -> Generator[str, None, None]:
         """
-        Отправляет запрос к модели LMStudio
+        Отправляет запрос к модели и возвращает генератор для потокового ответа
         
         Args:
-            messages: Список сообщений в формате [{"role": "user", "content": "текст"}]
-            **kwargs: Дополнительные параметры для API
+            messages: Список сообщений
+            **kwargs: Дополнительные параметры
             
         Returns:
-            Union[str, Generator[str, None, None]]: Ответ модели или генератор частей ответа
+            Generator[str, None, None]: Генератор для потокового ответа
+            
+        Raises:
+            ConnectionError: Если не удалось подключиться к API
+            Exception: При других ошибках
         """
         try:
             # Форматируем сообщения в соответствии с выбранным форматом чата
@@ -147,8 +150,7 @@ class LMStudioInference:
                 "model": kwargs.get("model", "local-model"),
                 "messages": [{"role": "user", "content": formatted_prompt}],
                 "temperature": kwargs.get("temperature", 0.7),
-                "max_tokens": kwargs.get("max_new_tokens", 2048),
-                # Увеличиваем значение по умолчанию
+                "max_tokens": kwargs.get("max_new_tokens", 4096),
                 "top_p": kwargs.get("top_p", 0.95),
                 "repeat_penalty": kwargs.get("repeat_penalty", 1.1),
                 "presence_penalty": kwargs.get("presence_penalty", 0.0),

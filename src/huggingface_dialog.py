@@ -1,378 +1,496 @@
 import logging
+from typing import Optional
 
-from PyQt6.QtCore import QMetaObject, Q_ARG
-from PyQt6.QtCore import Qt, QTimer, QThreadPool, QRunnable
+from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
+                             QPushButton, QTextEdit, QComboBox, QMessageBox,
+                             QCheckBox, QGroupBox)
 from PyQt6.QtGui import QTextCursor
-from PyQt6.QtWidgets import QComboBox, QDialog, QGroupBox, QFormLayout, QSlider, QSpinBox, QLabel, \
-    QPushButton, QTextEdit, QVBoxLayout, QHBoxLayout, QMessageBox
+from huggingface_hub import HfApi
+
+from .api_keys_dialog import ApiKeysDialog
+from .hf_model_editor_dialog import ModelEditorDialog
+from .huggingface_api import HuggingFaceAPI
+from .settings import Settings
 
 
-class Worker(QRunnable):
-    """Класс для выполнения задач в отдельном потоке"""
+class Worker(QThread):
+    """Поток для выполнения запросов к API"""
+    token_received = pyqtSignal(str)  # Сигнал для отправки токенов
+    finished = pyqtSignal(str)  # Сигнал о завершении
+    error = pyqtSignal(str)  # Сигнал об ошибке
 
-    def __init__(self, parent, handler, logger):
+    def __init__(self, api, model_name: str, prompt: str, **kwargs):
         super().__init__()
-        self.parent = parent
-        self.handler = handler
-        self.logger = logger
+        self.api = api
+        self.model_name = model_name
+        self.prompt = prompt
+        self.kwargs = kwargs
+        self.full_response = ""  # Для хранения полного ответа
+        self.logger = logging.getLogger(__name__)
 
     def run(self):
         try:
-            self.logger.debug("Worker начал выполнение")
-            self.handler()
+            self.logger.info(f"Запуск Worker для модели {self.model_name}")
+            self.logger.debug(f"Промпт: {self.prompt}")
+            self.logger.debug(f"Параметры: {self.kwargs}")
+            
+            # Форматируем запрос как сообщение
+            messages = [{"role": "user", "content": self.prompt}]
+            
+            # Получаем генератор токенов
+            try:
+                for token in self.api.query_model(self.model_name, messages, **self.kwargs):
+                    if token:  # Проверяем, что токен не пустой
+                        self.full_response += token
+                        self.token_received.emit(token)
+                        self.logger.debug(f"Получен токен: {token}")
+                
+                # Отправляем полный ответ по завершении
+                if self.full_response:  # Проверяем, что есть что отправлять
+                    self.logger.info("Генерация завершена успешно")
+                    self.logger.debug(f"Полный ответ: {self.full_response}")
+                    self.finished.emit(self.full_response)
+                else:
+                    raise Exception("Не получено ответа от модели")
+                    
+            except Exception as e:
+                error_msg = f"Ошибка при получении ответа: {str(e)}"
+                self.logger.error(error_msg, exc_info=True)
+                self.error.emit(error_msg)
+                
         except Exception as e:
-            self.logger.error(f"Ошибка в Worker: {str(e)}", exc_info=True)
-        finally:
-            # Обновляем состояние кнопки через главный поток
-            QTimer.singleShot(0, lambda: self.parent.run_button.setEnabled(True))
-            QTimer.singleShot(0, lambda: self.parent.run_button.setText("Выполнить"))
+            error_msg = f"Ошибка в Worker: {str(e)}"
+            self.logger.error(error_msg, exc_info=True)
+            self.error.emit(error_msg)
 
 
 class HuggingFaceDialog(QDialog):
-    MODELS = {
-        "Mistral-7B-Instruct": {
-            "id": "mistralai/Mistral-7B-Instruct-v0.2",
-            "params": {
-                "max_new_tokens": 256,
-                "temperature": 0.7,
-                "top_p": 0.85,
-                "repetition_penalty": 1.1,
-            },
-            "description": "Мощная модель с хорошим балансом качества и производительности. Отлично подходит для русского языка."
-        },
-        "Zephyr-7B": {
-            "id": "HuggingFaceH4/zephyr-7b-beta",
-            "params": {
-                "max_new_tokens": 200,
-                "temperature": 0.7,
-                "top_p": 0.9,
-                "repetition_penalty": 1.15,
-            },
-            "description": "Специализированная модель для инструкций и промптов. Хорошо следует указаниям."
-        },
-        "SOLAR-10.7B-Instruct": {
-            "id": "upstage/SOLAR-10.7B-Instruct-v1.0",
-            "params": {
-                "max_new_tokens": 150,
-                "temperature": 0.65,
-                "top_p": 0.9,
-                "repetition_penalty": 1.2,
-            },
-            "description": "Продвинутая модель с отличным пониманием контекста и генерацией текста."
-        },
-        "Phi-2": {
-            "id": "microsoft/phi-2",
-            "params": {
-                "max_new_tokens": 180,
-                "temperature": 0.75,
-                "top_p": 0.9,
-                "repetition_penalty": 1.1,
-            },
-            "description": "Компактная но мощная модель от Microsoft. Хорошо работает с техническими текстами."
-        },
-        "Starling-LM": {
-            "id": "berkeley-nest/Starling-LM-7B-alpha",
-            "params": {
-                "max_new_tokens": 200,
-                "temperature": 0.7,
-                "top_p": 0.85,
-                "repetition_penalty": 1.15,
-            },
-            "description": "Оптимизирована для следования инструкциям и генерации качественных ответов."
-        },
-        "Gemma-3-12B-Instruct": {
-            "id": "google/gemma-3-4b-pt",
-            "params": {
-                "max_new_tokens": 256,  # Максимальное количество новых токенов
-                "temperature": 0.6,
-                # Температура генерации (более низкое значение для детерминированности)
-                "top_p": 0.9,  # Вероятностное обрезание для Nucleus Sampling
-                "repetition_penalty": 1.2,  # Штраф за повторение фраз
-            },
-            # Описание модели
-            "description": (
-                    "Мультимодальная модель от Google с поддержкой текста и изображений, "
-                    + f"128K контекстным окном и мультиязычной поддержкой (140+ языков). "
-                    + f"Подходит для задач анализа изображений, генерации текста и ответов на вопросы."
-            )
-        }
-    }
+    """Диалог для работы с Hugging Face API"""
 
-    def __init__(self, hf_api, prompt_text="", parent=None):
+    def __init__(self, api, settings: Settings, prompt: Optional[str] = None,
+                 parent=None, from_preview: bool = False):
         super().__init__(parent)
+        self.api = api
+        self.model_manager = api.model_manager
+        self.prompt = prompt
+        self.settings = settings
+        self.from_preview = from_preview
         self.logger = logging.getLogger(__name__)
-        self.hf_api = hf_api
-        self.result = None
+        self.current_worker = None
 
-        # Настройка окна
-        self.setWindowTitle("Запрос к Hugging Face API")
-        self.setGeometry(200, 200, 800, 600)
+        self.setWindowTitle("Hugging Face API")
+        self.setGeometry(100, 100, 800, 600)
+        self.setup_ui()
 
-        # Выбор модели
-        self.model_selector = QComboBox()
-        for model_name in self.MODELS.keys():
-            self.model_selector.addItem(model_name)
+    def setup_ui(self):
+        """Настройка интерфейса"""
+        layout = QVBoxLayout()
 
-        # Настройки модели
-        self.settings_group = QGroupBox("Настройки модели")
-        settings_layout = QFormLayout()
+        # Группа API ключа
+        api_group = QGroupBox("API ключ")
+        api_layout = QHBoxLayout()
 
-        # Исправляем создание слайдера
-        self.temperature_slider = QSlider(Qt.Orientation.Horizontal)  # Исправленная строка
-        self.temperature_slider.setRange(0, 100)
-        self.temperature_slider.setValue(70)
-        self.temperature_label = QLabel("0.7")
-        self.temperature_slider.valueChanged.connect(
-            lambda v: self.temperature_label.setText(f"{v / 100:.1f}")
+        self.api_key_label = QLabel()
+        self.update_api_key_label()
+        api_layout.addWidget(self.api_key_label)
+
+        self.api_key_button = QPushButton("⚙️")
+        self.api_key_button.setFixedWidth(30)
+        self.api_key_button.setToolTip("Управление API ключами")
+        self.api_key_button.clicked.connect(self.show_api_keys_dialog)
+        api_layout.addWidget(self.api_key_button)
+
+        api_group.setLayout(api_layout)
+        layout.addWidget(api_group)
+
+        # Группа выбора модели
+        model_group = QGroupBox("Модель")
+        model_layout = QVBoxLayout()
+
+        # Комбобокс и кнопки
+        model_controls = QHBoxLayout()
+
+        self.model_combo = QComboBox()
+        self.model_combo.addItems(self.api.get_available_models())
+        self.model_combo.currentTextChanged.connect(self.update_model_description)
+        model_controls.addWidget(self.model_combo)
+
+        buttons_layout = QHBoxLayout()
+
+        self.check_button = QPushButton("Проверить модель")
+        self.check_button.clicked.connect(self.check_model)
+        buttons_layout.addWidget(self.check_button)
+
+        self.add_model_button = QPushButton("Добавить модель")
+        self.add_model_button.clicked.connect(self.add_model)
+        buttons_layout.addWidget(self.add_model_button)
+
+        self.edit_model_button = QPushButton("Редактировать")
+        self.edit_model_button.clicked.connect(self.edit_model)
+        buttons_layout.addWidget(self.edit_model_button)
+
+        model_controls.addLayout(buttons_layout)
+        model_layout.addLayout(model_controls)
+
+        # Описание модели
+        self.description_label = QLabel()
+        self.description_label.setWordWrap(True)
+        self.description_label.setStyleSheet("color: gray;")
+        self.update_model_description()
+        model_layout.addWidget(self.description_label)
+
+        model_group.setLayout(model_layout)
+        layout.addWidget(model_group)
+
+        # Группа запроса
+        prompt_group = QGroupBox("Запрос")
+        prompt_layout = QVBoxLayout()
+
+        # Улучшение промпта
+        improve_layout = QHBoxLayout()
+        self.improve_prompt_check = QCheckBox("Улучшить промпт")
+        self.improve_prompt_check.setToolTip(
+            "Автоматически улучшить промпт перед отправкой модели.\n"
+            "Это может помочь получить более качественный ответ,\n"
+            "но увеличит время обработки запроса."
         )
+        improve_layout.addWidget(self.improve_prompt_check)
+        improve_layout.addStretch()
+        prompt_layout.addLayout(improve_layout)
 
-        self.max_tokens_spin = QSpinBox()
-        self.max_tokens_spin.setRange(64, 4096)
-        self.max_tokens_spin.setValue(1024)
+        # Поле для промпта
+        if not self.from_preview:
+            self.prompt_edit = QTextEdit()
+            self.prompt_edit.setPlaceholderText("Введите текст запроса...")
+            self.prompt_edit.setMinimumHeight(100)
+            if self.prompt:
+                self.prompt_edit.setText(self.prompt)
+            prompt_layout.addWidget(self.prompt_edit)
 
-        settings_layout.addRow("Температура:", self.temperature_slider)
-        settings_layout.addRow("Значение:", self.temperature_label)
-        settings_layout.addRow("Макс. токенов:", self.max_tokens_spin)
-        self.settings_group.setLayout(settings_layout)
+            # Кнопка отправки
+            send_layout = QHBoxLayout()
+            self.process_button = QPushButton("Отправить запрос")
+            self.process_button.clicked.connect(self.process_request)
+            send_layout.addStretch()
+            send_layout.addWidget(self.process_button)
+            prompt_layout.addLayout(send_layout)
 
-        # Остальные элементы интерфейса
-        self.prompt_field = QTextEdit()
-        self.prompt_field.setPlainText(prompt_text)
-        self.prompt_field.setMinimumHeight(200)
+        prompt_group.setLayout(prompt_layout)
+        layout.addWidget(prompt_group)
 
-        self.run_button = QPushButton("Выполнить")
-        self.run_button.clicked.connect(self.execute_prompt)
+        # Группа результата
+        result_group = QGroupBox("Результат")
+        result_layout = QVBoxLayout()
 
-        self.output_field = QTextEdit()
-        self.output_field.setReadOnly(True)
-        self.output_field.setMinimumHeight(200)
+        self.result_edit = QTextEdit()
+        self.result_edit.setPlaceholderText("Здесь появится ответ модели...")
+        self.result_edit.setReadOnly(True)
+        self.result_edit.setMinimumHeight(150)
+        result_layout.addWidget(self.result_edit)
+
+        result_group.setLayout(result_layout)
+        layout.addWidget(result_group)
+
+        # Кнопки диалога
+        buttons_layout = QHBoxLayout()
+        buttons_layout.addStretch()
 
         self.close_button = QPushButton("Закрыть")
-        self.close_button.clicked.connect(self.accept)
+        self.close_button.clicked.connect(self.reject)
+        buttons_layout.addWidget(self.close_button)
 
-        self.apply_button = QPushButton("Вернуть результат в редактор")
-        self.apply_button.clicked.connect(self.apply_result)
-        self.apply_button.setEnabled(False)  # Изначально кнопка неактивна
+        layout.addLayout(buttons_layout)
 
-        self.close_button = QPushButton("Закрыть без сохранения")
-        self.close_button.clicked.connect(self.reject)  # Используем reject вместо accept
-
-        self.model_description = QLabel()
-        self.model_description.setWordWrap(True)
-        self.model_selector.currentTextChanged.connect(self.update_model_description)
-
-        # Компоновка
-        layout = QVBoxLayout()
-        # Обновляем layout
-        layout.addWidget(QLabel("Выберите модель:"))
-        layout.addWidget(self.model_selector)
-        layout.addWidget(self.model_description)
-        layout.addWidget(self.settings_group)
-        layout.addWidget(QLabel("Промпт:"))
-        layout.addWidget(self.prompt_field)
-        layout.addWidget(self.run_button)
-        layout.addWidget(QLabel("Результат:"))
-        layout.addWidget(self.output_field)
-
-        button_layout = QHBoxLayout()
-        button_layout.addWidget(self.apply_button)
-        button_layout.addWidget(self.close_button)
-        layout.addLayout(button_layout)
-
-        # Устанавливаем начальное описание
-        self.update_model_description(self.model_selector.currentText())
         self.setLayout(layout)
 
-    def update_model_description(self, model_name: str):
-        """Обновляет описание выбранной модели"""
-        description = self.MODELS[model_name]["description"]
-        self.model_description.setText(f"Описание: {description}")
-
-        # Обновляем параметры по умолчанию
-        params = self.MODELS[model_name]["params"]
-        self.temperature_slider.setValue(int(params["temperature"] * 100))
-        self.max_tokens_spin.setValue(params["max_new_tokens"])
-
-    def apply_result(self):
-        """Возвращает результат в редактор промптов"""
-        if self.result:
-            self.accept()  # Используем accept для подтверждения результата
+    def update_api_key_label(self):
+        """Обновляет текст метки API ключа"""
+        api_key = self.settings.get_api_key("huggingface")
+        if api_key:
+            masked_key = f"{api_key[:4]}...{api_key[-4:]}" if len(api_key) > 8 else "****"
+            self.api_key_label.setText(f"API ключ: {masked_key}")
         else:
-            self.logger.warning("Попытка применить пустой результат")
-            QMessageBox.warning(self, "Предупреждение",
-                                "Нет результата для возврата. Сначала выполните запрос.")
+            self.api_key_label.setText("API ключ не установлен")
 
-    def get_result(self):
-        """Возвращает результат только если диалог был принят"""
-        if self.result is None:
-            self.logger.warning("Попытка получить пустой результат")
-        return self.result
-
-    def update_output(self, text):
-        """Обновляет поле вывода"""
+    def show_api_keys_dialog(self):
+        """Показать диалог управления API ключами"""
         try:
-            # Устанавливаем текст
-            QMetaObject.invokeMethod(
-                self.output_field,
-                "setPlainText",
-                Qt.ConnectionType.QueuedConnection,
-                Q_ARG(str, str(text))
-            )
+            dialog = ApiKeysDialog(self.settings, self)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                # Пересоздаем API клиент
+                self.api = HuggingFaceAPI(settings=self.settings)
+                # Обновляем UI
+                self.update_api_key_label()
+                self.model_combo.clear()
+                self.model_combo.addItems(self.api.get_available_models())
+                self.update_model_description()
+        except Exception as e:
+            self.logger.error(f"Ошибка при открытии диалога API ключей: {str(e)}", exc_info=True)
+            QMessageBox.critical(self, "Ошибка", f"Не удалось открыть диалог: {str(e)}")
 
-            # Прокрутка к концу текста
-            QMetaObject.invokeMethod(
-                self.output_field,
-                "moveCursor",
-                Qt.ConnectionType.QueuedConnection,
-                Q_ARG(int, QTextCursor.MoveOperation.End)
-            )
+    def check_model(self):
+        """Проверяет доступность выбранной модели"""
+        try:
+            model_name = self.model_combo.currentText()
+            if not model_name:
+                QMessageBox.warning(self, "Ошибка", "Выберите модель для проверки")
+                return
+
+            model_id = self.model_manager.get_model_path(model_name)
+
+            # Получаем API ключ
+            api_key = self.settings.get_api_key("huggingface")
+            if not api_key:
+                QMessageBox.warning(self, "Ошибка", "API ключ не установлен")
+                return
+
+            # Создаем клиент с API ключом
+            api = HfApi(token=api_key)
+
+            # Проверяем существование модели
+            try:
+                model_info = api.model_info(model_id)
+                if model_info:
+                    message = (
+                        f"Модель {model_id} доступна\n"
+                        f"Автор: {model_info.author}\n"
+                        f"Лайков: {model_info.likes}\n"
+                        f"Последнее обновление: {model_info.last_modified}"
+                    )
+                    QMessageBox.information(self, "Успех", message)
+                else:
+                    QMessageBox.warning(self, "Предупреждение", f"Модель {model_id} не найдена")
+            except Exception as model_error:
+                error_msg = str(model_error)
+                if "401" in error_msg:
+                    error_msg = (
+                        "Ошибка авторизации в Hugging Face API.\n\n"
+                        "Возможные причины:\n"
+                        "1. API ключ не указан или указан неверно\n"
+                        "2. У вас нет доступа к этой модели\n"
+                        "3. Модель недоступна для использования через API\n\n"
+                        "Рекомендации:\n"
+                        "- Проверьте API ключ в настройках\n"
+                        "- Убедитесь, что у вас есть доступ к модели\n"
+                        "- Попробуйте использовать другую модель"
+                    )
+                elif "403" in error_msg:
+                    error_msg = "У вас нет доступа к этой модели. Возможно, она приватная."
+                elif "404" in error_msg:
+                    error_msg = "Модель не найдена. Проверьте правильность пути к модели."
+
+                QMessageBox.critical(self, "Ошибка", f"Модель недоступна:\n{error_msg}")
 
         except Exception as e:
-            self.logger.error(f"Ошибка при обновлении вывода: {str(e)}", exc_info=True)
+            self.logger.error(f"Ошибка при проверке модели: {str(e)}")
+            QMessageBox.critical(self, "Ошибка", f"Не удалось проверить модель: {str(e)}")
 
-    def execute_prompt(self):
-        """Отправляет запрос к выбранной модели"""
-        model_name = self.model_selector.currentText()
-        model_config = self.MODELS[model_name]
-
-        # Получаем текст промпта
-        prompt_text = self.prompt_field.toPlainText()
-
-        # Добавляем инструкции для улучшения промпта
-        enhanced_prompt = (
-            "Ты - опытный эксперт по промпт-инжинирингу. Твоя задача - улучшить следующий промпт, "
-            "используя лучшие практики:\n\n"
-            "ИСХОДНЫЙ ПРОМПТ:\n"
-            f"{prompt_text}\n\n"
-            "ИНСТРУКЦИИ ПО УЛУЧШЕНИЮ:\n"
-            "1. Сделай промпт более конкретным и четким\n"
-            "2. Добавь контекст и ограничения\n"
-            "3. Структурируй информацию в логическом порядке\n"
-            "4. Используй маркеры для разделения частей промпта\n"
-            "5. Укажи желаемый формат ответа\n"
-            "6. Добавь примеры, если это уместно\n\n"
-            "ФОРМАТ ОТВЕТА:\n"
-            "### Роль и контекст\n"
-            "[Определи роль ИИ и контекст задачи]\n\n"
-            "### Основная задача\n"
-            "[Четко сформулируй, что нужно сделать]\n\n"
-            "### Ограничения и требования\n"
-            "[Укажи важные ограничения и специальные требования]\n\n"
-            "### Формат вывода\n"
-            "[Опиши, как должен быть структурирован ответ]\n\n"
-            "### Дополнительные указания\n"
-            "[Добавь уточнения или примеры при необходимости]\n\n"
-            "ВАЖНО:\n"
-            "- Сохрани исходную цель и основной смысл промпта\n"
-            "- Используй профессиональный, но понятный язык\n"
-            "- Добавь конкретные метрики или критерии успеха\n"
-            "- Учитывай возможные ограничения модели\n\n"
-            "Пожалуйста, верни только улучшенную версию промпта, следуя указанному формату, "
-            "без дополнительных пояснений или комментариев."
-        )
-
-        # Проверяем длину текста
-        if len(enhanced_prompt) > 1000:  # Уменьшаем максимальную длину
-            warning_msg = "Текст слишком длинный. Он будет обрезан до 1000 символов."
-            self.logger.warning(warning_msg)
-            QMessageBox.warning(self, "Предупреждение", warning_msg)
-            enhanced_prompt = enhanced_prompt[:1000]
-
-        # Обновляем параметры
-        params = model_config["params"].copy()
-        params.update({
-            "temperature": self.temperature_slider.value() / 100,
-            "max_new_tokens": self.max_tokens_spin.value(),
-            "do_sample": True,
-            "return_full_text": False,
-            "truncation": True,
-        })
-
-        # Отключаем кнопку и меняем текст
-        self.run_button.setEnabled(False)
-        self.run_button.setText("Выполняется...")
-
+    def update_model_description(self):
+        """Обновляет описание выбранной модели"""
         try:
-            # Создаем и запускаем worker
-            worker = Worker(
-                parent=self,
-                handler=lambda: self._process_request(enhanced_prompt, params, model_config["id"]),
-                logger=self.logger
-            )
-            QThreadPool.globalInstance().start(worker)
-
-        except Exception as e:
-            self.logger.error(f"Ошибка при запуске worker: {str(e)}", exc_info=True)
-            self.update_output(f"Ошибка при запуске обработчика: {str(e)}")
-            self.run_button.setEnabled(True)
-            self.run_button.setText("Выполнить")
-
-    def _process_request(self, prompt_text: str, params: dict, model_id: str):
-        """Обработка запроса к модели"""
-        try:
-            self.logger.debug("Начало обработки запроса")
-            self.update_output("Отправка запроса к модели...")
-
-            messages = [{"role": "user", "content": prompt_text}]
-
-            # Убираем неподдерживаемые параметры
-            allowed_params = {
-                'max_new_tokens', 'temperature', 'top_p',
-                'repetition_penalty', 'do_sample', 'return_full_text'
-            }
-            filtered_params = {k: v for k, v in params.items() if k in allowed_params}
-
-            # Устанавливаем выбранную модель и параметры
-            self.hf_api.model_name = model_id
-            response = self.hf_api.query_model(
-                messages,
-                **filtered_params
-            )
-
-            self.logger.debug(f"Получен ответ: {response[:100]}...")
-
-            if response and isinstance(response, str):
-                # Очищаем возможные специальные токены из ответа
-                cleaned_response = (response
-                                    .replace("<|Assistant|>:", "")
-                                    .replace("<|User|>:", "")
-                                    .strip())
-                self.update_output(cleaned_response)
-                self.result = cleaned_response
-                # Активируем кнопку в главном потоке
-                QMetaObject.invokeMethod(
-                    self.apply_button,
-                    "setEnabled",
-                    Qt.ConnectionType.QueuedConnection,
-                    Q_ARG(bool, True)
-                )
+            model_name = self.model_combo.currentText()
+            if model_name:
+                description = self.api.get_model_description(model_name)
+                self.description_label.setText(description)
             else:
-                error_msg = "Не удалось получить ответ от модели"
-                self.logger.error(error_msg)
-                self.update_output(error_msg)
-                self.show_error_message(error_msg)
-
+                self.description_label.setText("")
         except Exception as e:
-            error_msg = str(e)
-            if "out of memory" in error_msg.lower():
-                error_msg = ("Недостаточно памяти. Попробуйте:\n"
-                             "1. Уменьшить длину входного текста\n"
-                             "2. Выбрать модель с меткой (Low Memory)\n"
-                             "3. Уменьшить максимальное количество токенов")
+            self.logger.error(f"Ошибка при получении описания модели: {str(e)}")
+            self.description_label.setText("Ошибка при получении описания модели")
 
-            self.logger.error(f"Ошибка в обработке запроса: {error_msg}", exc_info=True)
-            self.update_output(f"Произошла ошибка: {error_msg}")
-            self.show_error_message(error_msg)
-
-    def show_error_message(self, message: str):
-        """Показывает сообщение об ошибке в главном потоке"""
+    def add_model(self):
+        """Открывает диалог добавления модели"""
         try:
-            from PyQt6.QtCore import QMetaObject, Qt, Q_ARG
-            QMetaObject.invokeMethod(
-                self,
-                "_show_error_dialog",
-                Qt.ConnectionType.QueuedConnection,
-                Q_ARG(str, message)
-            )
+            dialog = ModelEditorDialog(self.model_manager, parent=self)
+            if dialog.exec():
+                self.model_combo.clear()
+                self.model_combo.addItems(self.api.get_available_models())
+                # Выбираем последнюю добавленную модель
+                if self.model_combo.count() > 0:
+                    self.model_combo.setCurrentIndex(self.model_combo.count() - 1)
+                    self.update_model_description()
         except Exception as e:
-            self.logger.error(f"Ошибка при показе сообщения об ошибке: {str(e)}", exc_info=True)
+            self.logger.error(f"Ошибка при добавлении модели: {str(e)}")
+            QMessageBox.critical(self, "Ошибка", f"Не удалось добавить модель: {str(e)}")
+
+    def edit_model(self):
+        """Открывает диалог редактирования модели"""
+        try:
+            model_name = self.model_combo.currentText()
+            if not model_name:
+                QMessageBox.warning(self, "Ошибка", "Выберите модель для редактирования")
+                return
+
+            dialog = ModelEditorDialog(self.model_manager, model_name, parent=self)
+            if dialog.exec():
+                self.model_combo.clear()
+                self.model_combo.addItems(self.api.get_available_models())
+                self.update_model_description()
+        except Exception as e:
+            self.logger.error(f"Ошибка при редактировании модели: {str(e)}")
+            QMessageBox.critical(self, "Ошибка", f"Не удалось отредактировать модель: {str(e)}")
+
+    def _handle_improve_response(self, response: str):
+        """Обрабатывает ответ с улучшенным промптом"""
+        try:
+            if response:  # Проверяем, что ответ не пустой
+                self.prompt_edit.setText(response)
+                self._set_request_controls_enabled(True)
+                self.logger.info("Промпт успешно улучшен")
+                self.logger.debug(f"Улучшенный промпт: {response}")
+                QMessageBox.information(
+                    self,
+                    "Промпт улучшен",
+                    "Промпт был улучшен. Теперь вы можете отправить его модели."
+                )
+        except Exception as e:
+            self.logger.error(f"Ошибка при обработке улучшенного промпта: {str(e)}", exc_info=True)
+            self._handle_error(str(e))
+
+    def process_request(self):
+        """Обрабатывает запрос к модели"""
+        try:
+            # Получаем текст запроса
+            if self.from_preview:
+                prompt = self.prompt
+            else:
+                prompt = self.prompt_edit.toPlainText().strip()
+
+            if not prompt:
+                QMessageBox.warning(self, "Ошибка", "Введите текст запроса")
+                return
+
+            # Получаем выбранную модель
+            model_name = self.model_combo.currentText()
+            if not model_name:
+                QMessageBox.warning(self, "Ошибка", "Выберите модель")
+                return
+
+            # Блокируем только элементы управления запросом
+            self._set_request_controls_enabled(False)
+
+            # Получаем параметры модели
+            params = self.model_manager.get_model_parameters(model_name)
+            model_path = self.model_manager.get_model_path(model_name)
+
+            # Корректируем max_new_tokens для phi-2
+            if "phi-2" in model_path.lower():
+                max_context = 2048
+                # Примерная оценка количества токенов (4 символа на токен)
+                input_tokens = len(prompt) // 4
+                max_new_tokens = min(params.get('max_new_tokens', 2048), max_context - input_tokens - 100)  # Оставляем запас
+                if max_new_tokens <= 0:
+                    QMessageBox.warning(
+                        self,
+                        "Предупреждение",
+                        f"Промпт слишком длинный для модели {model_name}. "
+                        f"Максимальная длина контекста: {max_context} токенов"
+                    )
+                    self._set_request_controls_enabled(True)
+                    return
+                params['max_new_tokens'] = max_new_tokens
+                self.logger.info(
+                    f"Скорректирован max_new_tokens для {model_name}: {max_new_tokens} "
+                    f"(длина промпта ~{input_tokens} токенов)"
+                )
+
+            # Улучшаем промпт если нужно
+            if self.improve_prompt_check.isChecked():
+                # Для улучшения промпта используем меньше токенов
+                improve_params = params.copy()
+                improve_params['max_new_tokens'] = min(improve_params.get('max_new_tokens', 2048), 1000)
+                
+                improve_worker = Worker(
+                    self.api,
+                    model_name,
+                    f"" "Ты - опытный эксперт по промпт-инжинирингу. Твоя задача - улучшить следующий промпт, "
+                    "сделав его более эффективным и структурированным.\n\n"
+                    "ИСХОДНЫЙ ПРОМПТ:\n"
+                    f"{prompt}\n\n"
+                    "ИНСТРУКЦИИ ПО УЛУЧШЕНИЮ:\n"
+                    "1. Определи роль и цель: Четко укажи, какую роль должен играть ИИ и какой результат ожидается\n"
+                    "2. Добавь контекст: Предоставь необходимую предысторию и условия\n"
+                    "3. Уточни требования: Укажи конкретные параметры, ограничения и критерии качества\n"
+                    "4. Структурируй информацию: Используй четкие разделы и маркеры\n"
+                    "5. Задай формат ответа: Опиши желаемую структуру и стиль ответа\n"
+                    "6. Добавь примеры: Если уместно, включи образцы желаемого результата\n\n"
+                    "ВАЖНО:\n"
+                    "- Сохрани основную цель и смысл исходного промпта\n"
+                    "- Используй четкий и профессиональный язык\n"
+                    "- Добавь конкретные метрики успеха\n"
+                    "- Учитывай возможные ограничения модели\n\n"
+                    "Пожалуйста, верни только улучшенную версию промпта, без дополнительных пояснений.",
+                    **improve_params
+                )
+                improve_worker.token_received.connect(self._handle_token)
+                improve_worker.finished.connect(self._handle_improve_response)
+                improve_worker.error.connect(self._handle_error)
+                self.current_worker = improve_worker
+                improve_worker.start()
+            else:
+                # Отправляем запрос
+                worker = Worker(self.api, model_name, prompt, **params)
+                worker.token_received.connect(self._handle_token)
+                worker.finished.connect(self._handle_response)
+                worker.error.connect(self._handle_error)
+                self.current_worker = worker
+                worker.start()
+
+            # Очищаем поле результата перед началом генерации
+            self.result_edit.clear()
+
+        except Exception as e:
+            self.logger.error(f"Ошибка при обработке запроса: {str(e)}")
+            QMessageBox.critical(self, "Ошибка", str(e))
+            self._set_request_controls_enabled(True)
+
+    def _set_request_controls_enabled(self, enabled: bool):
+        """Включает/выключает элементы управления запросом"""
+        if not self.from_preview:
+            self.prompt_edit.setEnabled(enabled)
+            self.process_button.setEnabled(enabled)
+        self.improve_prompt_check.setEnabled(enabled)
+        self.model_combo.setEnabled(enabled)
+        self.add_model_button.setEnabled(enabled)
+        self.edit_model_button.setEnabled(enabled)
+        self.check_button.setEnabled(enabled)
+
+    def _handle_token(self, token: str):
+        """Обрабатывает полученный токен"""
+        try:
+            if token:  # Проверяем, что токен не пустой
+                current_text = self.result_edit.toPlainText()
+                self.result_edit.setText(current_text + token)
+                # Прокручиваем до конца
+                cursor = self.result_edit.textCursor()
+                cursor.movePosition(QTextCursor.MoveOperation.End)
+                self.result_edit.setTextCursor(cursor)
+                self.logger.debug(f"Обработан токен: {token}")
+        except Exception as e:
+            self.logger.error(f"Ошибка при обработке токена: {str(e)}", exc_info=True)
+
+    def _handle_response(self, response: str):
+        """Обрабатывает ответ от модели"""
+        try:
+            if response:  # Проверяем, что ответ не пустой
+                self.result_edit.setText(response)
+                self._set_request_controls_enabled(True)
+                self.logger.info("Обработка ответа завершена")
+                self.logger.debug(f"Финальный ответ: {response}")
+        except Exception as e:
+            self.logger.error(f"Ошибка при обработке ответа: {str(e)}", exc_info=True)
+            self._handle_error(str(e))
+
+    def _handle_error(self, error: str):
+        """Обрабатывает ошибку запроса"""
+        try:
+            self._set_request_controls_enabled(True)
+            self.logger.error(f"Ошибка запроса: {error}")
+            QMessageBox.critical(self, "Ошибка", error)
+        except Exception as e:
+            self.logger.error(f"Ошибка при обработке ошибки: {str(e)}", exc_info=True)
+
+    def get_result(self) -> Optional[str]:
+        """Возвращает результат обработки"""
+        return self.result_edit.toPlainText().strip() or None

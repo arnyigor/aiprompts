@@ -2,13 +2,36 @@
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QGuiApplication
 from PyQt6.QtWidgets import (QDialog, QTextEdit, QVBoxLayout, QLabel,
-                             QPushButton, QHBoxLayout, QMessageBox, QWidget, QTabWidget)
+                             QPushButton, QHBoxLayout, QMessageBox, QWidget, QTabWidget,
+                             QLineEdit, QFormLayout, QGroupBox)
+
+from src.huggingface_api import HuggingFaceAPI
+from src.huggingface_dialog import HuggingFaceDialog
+from src.lmstudio_api import LMStudioInference
+from src.lmstudio_dialog import LMStudioDialog
+from src.prompt_editor import ExampleSelectionDialog
 
 
 class PromptPreview(QDialog):
-    def __init__(self, prompt):
+    def __init__(self, prompt, settings):
         super().__init__()
         self.prompt = prompt
+        self.settings = settings
+        self.variable_inputs = {}  # Словарь для хранения полей ввода переменных
+        self.ru_history = []  # История изменений для русского текста
+        self.en_history = []  # История изменений для английского текста
+
+        # Инициализация API клиентов
+        try:
+            self.hf_api = HuggingFaceAPI(settings=self.settings)
+        except Exception as e:
+            self.hf_api = None
+
+        try:
+            self.lm_api = LMStudioInference()
+        except Exception as e:
+            self.lm_api = None
+
         self.setWindowTitle("Предпросмотр промпта")
         self.setGeometry(300, 300, 800, 600)
 
@@ -70,10 +93,48 @@ class PromptPreview(QDialog):
         self.models_text.setMaximumHeight(60)
         layout.addWidget(self.models_text)
 
+        # Variables input
+        if self.prompt.variables:
+            variables_group = QGroupBox("Заполните переменные:")
+            variables_layout = QFormLayout()
+
+            for var in self.prompt.variables:
+                input_field = QLineEdit()
+                if var.examples:
+                    input_field.setPlaceholderText(f"Например: {', '.join(var.examples)}")
+                    # Добавляем кнопку для вставки примеров
+                    input_layout = QHBoxLayout()
+                    input_layout.addWidget(input_field)
+                    insert_examples_btn = QPushButton("📝")
+                    insert_examples_btn.setFixedWidth(30)
+                    insert_examples_btn.setToolTip("Вставить примеры")
+                    insert_examples_btn.clicked.connect(
+                        lambda checked, v=var, f=input_field: self.show_examples_dialog(v, f))
+                    input_layout.addWidget(insert_examples_btn)
+                    variables_layout.addRow(f"{var.description}:", input_layout)
+                else:
+                    input_field.setPlaceholderText(f"Введите {var.description}")
+                    variables_layout.addRow(f"{var.description}:", input_field)
+                self.variable_inputs[var.name] = input_field
+
+            # Добавляем две кнопки для применения переменных
+            buttons_layout = QHBoxLayout()
+
+            apply_ru_btn = QPushButton("Применить к RU")
+            apply_ru_btn.clicked.connect(lambda: self.apply_variables("ru"))
+            buttons_layout.addWidget(apply_ru_btn)
+
+            apply_en_btn = QPushButton("Apply to EN")
+            apply_en_btn.clicked.connect(lambda: self.apply_variables("en"))
+            buttons_layout.addWidget(apply_en_btn)
+
+            variables_layout.addRow("", buttons_layout)
+
+            variables_group.setLayout(variables_layout)
+            layout.addWidget(variables_group)
+
         # Content с табами
         layout.addWidget(QLabel("Содержание:"))
-
-        # Создаем табы для контента
         self.content_tabs = QTabWidget()
 
         # Русский контент
@@ -86,7 +147,29 @@ class PromptPreview(QDialog):
         ru_buttons = QHBoxLayout()
         ru_copy_btn = QPushButton("Копировать RU")
         ru_copy_btn.clicked.connect(lambda: self.copy_content("ru"))
+        ru_undo_btn = QPushButton("↩ Отменить")
+        ru_undo_btn.clicked.connect(lambda: self.undo_changes("ru"))
+        ru_undo_btn.setToolTip("Вернуть к предыдущему состоянию")
+
+        # Добавляем кнопки для выполнения промпта
+        if self.hf_api:
+            ru_hf_btn = QPushButton("Выполнить через Hugging Face")
+            ru_hf_btn.clicked.connect(lambda: self.execute_prompt("ru", "hf"))
+        else:
+            ru_hf_btn = QPushButton("Добавить API ключ Hugging Face")
+            ru_hf_btn.clicked.connect(self.add_huggingface_key)
+            ru_hf_btn.setStyleSheet("background-color: #4CAF50; color: white;")
+
+        ru_lm_btn = QPushButton("Выполнить через LMStudio")
+        ru_lm_btn.clicked.connect(lambda: self.execute_prompt("ru", "lm"))
+        if not self.lm_api:
+            ru_lm_btn.setEnabled(False)
+            ru_lm_btn.setToolTip("LMStudio API недоступен")
+
         ru_buttons.addWidget(ru_copy_btn)
+        ru_buttons.addWidget(ru_undo_btn)
+        ru_buttons.addWidget(ru_hf_btn)
+        ru_buttons.addWidget(ru_lm_btn)
         ru_layout.addLayout(ru_buttons)
 
         ru_container.setLayout(ru_layout)
@@ -102,7 +185,29 @@ class PromptPreview(QDialog):
         en_buttons = QHBoxLayout()
         en_copy_btn = QPushButton("Copy EN")
         en_copy_btn.clicked.connect(lambda: self.copy_content("en"))
+        en_undo_btn = QPushButton("↩ Undo")
+        en_undo_btn.clicked.connect(lambda: self.undo_changes("en"))
+        en_undo_btn.setToolTip("Revert to previous state")
+
+        # Добавляем кнопки для выполнения промпта
+        if self.hf_api:
+            en_hf_btn = QPushButton("Execute with Hugging Face")
+            en_hf_btn.clicked.connect(lambda: self.execute_prompt("en", "hf"))
+        else:
+            en_hf_btn = QPushButton("Add Hugging Face API Key")
+            en_hf_btn.clicked.connect(self.add_huggingface_key)
+            en_hf_btn.setStyleSheet("background-color: #4CAF50; color: white;")
+
+        en_lm_btn = QPushButton("Execute with LMStudio")
+        en_lm_btn.clicked.connect(lambda: self.execute_prompt("en", "lm"))
+        if not self.lm_api:
+            en_lm_btn.setEnabled(False)
+            en_lm_btn.setToolTip("LMStudio API is not available")
+
         en_buttons.addWidget(en_copy_btn)
+        en_buttons.addWidget(en_undo_btn)
+        en_buttons.addWidget(en_hf_btn)
+        en_buttons.addWidget(en_lm_btn)
         en_layout.addLayout(en_buttons)
 
         en_container.setLayout(en_layout)
@@ -110,7 +215,7 @@ class PromptPreview(QDialog):
 
         layout.addWidget(self.content_tabs)
 
-        # Variables
+        # Variables info
         self.vars_label = QLabel("Переменные:")
         layout.addWidget(self.vars_label)
         self.vars_text = QTextEdit()
@@ -160,8 +265,10 @@ class PromptPreview(QDialog):
         self.tags_label.setText(f"Теги: {', '.join(self.prompt.tags)}")
 
         # Даты создания и изменения
-        created_at = self.prompt.created_at.strftime("%d.%m.%Y %H:%M") if self.prompt.created_at else "Не указано"
-        updated_at = self.prompt.updated_at.strftime("%d.%m.%Y %H:%M") if self.prompt.updated_at else "Не указано"
+        created_at = self.prompt.created_at.strftime(
+            "%d.%m.%Y %H:%M") if self.prompt.created_at else "Не указано"
+        updated_at = self.prompt.updated_at.strftime(
+            "%d.%m.%Y %H:%M") if self.prompt.updated_at else "Не указано"
         self.created_at_label.setText(f"Создан: {created_at}")
         self.updated_at_label.setText(f"Изменен: {updated_at}")
 
@@ -208,6 +315,26 @@ class PromptPreview(QDialog):
                 self.source_label.setText(f"Источник: {source}")
             else:
                 self.source_label.hide()
+
+    def apply_variables(self, lang: str):
+        """Применяет введенные значения переменных к тексту промпта указанного языка"""
+        if not self.variable_inputs:
+            return
+
+        text = self.prompt.content.get(lang, '')
+        text_edit = self.ru_content_edit if lang == "ru" else self.en_content_edit
+        history = self.ru_history if lang == "ru" else self.en_history
+
+        # Сохраняем текущее состояние в историю
+        history.append(text_edit.toPlainText())
+
+        for var_name, input_field in self.variable_inputs.items():
+            value = input_field.text().strip()
+            if value:
+                text = text.replace(f"[{var_name}]", value)
+
+        text_edit.setPlainText(text)
+        self.show_toast("Переменные применены!" if lang == "ru" else "Changes applied")
 
     def copy_content(self, lang=None):
         """Копирование контента определенного языка"""
@@ -272,6 +399,16 @@ class PromptPreview(QDialog):
         clipboard.setText(text)
         self.show_toast("Полный текст скопирован!")
 
+    def undo_changes(self, lang: str):
+        """Отменить последнее изменение для указанного языка"""
+        history = self.ru_history if lang == "ru" else self.en_history
+        text_edit = self.ru_content_edit if lang == "ru" else self.en_content_edit
+
+        if history:
+            previous_text = history.pop()
+            text_edit.setPlainText(previous_text)
+            self.show_toast("Изменения отменены" if lang == "ru" else "Changes reverted")
+
     def show_toast(self, message):
         """Всплывающее уведомление"""
         msg = QMessageBox(self)
@@ -281,3 +418,149 @@ class PromptPreview(QDialog):
         msg.setStandardButtons(QMessageBox.StandardButton.Ok)
         msg.show()
         QTimer.singleShot(1500, msg.close)
+
+    def show_examples_dialog(self, variable, input_field):
+        """Показать диалог выбора примеров"""
+        dialog = ExampleSelectionDialog(variable, self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            selected_examples = dialog.get_selected_examples()
+            if selected_examples:
+                if len(selected_examples) == 1:
+                    input_field.setText(selected_examples[0])
+                else:
+                    input_field.setText(", ".join(selected_examples))
+
+    def execute_prompt(self, lang: str, api: str):
+        """Выполнить промпт через выбранный API"""
+        try:
+            # Получаем текст промпта
+            text_edit = self.ru_content_edit if lang == "ru" else self.en_content_edit
+            prompt_text = text_edit.toPlainText()
+
+            if not prompt_text.strip():
+                QMessageBox.warning(
+                    self,
+                    "Предупреждение" if lang == "ru" else "Warning",
+                    "Введите промпт" if lang == "ru" else "Enter prompt"
+                )
+                return
+
+            if api == "hf":
+                # Для Hugging Face всегда используем режим без улучшения
+                dialog = HuggingFaceDialog(self.hf_api, self.settings, prompt_text, self,
+                                           from_preview=True)
+                if dialog.exec() == QDialog.DialogCode.Accepted:
+                    result = dialog.get_result()
+                    if result:
+                        # Сохраняем текущее состояние в историю
+                        history = self.ru_history if lang == "ru" else self.en_history
+                        history.append(text_edit.toPlainText())
+                        # Обновляем текст
+                        text_edit.setPlainText(result)
+                        self.show_toast(
+                            "Результат получен!" if lang == "ru" else "Result received!"
+                        )
+                    else:
+                        QMessageBox.warning(
+                            self,
+                            "Предупреждение" if lang == "ru" else "Warning",
+                            "Получен пустой результат" if lang == "ru" else "Empty result received"
+                        )
+            else:
+                # Для LMStudio
+                dialog = LMStudioDialog(self.lm_api, prompt_text, self, from_preview=True)
+                if dialog.exec() == QDialog.DialogCode.Accepted:
+                    result = dialog.get_result()
+                    if result:
+                        # Сохраняем текущее состояние в историю
+                        history = self.ru_history if lang == "ru" else self.en_history
+                        history.append(text_edit.toPlainText())
+                        # Обновляем текст
+                        text_edit.setPlainText(result)
+                        self.show_toast(
+                            "Результат получен!" if lang == "ru" else "Result received!"
+                        )
+                    else:
+                        QMessageBox.warning(
+                            self,
+                            "Предупреждение" if lang == "ru" else "Warning",
+                            "Получен пустой результат" if lang == "ru" else "Empty result received"
+                        )
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Ошибка" if lang == "ru" else "Error",
+                f"Не удалось выполнить промпт: {str(e)}" if lang == "ru" else f"Failed to execute prompt: {str(e)}"
+            )
+
+    def add_huggingface_key(self):
+        """Добавление или обновление API ключа Hugging Face"""
+        try:
+            # Получаем текущий ключ
+            current_key = self.settings.get_api_key("huggingface")
+
+            # Создаем диалог для ввода ключа
+            dialog = QDialog(self)
+            dialog.setWindowTitle("API ключ Hugging Face")
+            layout = QVBoxLayout()
+
+            # Поле для ввода ключа
+            key_label = QLabel("Введите API ключ:")
+            key_input = QLineEdit()
+            key_input.setEchoMode(QLineEdit.EchoMode.Password)
+            if current_key:
+                key_input.setPlaceholderText("Введите новый ключ для обновления")
+            else:
+                key_input.setPlaceholderText("Введите API ключ")
+
+            # Кнопка показать/скрыть ключ
+            show_key = QPushButton("Показать ключ")
+            show_key.setCheckable(True)
+            show_key.clicked.connect(lambda: key_input.setEchoMode(
+                QLineEdit.EchoMode.Normal if show_key.isChecked()
+                else QLineEdit.EchoMode.Password
+            ))
+
+            # Кнопки управления
+            buttons = QHBoxLayout()
+            save_btn = QPushButton("Сохранить")
+            cancel_btn = QPushButton("Отмена")
+
+            # Добавляем виджеты в layout
+            layout.addWidget(key_label)
+            layout.addWidget(key_input)
+            layout.addWidget(show_key)
+            buttons.addWidget(save_btn)
+            buttons.addWidget(cancel_btn)
+            layout.addLayout(buttons)
+
+            dialog.setLayout(layout)
+
+            # Подключаем обработчики
+            save_btn.clicked.connect(dialog.accept)
+            cancel_btn.clicked.connect(dialog.reject)
+
+            # Показываем диалог
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                new_key = key_input.text().strip()
+                if new_key:
+                    # Сохраняем ключ
+                    self.settings.set_api_key("huggingface", new_key)
+
+                    # Пересоздаем API клиент
+                    self.hf_api = HuggingFaceAPI(settings=self.settings)
+
+                    # Обновляем UI
+                    self.init_ui()
+
+                    QMessageBox.information(
+                        self,
+                        "Успех",
+                        "API ключ успешно сохранен и применен"
+                    )
+                else:
+                    QMessageBox.warning(self, "Ошибка", "API ключ не может быть пустым")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить API ключ: {str(e)}")

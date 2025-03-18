@@ -3,11 +3,11 @@
   "title": "Объясни, почему бизнесу нужно включить (ключевое слово) в стратегию",
   "version": "1.0.0",
   "status": "draft",
-  "is_local": true,
+  "is_local": false,
   "is_favorite": false,
   "description": "Русский",
   "content": {
-    "ru": "Объясни, почему бизнесу нужно включить (ключевое слово) в стратегию",
+    "ru": "Объясни, почему бизнесу нужно включить [keyword] в стратегию",
     "en": "Design an SEO-optimized explainer on why businesses need to incorporate (keyword) into their strategies today"
   },
   "compatible_models": [
@@ -22,12 +22,29 @@
     "ai",
     "marketing"
   ],
-  "variables": [],
-  "metadata": {},
+  "variables": [
+    {
+      "name": "keyword",
+      "type": "string",
+      "description": "ключевое слово",
+      "examples": [
+        "криминал",
+        "пожертвование"
+      ]
+    }
+  ],
+  "metadata": {
+    "author": {
+      "id": "",
+      "name": ""
+    },
+    "source": "",
+    "notes": ""
+  },
   "rating": {
     "score": 0.0,
     "votes": 0
   },
   "created_at": "2025-03-13T07:10:58.441154",
-  "updated_at": "2025-03-13T07:11:02.248795"
+  "updated_at": "2025-03-18T05:39:32.432798"
 }
