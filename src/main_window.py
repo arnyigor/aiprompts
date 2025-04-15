@@ -1,16 +1,16 @@
 # main_window.py
 import logging
 
-from PyQt6.QtWidgets import QMainWindow, QListWidget, QVBoxLayout, QWidget, QPushButton, \
-    QHBoxLayout, QLineEdit, QLabel, QMessageBox, QComboBox, QCheckBox
-from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QToolButton, QVBoxLayout, QWidget, QHBoxLayout
+from PyQt6.QtWidgets import QMainWindow, QListWidget, QPushButton, \
+    QLineEdit, QLabel, QMessageBox, QComboBox
 
+from src.api_keys_dialog import ApiKeysDialog
+from src.llm_settings import Settings
 from src.preview import PromptPreview
 from src.prompt_editor import PromptEditor
 from src.prompt_manager import PromptManager
-from src.settings import Settings
-from src.api_keys_dialog import ApiKeysDialog
-
+from src.settings_window import SettingsDialog
 
 class MainWindow(QMainWindow):
     def __init__(self, prompt_manager: PromptManager, settings: Settings):
@@ -30,7 +30,7 @@ class MainWindow(QMainWindow):
         self.favorite_filter.setCheckable(True)
         self.favorite_filter.setFixedWidth(30)
         self.favorite_filter.setToolTip("Показать избранное")
-        
+
         # Сортировка
         self.sort_combo = QComboBox()
         self.sort_combo.addItems(["По названию", "По дате создания", "По категории"])
@@ -48,20 +48,26 @@ class MainWindow(QMainWindow):
         self.edit_button = QPushButton("Редактировать")
         self.delete_button = QPushButton("Удалить")
 
+        # Инициализация компонентов
+        self.settings_button = QPushButton("⚙️")
+        self.settings_button.setToolTip("Настройки")
+        self.settings_button.adjustSize()
+        self.settings_button.clicked.connect(self.show_settings_dialog)
+
         # Фильтр по категориям
         self.category_filter = QComboBox()
         self.category_filter.addItem("Все категории")
-        
+
         # Фильтр по тегам
         self.tag_filter = QComboBox()
         self.tag_filter.addItem("Все теги")
-        
+
         # Layout setup
         main_layout = QHBoxLayout()
 
         # Left panel (list + filters)
         left_layout = QVBoxLayout()
-        
+
         # Search layout
         search_layout = QHBoxLayout()
         search_layout.addWidget(QLabel("Поиск:"))
@@ -75,25 +81,25 @@ class MainWindow(QMainWindow):
         lang_layout.addWidget(QLabel("Язык:"))
         lang_layout.addWidget(self.lang_filter)
         filters_layout.addLayout(lang_layout)
-        
+
         # Favorite filter
         fav_layout = QVBoxLayout()
         fav_layout.addWidget(QLabel("Избранное:"))
         fav_layout.addWidget(self.favorite_filter)
         filters_layout.addLayout(fav_layout)
-        
+
         # Category filter
         cat_layout = QVBoxLayout()
         cat_layout.addWidget(QLabel("Категория:"))
         cat_layout.addWidget(self.category_filter)
         filters_layout.addLayout(cat_layout)
-        
+
         # Tag filter
         tag_layout = QVBoxLayout()
         tag_layout.addWidget(QLabel("Тег:"))
         tag_layout.addWidget(self.tag_filter)
         filters_layout.addLayout(tag_layout)
-        
+
         left_layout.addLayout(filters_layout)
 
         # Sort layout
@@ -111,6 +117,7 @@ class MainWindow(QMainWindow):
         button_layout.addWidget(self.preview_button)
         button_layout.addWidget(self.edit_button)
         button_layout.addWidget(self.delete_button)
+        button_layout.addWidget(self.settings_button)
         button_layout.addStretch()
 
         main_layout.addLayout(left_layout, 4)
@@ -135,6 +142,11 @@ class MainWindow(QMainWindow):
 
         # Load initial data
         self.load_prompts()
+
+    # Метод для отображения диалога настроек
+    def show_settings_dialog(self):
+        dialog = SettingsDialog(self)
+        dialog.exec()
 
     def toggle_sort_direction(self):
         """Переключение направления сортировки"""
@@ -177,30 +189,29 @@ class MainWindow(QMainWindow):
         """Загрузка промптов в список с сохранением фильтров"""
         # Сохраняем текущее состояние фильтров
         filter_state = self.save_filter_state()
-        
+
         try:
             # Блокируем сигналы на время обновления
             self.category_filter.blockSignals(True)
             self.tag_filter.blockSignals(True)
             self.lang_filter.blockSignals(True)
             self.sort_combo.blockSignals(True)
-        
 
             self.prompt_list.clear()
             prompts = self.prompt_manager.list_prompts()
             self.logger.debug(f"load_prompts: Получено промптов: {len(prompts)}")
-            
+
             # Сортируем промпты по названию (начальная сортировка)
             prompts.sort(key=lambda x: x.title.lower(), reverse=not self.sort_ascending)
-            
+
             # Добавляем отсортированные промпты в список
             for prompt in prompts:
                 item_text = f"{prompt.title} ({prompt.id})"
                 self.prompt_list.addItem(item_text)
-            
+
             # Проверяем, что промпты добавились
             self.logger.debug(f"load_prompts: Количество элементов в списке: {self.prompt_list.count()}")
-            
+
             # Обновляем список категорий
             categories = set()
             tags = set()
@@ -208,33 +219,33 @@ class MainWindow(QMainWindow):
                 categories.add(prompt.category)
                 if hasattr(prompt, 'tags'):
                     tags.update(prompt.tags)
-            
+
             self.logger.debug(f"load_prompts: Найдено категорий: {len(categories)}")
             self.logger.debug(f"load_prompts: Найдено тегов: {len(tags)}")
-            
+
             # Обновляем списки фильтров
             self.category_filter.clear()
             self.category_filter.addItem("Все категории")
             self.category_filter.addItems(sorted(categories))
-            
+
             self.tag_filter.clear()
             self.tag_filter.addItem("Все теги")
             self.tag_filter.addItems(sorted(tags))
-            
+
             # Восстанавливаем состояние фильтров
             self.restore_filter_state(filter_state)
-            
+
             # Обновляем заголовок окна со статистикой
             total_prompts = len(prompts)
             self.setWindowTitle(f"Prompt Manager - Загружено промптов: {total_prompts}")
-            
+
         finally:
             # Разблокируем сигналы
             self.category_filter.blockSignals(False)
             self.tag_filter.blockSignals(False)
             self.lang_filter.blockSignals(False)
             self.sort_combo.blockSignals(False)
-            
+
             # Применяем фильтры к обновленному списку
             self.filter_prompts()
 
@@ -245,77 +256,77 @@ class MainWindow(QMainWindow):
             prompts = self.prompt_manager.list_prompts()
             # self.logger.debug(f"filter_prompts: Начало фильтрации, всего промптов: {len(prompts)}")
             filtered_prompts = []
-            
+
             # Применяем фильтры
             search_query = self.search_field.text().lower()
             category_filter = self.category_filter.currentText()
             lang_filter = self.lang_filter.currentText()
             tag_filter = self.tag_filter.currentText()
             show_favorites = self.favorite_filter.isChecked()
-            
+
             # self.logger.debug(f"filter_prompts: Параметры фильтрации: поиск='{search_query}', категория='{category_filter}', тег='{tag_filter}', язык='{lang_filter}', избранное={show_favorites}")
-            
+
             for prompt in prompts:
                 # Проверяем все условия фильтрации
                 matches = True
-                
+
                 # Фильтр по избранному
                 if show_favorites and not getattr(prompt, 'is_favorite', False):
                     matches = False
-                
+
                 # Фильтр по поисковому запросу
                 if search_query:
-                    if not (search_query in prompt.title.lower() or 
-                          search_query in prompt.content.get('ru', '').lower() or 
-                          search_query in prompt.content.get('en', '').lower()):
+                    if not (search_query in prompt.title.lower() or
+                            search_query in prompt.content.get('ru', '').lower() or
+                            search_query in prompt.content.get('en', '').lower()):
                         matches = False
-                
+
                 # Фильтр по категории
                 if category_filter != "Все категории" and prompt.category != category_filter:
                     matches = False
-                
+
                 # Фильтр по тегам
                 if tag_filter != "Все теги":
                     if not hasattr(prompt, 'tags') or tag_filter not in prompt.tags:
                         matches = False
-                
+
                 # Фильтр по языку
                 if lang_filter != "Все":
                     if lang_filter == "RU" and not prompt.content.get('ru'):
                         matches = False
                     elif lang_filter == "EN" and not prompt.content.get('en'):
                         matches = False
-                
+
                 if matches:
                     filtered_prompts.append(prompt)
-            
+
             self.logger.debug(f"filter_prompts: После фильтрации осталось промптов: {len(filtered_prompts)}")
-            
+
             # Применяем сортировку
             sort_type = self.sort_combo.currentText()
             reverse = not self.sort_ascending
-            
+
             if sort_type == "По названию":
                 filtered_prompts.sort(key=lambda x: x.title.lower(), reverse=reverse)
             elif sort_type == "По дате создания":
                 filtered_prompts.sort(key=lambda x: x.created_at, reverse=reverse)
             elif sort_type == "По категории":
                 filtered_prompts.sort(key=lambda x: x.category.lower(), reverse=reverse)
-            
+
             # Обновляем список
             self.prompt_list.clear()
             for prompt in filtered_prompts:
                 item_text = f"{prompt.title} ({prompt.id})"
                 self.prompt_list.addItem(item_text)
-            
+
             # Проверяем, что промпты добавились после фильтрации
             # self.logger.debug(f"filter_prompts: Количество элементов в списке после фильтрации: {self.prompt_list.count()}")
-            
+
             # Обновляем статистику
             total_prompts = len(prompts)
             filtered_count = len(filtered_prompts)
             self.setWindowTitle(f"Prompt Manager - Показано {filtered_count} из {total_prompts}")
-            
+
         except Exception as e:
             self.logger.error(f"Ошибка фильтрации: {str(e)}", exc_info=True)
             QMessageBox.critical(self, "Ошибка", f"Не удалось выполнить фильтрацию: {str(e)}")
@@ -420,7 +431,7 @@ class MainWindow(QMainWindow):
                     "Успешно",
                     f"Отредактировано промптов: {edited_count}"
                 )
-            
+
             # Обновляем список только если были изменения
             if edited_count > 0:
                 self.load_prompts()
@@ -489,7 +500,7 @@ class MainWindow(QMainWindow):
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                     QMessageBox.StandardButton.No
                 )
-                
+
                 if final_confirm == QMessageBox.StandardButton.Yes:
                     # Удаление промптов
                     deleted_count = 0
@@ -536,10 +547,10 @@ class MainWindow(QMainWindow):
         edit_button = dialog.addButton("Редактировать", QMessageBox.ButtonRole.AcceptRole)
         preview_button = dialog.addButton("Просмотреть", QMessageBox.ButtonRole.AcceptRole)
         dialog.addButton("Отмена", QMessageBox.ButtonRole.RejectRole)
-        
+
         dialog.exec()
         clicked_button = dialog.clickedButton()
-        
+
         if clicked_button == edit_button:
             try:
                 editor = PromptEditor(self.prompt_manager, self.settings, prompt_id)

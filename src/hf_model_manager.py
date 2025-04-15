@@ -3,7 +3,7 @@ import logging
 import os
 from typing import Dict, Any, List, Optional
 
-from src.settings import Settings
+from src.llm_settings import Settings
 
 
 class HFModelManager:

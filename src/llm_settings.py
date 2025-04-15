@@ -1,17 +1,17 @@
 import json
 import logging
-from pathlib import Path
 import os
-import sys
-from typing import Dict, Any, Optional
 import secrets
+import sys
 from base64 import urlsafe_b64encode, urlsafe_b64decode
+from pathlib import Path
+from typing import Dict, Any, Optional
+
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
+
 from src.key_encryption import KeyEncryption
-from cryptography.fernet import Fernet
+
 
 class Settings:
     def __init__(self):
@@ -21,7 +21,7 @@ class Settings:
         self.settings_file = self.settings_dir / 'settings.json'
         self.api_keys_file = self.settings_dir / '.keystore'
         self.key_encryption = KeyEncryption()
-        
+
         # Структура настроек по умолчанию
         self.default_settings = {
             "favorites": {},  # id промпта: True/False
@@ -37,7 +37,7 @@ class Settings:
                 "last_language": "Все"
             }
         }
-        
+
         # Структура API ключей по умолчанию
         self.default_api_keys = {
             "huggingface": {
@@ -53,7 +53,7 @@ class Settings:
                 "salt": None
             }
         }
-        
+
         # Загружаем настройки
         self.settings = self.load_settings()
         self.api_keys = self.load_api_keys()
@@ -61,21 +61,21 @@ class Settings:
     def _get_settings_dir(self) -> Path:
         """Определяет путь для хранения настроек в зависимости от ОС"""
         app_name = "AiPromptManager"
-        
+
         # Проверяем переменную окружения XDG_CONFIG_HOME (для Linux)
         xdg_config = os.environ.get('XDG_CONFIG_HOME')
-        
+
         if sys.platform == 'win32':
             # Windows: используем APPDATA или LOCALAPPDATA
             base_path = os.environ.get('APPDATA') or os.environ.get('LOCALAPPDATA')
             if not base_path:
                 base_path = os.path.expanduser('~')
             return Path(base_path) / app_name
-            
+
         elif sys.platform == 'darwin':
             # macOS: используем ~/Library/Application Support
             return Path.home() / "Library" / "Application Support" / app_name
-            
+
         else:
             # Linux/Unix: используем XDG_CONFIG_HOME или ~/.config
             if xdg_config:
@@ -110,7 +110,7 @@ class Settings:
         try:
             # Убеждаемся, что директория существует
             self.settings_dir.mkdir(parents=True, exist_ok=True)
-            
+
             # Сохраняем настройки
             with open(self.settings_file, 'w', encoding='utf-8') as f:
                 json.dump(self.settings, f, indent=2, ensure_ascii=False)
@@ -211,11 +211,11 @@ class Settings:
         try:
             with open(self.api_keys_file, 'w', encoding='utf-8') as f:
                 json.dump(api_keys, f, indent=2)
-            
+
             # Устанавливаем права доступа только для текущего пользователя
             if sys.platform != 'win32':
                 self.api_keys_file.chmod(0o600)
-                
+
         except Exception as e:
             self.logger.error(f"Ошибка сохранения API ключей: {str(e)}", exc_info=True)
 
@@ -236,14 +236,14 @@ class Settings:
         # Используем имя пользователя и путь к директории как основу для ключа
         user = os.environ.get('USERNAME') or os.environ.get('USER') or 'default'
         base = (user + str(self.settings_dir)).encode()
-        
+
         # Используем Scrypt для получения ключа (более устойчив к перебору)
         kdf = Scrypt(
             salt=master_salt,
             length=32,
-            n=2**16,  # CPU/память параметр
-            r=8,      # размер блока
-            p=1,      # параллелизм
+            n=2 ** 16,  # CPU/память параметр
+            r=8,  # размер блока
+            p=1,  # параллелизм
         )
         return kdf.derive(base)
 
@@ -251,22 +251,22 @@ class Settings:
         """Шифрование API ключа"""
         if not key:
             return None, None, None
-            
+
         try:
             # Получаем мастер-ключ
             master_key = self._derive_master_key()
-            
+
             # Создаем AESGCM шифровальщик
             aesgcm = AESGCM(master_key)
-            
+
             # Генерируем случайные соль и nonce
             salt = secrets.token_bytes(16)
             nonce = secrets.token_bytes(12)
-            
+
             # Шифруем ключ
             key_bytes = key.encode()
             encrypted_key = aesgcm.encrypt(nonce, key_bytes, None)
-            
+
             # Кодируем в base64 для хранения
             return (
                 urlsafe_b64encode(encrypted_key).decode(),
@@ -281,22 +281,22 @@ class Settings:
         """Расшифровка API ключа"""
         if not all([encrypted_key, salt, nonce]):
             return None
-            
+
         try:
             # Получаем мастер-ключ
             master_key = self._derive_master_key()
-            
+
             # Создаем AESGCM дешифровщик
             aesgcm = AESGCM(master_key)
-            
+
             # Декодируем из base64
             encrypted_bytes = urlsafe_b64decode(encrypted_key)
             nonce_bytes = urlsafe_b64decode(nonce)
-            
+
             # Расшифровываем ключ
             decrypted_key = aesgcm.decrypt(nonce_bytes, encrypted_bytes, None)
             return decrypted_key.decode()
-            
+
         except Exception as e:
             self.logger.error(f"Ошибка расшифровки ключа: {str(e)}", exc_info=True)
             return None
@@ -307,13 +307,13 @@ class Settings:
             service_data = self.api_keys.get(service, {})
             if not service_data or not service_data.get("key"):
                 return None
-                
+
             encrypted_key = service_data.get("key")
             salt = service_data.get("salt")
             nonce = service_data.get("nonce")
-            
+
             return self._decrypt_key(encrypted_key, salt, nonce)
-                
+
         except Exception as e:
             self.logger.error(f"Ошибка получения API ключа: {str(e)}", exc_info=True)
             return None
@@ -324,19 +324,19 @@ class Settings:
             if not key:
                 self.remove_api_key(service)
                 return
-                
+
             # Шифруем ключ
             encrypted_key, salt, nonce = self._encrypt_key(key)
-            
+
             # Сохраняем зашифрованный ключ и метаданные
             self.api_keys[service] = {
                 "key": encrypted_key,
                 "salt": salt,
                 "nonce": nonce
             }
-            
+
             self.save_api_keys(self.api_keys)
-            
+
         except Exception as e:
             self.logger.error(f"Ошибка установки API ключа: {str(e)}", exc_info=True)
             raise
@@ -360,4 +360,4 @@ class Settings:
         Returns:
             str: Полный путь к файлу конфигурации
         """
-        return str(self.settings_dir / filename) 
+        return str(self.settings_dir / filename)

@@ -4,7 +4,7 @@ from typing import Optional, Generator
 from huggingface_hub import InferenceClient
 
 from .hf_model_manager import HFModelManager
-from .settings import Settings
+from .llm_settings import Settings
 
 
 class HuggingFaceAPI:

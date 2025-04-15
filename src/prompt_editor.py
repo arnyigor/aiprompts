@@ -28,7 +28,7 @@ from src.lmstudio_dialog import LMStudioDialog
 from src.model_dialog import ModelConfigDialog
 from src.models import Variable
 from src.prompt_manager import PromptManager
-from src.settings import Settings
+from src.llm_settings import Settings
 
 
 class JsonPreviewDialog(QDialog):

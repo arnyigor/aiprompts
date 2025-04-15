@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import QApplication
 
 from src.main_window import MainWindow
 from src.prompt_manager import PromptManager
-from src.settings import Settings
+from src.llm_settings import Settings
 
 
 def get_base_path() -> Path:

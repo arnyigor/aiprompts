@@ -11,7 +11,7 @@ from huggingface_hub import HfApi
 from .api_keys_dialog import ApiKeysDialog
 from .hf_model_editor_dialog import ModelEditorDialog
 from .huggingface_api import HuggingFaceAPI
-from .settings import Settings
+from .llm_settings import Settings
 
 
 class Worker(QThread):

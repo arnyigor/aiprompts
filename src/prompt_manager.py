@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Optional
 from uuid import uuid4
 
+from PyQt6.QtCore import QSettings
+
 from src.category_manager import CategoryManager
 from src.models import Prompt
 from src.storage import LocalStorage
@@ -16,6 +18,11 @@ class PromptManager:
 
     def __init__(self, storage_path="prompts"):
         self.logger = logging.getLogger(__name__)
+        # Загрузка настроек
+        settings = QSettings("YourCompany", "YourApp")
+        if storage_path is None:
+            storage_path = settings.value("prompts_path", "prompts")
+
         self.logger.debug(f"Инициализация PromptManager с путем: {storage_path}")
         
         self.cat_manager = CategoryManager()

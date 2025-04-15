@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 
-from src.settings import Settings
+from src.llm_settings import Settings
 
 
 class ApiKeysDialog(QDialog):

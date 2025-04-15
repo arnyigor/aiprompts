@@ -6,7 +6,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from src.models import Prompt
-from src.settings import Settings
+from src.llm_settings import Settings
 
 
 class DateTimeEncoder(json.JSONEncoder):
