@@ -178,13 +178,14 @@ class MainWindow(QMainWindow):
         # Сохраняем текущее состояние фильтров
         filter_state = self.save_filter_state()
         
-        # Блокируем сигналы на время обновления
-        self.category_filter.blockSignals(True)
-        self.tag_filter.blockSignals(True)
-        self.lang_filter.blockSignals(True)
-        self.sort_combo.blockSignals(True)
-        
         try:
+            # Блокируем сигналы на время обновления
+            self.category_filter.blockSignals(True)
+            self.tag_filter.blockSignals(True)
+            self.lang_filter.blockSignals(True)
+            self.sort_combo.blockSignals(True)
+        
+
             self.prompt_list.clear()
             prompts = self.prompt_manager.list_prompts()
             self.logger.debug(f"load_prompts: Получено промптов: {len(prompts)}")

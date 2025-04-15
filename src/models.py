@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List, Dict, Optional, Union
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, validator, ConfigDict
+from pydantic import BaseModel, Field, validator, ConfigDict, field_validator
 
 
 class Category(BaseModel):
@@ -19,7 +19,7 @@ class Variable(BaseModel):
     description: str
     examples: List[str] = []
 
-    @validator('type')
+    @field_validator('type')
     def validate_type(cls, v):
         allowed_types = ['string', 'number', 'list']
         if v not in allowed_types:
@@ -71,7 +71,7 @@ class Prompt(BaseModel):
         strict=True
     )
 
-    @validator('content')
+    @field_validator('content')
     def check_content(cls, v):
         if isinstance(v, str):
             # Если передана строка, возвращаем её как есть
@@ -84,7 +84,7 @@ class Prompt(BaseModel):
         else:
             raise ValueError("Контент должен быть строкой или словарем")
 
-    @validator('tags')
+    @field_validator('tags')
     def check_tags(cls, v):
         if not v:
             raise ValueError("Теги не могут быть пустыми")

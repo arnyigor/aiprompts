@@ -265,6 +265,10 @@ pip install -r requirements.txt
 pip install auto-py-to-exe
 ```
 
+2. MAC Соберите **.app**:
+   ```bash
+   pyinstaller --onefile --windowed --name "aipromptmaster" src/main.py --distpath .
+
 2. Запустите Auto Py to Exe:
 ```bash
 auto-py-to-exe
