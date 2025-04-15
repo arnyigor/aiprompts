@@ -1,6 +1,7 @@
 # main_window.py
 import logging
 
+from PyQt6.QtCore import pyqtSlot
 from PyQt6.QtWidgets import QToolButton, QVBoxLayout, QWidget, QHBoxLayout
 from PyQt6.QtWidgets import QMainWindow, QListWidget, QPushButton, \
     QLineEdit, QLabel, QMessageBox, QComboBox
@@ -146,7 +147,14 @@ class MainWindow(QMainWindow):
     # Метод для отображения диалога настроек
     def show_settings_dialog(self):
         dialog = SettingsDialog(self)
+        dialog.settings_changed.connect(self.settings_changed)
         dialog.exec()
+
+    @pyqtSlot()
+    def settings_changed(self):
+        self.logger.debug("Обнаружены изменения в настройках")
+        self.prompt_manager = PromptManager()
+        self.load_prompts()
 
     def toggle_sort_direction(self):
         """Переключение направления сортировки"""

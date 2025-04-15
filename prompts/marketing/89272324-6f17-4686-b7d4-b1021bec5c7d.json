@@ -3,7 +3,7 @@
   "title": "AR/VR: их роль в маркетинге",
   "version": "1.0.0",
   "status": "draft",
-  "is_local": true,
+  "is_local": false,
   "is_favorite": false,
   "description": "Русский",
   "content": {
@@ -20,11 +20,18 @@
     "marketing"
   ],
   "variables": [],
-  "metadata": {},
+  "metadata": {
+    "author": {
+      "id": "",
+      "name": ""
+    },
+    "source": "",
+    "notes": ""
+  },
   "rating": {
     "score": 0.0,
     "votes": 0
   },
   "created_at": "2025-03-13T07:10:58.447154",
-  "updated_at": "2025-03-13T07:11:02.279795"
+  "updated_at": "2025-04-15T10:25:25.077501"
 }

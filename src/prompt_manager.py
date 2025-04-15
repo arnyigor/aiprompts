@@ -16,7 +16,7 @@ from src.storage import LocalStorage
 class PromptManager:
     prompts: dict[string, Prompt]
 
-    def __init__(self, storage_path="prompts"):
+    def __init__(self, storage_path=None):
         self.logger = logging.getLogger(__name__)
         # Загрузка настроек
         settings = QSettings("YourCompany", "YourApp")

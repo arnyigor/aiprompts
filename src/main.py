@@ -17,8 +17,7 @@ def get_base_path() -> Path:
         if sys.platform == 'darwin':
             # На macOS путь будет Resources/prompts внутри .app бандла
             # Для приложений в /Applications/MyApp.app/Contents/MacOS/
-            bundle_path = Path(sys.executable).parent.parent
-            return bundle_path / 'Resources'
+            return Path(sys.executable).parent
         else:
             # Windows и Linux - папка рядом с exe
             return Path(sys.executable).parent
@@ -54,18 +53,18 @@ def main():
     logger = logging.getLogger(__name__)
 
     try:
-        base_path = get_base_path()
-        prompts_dir = base_path / "prompts"
-        prompts_dir.mkdir(exist_ok=True)
+        # base_path = get_base_path()
+        # prompts_dir = base_path / "prompts"
+        # prompts_dir.mkdir(exist_ok=True)
         
         logger.info(f"Платформа: {sys.platform}")
-        logger.info(f"Путь к папке с промптами: {prompts_dir}")
+        # logger.info(f"Путь к папке с промптами: {prompts_dir}")
 
         # Инициализируем настройки
         settings = Settings()
 
         app = QApplication(sys.argv)
-        prompt_manager = PromptManager(prompts_dir)
+        prompt_manager = PromptManager()
         window = MainWindow(prompt_manager, settings)
         window.show()
         sys.exit(app.exec())

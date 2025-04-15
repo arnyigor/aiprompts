@@ -1,10 +1,10 @@
+from PyQt6.QtCore import QSettings, pyqtSignal
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QHBoxLayout, QPushButton, QMessageBox, QFileDialog
-from PyQt6.QtCore import QSettings
 
 class SettingsDialog(QDialog):
+    settings_changed = pyqtSignal()
     def __init__(self, parent=None):
         super().__init__(parent)
-
         # Инициализация компонентов
         layout = QVBoxLayout()
 
@@ -32,6 +32,11 @@ class SettingsDialog(QDialog):
         settings = QSettings("YourCompany", "YourApp")
         self.prompts_path_edit.setText(settings.value("prompts_path", "."))  # По умолчанию корень проекта
 
+    def accept(self):
+        # Испускаем сигнал об успешном сохранении настроек
+        self.settings_changed.emit()
+        super().accept()
+
     def save_settings(self):
         settings = QSettings("YourCompany", "YourApp")
         settings.setValue("prompts_path", self.prompts_path_edit.text())
@@ -39,6 +44,7 @@ class SettingsDialog(QDialog):
         self.accept()
 
     def browse_prompts_path(self):
-        directory = QFileDialog.getExistingDirectory(self, self.tr("Выберите папку prompts"), self.prompts_path_edit.text())
+        directory = QFileDialog.getExistingDirectory(self, self.tr("Выберите папку prompts"),
+                                                     self.prompts_path_edit.text())
         if directory:
             self.prompts_path_edit.setText(directory)
