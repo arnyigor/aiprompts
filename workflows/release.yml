@@ -1,0 +1,102 @@
+name: Create Release and Build Assets
+
+on:
+  push:
+    tags:
+      - 'v*.*.*' # Запускать только при пуше тегов вида v1.2.3
+
+jobs:
+  create_release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }} # URL для загрузки артефактов
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Токен для аутентификации
+        with:
+          tag_name: ${{ github.ref_name }} # Имя тега, который вызвал workflow
+          release_name: Release ${{ github.ref_name }}
+          body: | # Описание релиза (можно генерировать или брать из файла)
+            New release: ${{ github.ref_name }}
+            See CHANGELOG.md for details.
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }} # Помечать как pre-release, если тег содержит '-' (например, v1.0.0-beta)
+
+  build_assets:
+    name: Build Assets (${{ matrix.os }})
+    needs: create_release # Запускать после создания релиза
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest] # Матрица для сборки под разные ОС
+        # Можно добавить python-version, если нужно
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9' # Укажите вашу версию Python
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt # Установите зависимости
+          pip install pyinstaller # Установите сборщик (PyInstaller как пример)
+
+      # --- Шаг Сборки (Пример для PyInstaller) ---
+      - name: Build with PyInstaller (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          pyinstaller --name myprogram-${{ github.ref_name }}-windows-x64 --onefile --windowed main.py # Пример команды
+          # Возможно, нужно будет упаковать в ZIP вместе с другими файлами
+          Compress-Archive -Path dist/myprogram-${{ github.ref_name }}-windows-x64.exe -DestinationPath myprogram-${{ github.ref_name }}-windows-x64.zip
+        # Настройте команду сборки под ваш проект!
+
+      - name: Build with PyInstaller (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          pyinstaller --name myprogram-${{ github.ref_name }}-macos --onefile --windowed main.py # Пример команды
+          # Создание DMG или ZIP для macOS
+          # hdiutil create -volname "MyProgram ${github.ref_name}" -srcfolder dist/myprogram-${{ github.ref_name }}-macos.app -ov -format UDZO myprogram-${{ github.ref_name }}-macos-$(uname -m).dmg
+          zip -r myprogram-${{ github.ref_name }}-macos-$(uname -m).zip dist/myprogram-${{ github.ref_name }}-macos.app
+        # Настройте команду сборки под ваш проект! Учтите архитектуру (uname -m -> x86_64 или arm64)
+
+      # --- Шаг Загрузки Артефакта ---
+      - name: Upload Release Asset (${{ matrix.os }})
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }} # URL из шага create_release
+          asset_path: ./myprogram-${{ github.ref_name }}-${{ matrix.os == 'windows-latest' && 'windows-x64' || 'macos'}}-$(matrix.os == 'macos-latest' && uname -m || '').${{ matrix.os == 'windows-latest' && 'zip' || 'zip' }} # Путь к собранному файлу (скорректируйте!)
+          asset_name: myprogram-${{ github.ref_name }}-${{ matrix.os == 'windows-latest' && 'windows-x64' || 'macos'}}-$(matrix.os == 'macos-latest' && uname -m || '').${{ matrix.os == 'windows-latest' && 'zip' || 'zip' }} # Имя файла на GitHub (скорректируйте!)
+          asset_content_type: application/zip # Тип контента (application/octet-stream, application/zip, application/x-apple-diskimage)
+
+  # --- Отдельная задача для упаковки и загрузки промптов (можно совместить) ---
+  package_and_upload_prompts:
+    name: Package and Upload Prompts
+    needs: create_release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Archive prompts
+        run: zip -r prompts-${{ github.ref_name }}.zip ./prompts # Укажите правильный путь к папке с промптами
+
+      - name: Upload Prompts Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ./prompts-${{ github.ref_name }}.zip
+          asset_name: prompts-${{ github.ref_name }}.zip
+          asset_content_type: application/zip
+
