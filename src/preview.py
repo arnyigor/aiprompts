@@ -468,7 +468,7 @@ class PromptPreview(QDialog):
                         )
             else:
                 # Для LMStudio
-                dialog = LMStudioDialog(self.lm_api, prompt_text, self, from_preview=True)
+                dialog = LMStudioDialog(prompt_text, self, from_preview=True)
                 if dialog.exec() == QDialog.DialogCode.Accepted:
                     result = dialog.get_result()
                     if result:

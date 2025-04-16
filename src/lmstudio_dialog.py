@@ -1,17 +1,87 @@
 import logging
 
+import lmstudio as lms
 from PyQt6.QtCore import QTimer, QThreadPool, QRunnable, QThread, pyqtSignal, QObject
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QGroupBox,
     QFormLayout, QLineEdit, QSpinBox,
     QDoubleSpinBox, QPushButton, QTextEdit, QMessageBox, QComboBox, QCheckBox, QLabel
 )
+from lmstudio import LlmInstanceInfo, LLM
+
+
+class AsyncWorker(QRunnable):
+    """Асинхронный Worker для выполнения корутин"""
+
+    def __init__(self, parent, handler, logger):
+        super().__init__()
+        self.parent = parent
+        self.handler = handler
+        self.logger = logger
+        self.signals = WorkerSignals()
+
+        # Подключение сигналов к слотам
+        self.signals.update_text.connect(parent.update_output)
+        self.signals.enable_apply.connect(parent.apply_button.setEnabled)
+        self.signals.show_info.connect(parent.show_message_box)
+        self.signals.show_warning.connect(parent.show_message_box)
+        self.signals.show_critical.connect(parent.show_message_box)
+
+    def run(self):
+        try:
+            loop = QThread.currentThread().eventDispatcher().mainLoop()
+            loop.callFromThread(self.handler)
+        except Exception as e:
+            self.logger.error(f"Ошибка в Worker: {str(e)}", exc_info=True)
+            self.signals.show_critical.emit("Ошибка", str(e))
+        finally:
+            self.parent._enable_buttons()
+
+
+class SyncCheckRunnable(QRunnable):
+    def __init__(self, parent, logger):
+        super().__init__()
+        self.parent = parent
+        self.logger = logger
+        # Создаем сигналы для обновления UI
+        self.signals = WorkerSignals()  # Используем тот же класс сигналов
+
+    def run(self):
+        try:
+            llm = lms.llm()
+            response = llm.get_info()  # Синхронный вызов
+            if response:
+                model_name = response.display_name
+                # Отправляем сигналы для обновления
+                self.signals.update_text.emit(f"Текущая модель: {model_name}")
+                self.signals.show_info.emit("Успех",
+                                            f"Соединение с LMStudio установлено\nAPI сервер работает и модель отвечает")
+            else:
+                self.signals.update_text.emit("Текущая модель: не отвечает")
+                self.signals.show_warning.emit("Предупреждение",
+                                               "Соединение установлено, но модель не отвечает\nУбедитесь, что модель загружена в LMStudio")
+        except Exception as e:
+            self.logger.error(f"Ошибка при проверке соединения: {str(e)}", exc_info=True)
+            self.signals.show_critical.emit(
+                "Ошибка",
+                f"Ошибка при проверке соединения: {str(e)}\n"
+                "Убедитесь что:\n"
+                "1. LMStudio запущен\n"
+                "2. Модель загружена\n"
+                "3. API сервер активен (зеленый индикатор)\n"
+                "4. Порт 1234 доступен\n"
+                "5. URL API указан верно"
+            )
 
 
 class WorkerSignals(QObject):
     """Сигналы для Worker"""
     update_text = pyqtSignal(str)
-    enable_apply = pyqtSignal()
+    enable_apply = pyqtSignal(bool)
+    show_info = pyqtSignal(str, str)
+    show_warning = pyqtSignal(str, str)
+    show_critical = pyqtSignal(str, str)
+    finished = pyqtSignal()  # Сигнал завершения работы
 
 
 class Worker(QRunnable):
@@ -23,9 +93,14 @@ class Worker(QRunnable):
         self.handler = handler
         self.logger = logger
         self.signals = WorkerSignals()
+
         # Подключаем сигналы к слотам
-        self.signals.update_text.connect(self.parent.output_field.setPlainText)
-        self.signals.enable_apply.connect(lambda: self.parent.apply_button.setEnabled(True))
+        self.signals.update_text.connect(parent.update_output)
+        self.signals.enable_apply.connect(lambda enabled: parent.apply_button.setEnabled(enabled))
+        self.signals.show_info.connect(parent.show_message_box)
+        self.signals.show_warning.connect(parent.show_message_box)
+        self.signals.show_critical.connect(parent.show_message_box)
+        self.signals.finished.connect(parent._enable_buttons)
 
     def run(self):
         try:
@@ -33,16 +108,16 @@ class Worker(QRunnable):
             self.handler()
         except Exception as e:
             self.logger.error(f"Ошибка в Worker: {str(e)}", exc_info=True)
+            self.signals.show_critical.emit("Ошибка", str(e))
         finally:
-            QTimer.singleShot(0, lambda: self.parent.run_button.setEnabled(True))
-            QTimer.singleShot(0, lambda: self.parent.run_button.setText("Выполнить"))
+            self.signals.finished.emit()
 
 
 class LMStudioDialog(QDialog):
-    def __init__(self, lm_api, prompt_text="", parent=None, from_preview=False):
+    def __init__(self, prompt_text="", parent=None, from_preview=False):
         super().__init__(parent)
+        self.response = None
         self.logger = logging.getLogger(__name__)
-        self.lm_api = lm_api
         self.result = None
         self.current_worker = None
 
@@ -79,7 +154,8 @@ class LMStudioDialog(QDialog):
 
         # Переключатель режима улучшения промптов
         self.improve_mode = QCheckBox("Режим улучшения промптов")
-        self.improve_mode.setChecked(not from_preview)  # Включен по умолчанию только если не из preview
+        self.improve_mode.setChecked(
+            not from_preview)  # Включен по умолчанию только если не из preview
         self.improve_mode.setToolTip(
             "Включите для автоматического улучшения структуры и качества промпта")
         params_layout.addRow(self.improve_mode)
@@ -157,65 +233,68 @@ class LMStudioDialog(QDialog):
 
         self.setLayout(layout)
 
-    def check_connection(self):
-        """Проверяет соединение с LMStudio API"""
+    async def check_connection_async(self) -> None:
+        """
+        Асинхронная проверка соединения с моделью.
+        :return: True, если соединение успешно; иначе False.
+        """
         try:
-            self.lm_api.base_url = self.api_url.text()
-
-            # Отправляем тестовый запрос к API
-            test_messages = [{"role": "user", "content": "test"}]
-            test_params = {
-                "temperature": 0.7,
-                "max_new_tokens": 1,
-                "chat_format": "chatml",
-                "stream": False
-            }
-
-            # Пробуем получить ответ от модели через существующий метод
-            try:
-                # Используем генератор для получения одного ответа
-                response_gen = self.lm_api.query_model(test_messages, **test_params)
-                response = next(response_gen, None)
-
-                if response:
-                    # Получаем имя модели из логов или используем значение по умолчанию
-                    model_name = "Модель активна"
-                    self.model_info.setText(f"Текущая модель: {model_name}")
-                    QMessageBox.information(self, "Успех",
-                                            f"Соединение с LMStudio установлено\n"
-                                            f"API сервер работает и модель отвечает")
-                else:
-                    self.model_info.setText("Текущая модель: не отвечает")
-                    QMessageBox.warning(self, "Предупреждение",
-                                        "Соединение установлено, но модель не отвечает\n"
-                                        "Убедитесь, что модель загружена в LMStudio")
-            except StopIteration:
-                # Если генератор пустой, но ошибки нет - соединение есть
-                self.model_info.setText("Текущая модель: загружается")
-                QMessageBox.information(self, "Успех",
-                                        "Соединение с LMStudio установлено\n"
-                                        "Модель может быть в процессе загрузки")
-
+            llm = lms.llm()
+            self.response: LlmInstanceInfo = await llm.get_info()
+            if self.response:
+                model_name = self.response.display_name
+                self.model_info.setText(f"Текущая модель: {model_name}")
+                QMessageBox.information(
+                    self, "Успех",
+                    f"Соединение с LMStudio установлено\nAPI сервер работает и модель отвечает"
+                )
+            else:
+                self.model_info.setText("Текущая модель: не отвечает")
+                QMessageBox.warning(
+                    self, "Предупреждение",
+                    "Соединение установлено, но модель не отвечает\nУбедитесь, что модель загружена в LMStudio"
+                )
         except Exception as e:
-            self.logger.error(f"Ошибка подключения к LMStudio: {str(e)}", exc_info=True)
-            self.model_info.setText("Текущая модель: ошибка подключения")
-            QMessageBox.critical(self, "Ошибка",
-                                 f"Ошибка при проверке соединения: {str(e)}\n\n"
-                                 "Убедитесь что:\n"
-                                 "1. LMStudio запущен\n"
-                                 "2. Модель загружена\n"
-                                 "3. API сервер активен (зеленый индикатор)\n"
-                                 "4. Порт 1234 доступен\n"
-                                 "5. URL API указан верно")
+            self.logger.error(f"Ошибка при проверке соединения: {str(e)}", exc_info=True,
+                              stack_info=True)
+            QMessageBox.critical(
+                self, "Ошибка",
+                f"Ошибка при проверке соединения: {str(e)}\n"
+                "Убедитесь что:\n"
+                "1. LMStudio запущен\n"
+                "2. Модель загружена\n"
+                "3. API сервер активен (зеленый индикатор)\n"
+                "4. Порт 1234 доступен\n"
+                "5. URL API указан верно"
+            )
+
+    def check_connection(self):
+        worker = SyncCheckRunnable(self, self.logger)
+        # Подключаем сигналы к слотам
+        worker.signals.update_text.connect(self.model_info.setText)
+        worker.signals.show_info.connect(self.show_message_box)
+        worker.signals.show_warning.connect(self.show_message_box)
+        worker.signals.show_critical.connect(self.show_message_box)
+        QThreadPool.globalInstance().start(worker)
+
+    def show_message_box(self, level, title, message):
+        if level == "info":
+            QMessageBox.information(self, title, message)
+        elif level == "warning":
+            QMessageBox.warning(self, title, message)
+        elif level == "critical":
+            QMessageBox.critical(self, title, message)
 
     def update_output(self, text):
-        """Обновляет поле вывода"""
+        """Обновляет поле вывода с автоматической прокруткой вниз"""
         try:
-            if self.current_worker:
-                self.current_worker.signals.update_text.emit(str(text))
-            else:
-                self.logger.warning("current_worker не установлен")
-
+            # Обновляем текст
+            self.output_field.setPlainText(text)
+            
+            # Прокручиваем до конца
+            scrollbar = self.output_field.verticalScrollBar()
+            scrollbar.setValue(scrollbar.maximum())
+            
         except Exception as e:
             self.logger.error(f"Ошибка при обновлении вывода: {str(e)}", exc_info=True)
 
@@ -271,9 +350,6 @@ class LMStudioDialog(QDialog):
 
         # Создаем и запускаем worker
         try:
-            # Обновляем URL API перед запуском
-            self.lm_api.base_url = self.api_url.text()
-
             worker = Worker(
                 parent=self,
                 handler=lambda: self._process_request(enhanced_prompt),
@@ -289,85 +365,100 @@ class LMStudioDialog(QDialog):
 
     def _enable_buttons(self):
         """Включает все кнопки"""
-        self.run_button.setEnabled(True)
-        self.run_button.setText("Выполнить")
-        self.close_button.setEnabled(True)
+        QTimer.singleShot(0, lambda: self.run_button.setEnabled(True))
+        QTimer.singleShot(0, lambda: self.run_button.setText("Выполнить"))
+        QTimer.singleShot(0, lambda: self.close_button.setEnabled(True))
 
     def _process_request(self, prompt_text: str):
-        """Обработка запроса к модели"""
+        """Обработка запроса к модели через LMStudio API"""
         try:
             self.logger.debug("Начало обработки запроса")
 
-            messages = []
-
-            # Добавляем системный промпт, если он указан
+            # Создаем чат и добавляем сообщения
+            chat = lms.Chat()
+            
+            # Добавляем системный промпт, если есть
             system_prompt = self.system_prompt.toPlainText().strip()
             if system_prompt:
-                messages.append({"role": "system", "content": system_prompt})
+                chat.add_system_message(system_prompt)
+                
+            # Добавляем сообщение пользователя
+            chat.add_user_message(prompt_text)
 
-            messages.append({"role": "user", "content": prompt_text})
-
-            params = {
+            # Подготовка параметров запроса
+            config = {
                 "temperature": self.temperature.value(),
-                "max_new_tokens": self.max_tokens.value(),
-                "chat_format": self.chat_format.currentText().lower(),
-                "stop": None  # Отключаем принудительную остановку
+                "maxTokens": self.max_tokens.value(),
+                "format": self.chat_format.currentText().lower()
             }
 
-            self.logger.debug("Получение ответа от модели...")
-            response_generator = self.lm_api.query_model(messages, **params)
-
-            full_response = ""
-            chunk_counter = 0
-            update_frequency = 5  # Обновляем каждые N чанков
-            is_truncated = False  # Флаг обрезания ответа
+            # Получаем модель
+            try:
+                model = lms.llm()
+                model_info = model.get_info()
+                self.logger.debug(f"Отправка запроса к LMStudio с моделью {model_info.display_name}")
+            except Exception as e:
+                raise RuntimeError(f"Ошибка при получении модели: {str(e)}")
+            
+            # Выполняем запрос через LMStudio API
+            full_response = []
+            is_truncated = False
 
             try:
-                for chunk in response_generator:
-                    if chunk:
-                        # Проверяем на специальные токены завершения
-                        if "<|endoftext|>" in chunk or "</s>" in chunk:
-                            is_truncated = True
-                            chunk = chunk.replace("<|endoftext|>", "").replace("</s>", "")
+                # Получаем потоковый ответ
+                prediction_stream = model.respond_stream(
+                    chat,
+                    config=config,
+                    on_message=chat.append  # Автоматически добавляем ответы в историю чата
+                )
 
-                        full_response += chunk
-                        chunk_counter += 1
+                for fragment in prediction_stream:
+                    if not fragment or not fragment.content:
+                        continue
+                        
+                    content = fragment.content
+                    # Проверка на токены завершения
+                    if any(token in content for token in ["</s>", "<|im_end|>", "<|endoftext|>"]):
+                        is_truncated = True
+                        content = content.replace("</s>", "").replace("<|im_end|>", "").replace("<|endoftext|>", "")
 
-                        # Обновляем UI каждые update_frequency чанков
-                        if chunk_counter % update_frequency == 0:
-                            self.update_output(full_response)
-                            QThread.msleep(10)  # Небольшая задержка для обработки UI
+                    full_response.append(content)
+                    # Частичное обновление UI каждые 5 чанков
+                    if len(full_response) % 5 == 0:
+                        current_text = "".join(full_response)
+                        self.current_worker.signals.update_text.emit(current_text)
+                        QThread.msleep(10)  # Небольшая задержка для обработки событий UI
 
-                # Финальное обновление UI
-                if full_response:
-                    self.logger.debug(f"Получен полный ответ длиной {len(full_response)} символов")
-                    self.result = full_response.strip()
-
-                    # Добавляем предупреждение, если ответ был обрезан
-                    if is_truncated:
-                        self.logger.warning("Ответ был обрезан")
-                        self.result += "\n\n[Внимание: ответ был обрезан. Попробуйте увеличить максимальное количество токенов]"
-
-                    self.update_output(self.result)
-
-                    if self.current_worker:
-                        self.current_worker.signals.enable_apply.emit()
-                else:
-                    error_msg = "Не удалось получить ответ от модели"
-                    self.logger.error(error_msg)
-                    self.update_output(error_msg)
+                # Получаем статистику генерации
+                result = prediction_stream.result()
+                self.logger.debug(f"Сгенерировано токенов: {result.stats.predicted_tokens_count}")
+                self.logger.debug(f"Время до первого токена: {result.stats.time_to_first_token_sec} сек")
+                self.logger.debug(f"Причина остановки: {result.stats.stop_reason}")
 
             except Exception as e:
-                self.logger.error(f"Ошибка при получении частей ответа: {str(e)}", exc_info=True)
-                raise
+                raise RuntimeError(f"Ошибка при генерации ответа: {str(e)}")
+
+            # Формирование итогового результата
+            final_text = "".join(full_response).strip()
+            if final_text:
+                if is_truncated:
+                    final_text += "\n\n[Внимание: ответ был обрезан. Увеличьте лимит токенов]"
+                    self.logger.warning("Обнаружен обрезанный ответ")
+
+                self.result = final_text
+                self.current_worker.signals.update_text.emit(final_text)
+                self.current_worker.signals.enable_apply.emit(True)
+            else:
+                raise RuntimeError("Пустой ответ от модели")
 
         except Exception as e:
-            error_msg = str(e)
-            self.logger.error(f"Ошибка в обработке запроса: {error_msg}", exc_info=True)
-            self.update_output(f"Произошла ошибка: {error_msg}")
+            error_msg = f"Ошибка обработки запроса: {str(e)}"
+            self.logger.error(error_msg, exc_info=True)
+            self.current_worker.signals.show_critical.emit("Ошибка", error_msg)
+            self.current_worker.signals.update_text.emit(error_msg)
 
         finally:
-            self._enable_buttons()
+            self.current_worker.signals.finished.emit()
 
     def apply_result(self):
         """Возвращает результат в редактор промптов"""

@@ -1233,7 +1233,7 @@ class PromptEditor(QDialog):
                 QMessageBox.warning(self, "Предупреждение", "Введите промпт")
                 return
 
-            dialog = LMStudioDialog(self.lm_api, user_prompt, self, from_preview=False)
+            dialog = LMStudioDialog(user_prompt, self, from_preview=False)
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 result = dialog.get_result()
                 if result:
@@ -1327,8 +1327,8 @@ class PromptEditor(QDialog):
                 else:
                     # Если категория не найдена, устанавливаем general
                     index = self.category_selector.findData("general")
-                    if index >= 0:
-                        self.category_selector.setCurrentIndex(index)
+                if index >= 0:
+                    self.category_selector.setCurrentIndex(index)
 
             # Совместимые модели
             if hasattr(prompt, 'compatible_models'):
