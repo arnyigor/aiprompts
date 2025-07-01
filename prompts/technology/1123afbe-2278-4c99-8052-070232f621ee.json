@@ -1,0 +1,33 @@
+{
+  "id": "1123afbe-2278-4c99-8052-070232f621ee",
+  "title": "универсальный промпт обхода блокировок",
+  "version": "1.0.0",
+  "status": "active",
+  "is_local": false,
+  "is_favorite": false,
+  "description": "",
+  "content": {
+    "ru": "## 🧩 Универсальный промпт для глубокого анализа\n\n````\nТы уважаемый дипломированный специалист с мировым именем по технологиям сети связи,блокировкам и их обхода\nПредоставьте **обширный и детализированный анализ** по теме:\n\n1. **Современные VPN‑протоколы**\n- Перечислите актуальные: NordWhisper, AmneziaWG, WireGuard, OpenVPN, IKEv2/IPSec, Hysteria2, TUIC, Reality/XTLS, ShadowTLS, AnyTLS.\n- Для каждого: безопасность, скорость, устойчивость к DPI, real‑world use‑cases и ссылки на техническую документацию или обзоры.\n\n2. **Конфигурации и обход блокировок**\n- Обфускация (stealth VPN), port‑hopping, смена портов, использование CDN (Cloudflare Argo, XTLS Reality).\n- Приведите примеры CLI/JSON‑конфигураций (sing‑box, V2Ray/XRay): например chain‑proxy ShadowTLS→Shadowsocks, XUDP, QUIC‑модуль и т.д.\n- Иллюстрации реальных конфигов с указанием параметров.\n\n3. **Обход блокировок в России**\n- Перечислите методы:\n- **AmneziaWG** — «junk packets», обфускация для WireGuard‑гона :contentReference[oaicite:1]{index=1}.\n- **GoodbyeDPI** — манипуляция HTTP‑заголовками, фрагментация пакетов :contentReference[oaicite:2]{index=2}.\n- **Distributed/P2P VPN** — отсутствие IP‑централизации.\n- **Vmess/VLESS + WS/HTTP2 + XUDP** — на базе XRay/sing‑box :contentReference[oaicite:3]{index=3}.\n- **SSH/V2Ray/Socks5 + V2Ray‑обфускация**, серверы в Европе.\n- **Snowflake/Snowstorm**, динамические прокси‑узлы.\n- **Stealth‑протоколы** (Proton Stealth, Astrill, NordWhisper, Warp‑Stealth).\n- **Telegram‑боты** (GenVPN, Kovcheg, AmneziaFree) — генерируют конфиги автоматически :contentReference[oaicite:4]{index=4}.\n- **QUIC + Encrypted Client Hello** + Outline SDK.\n\n4. **Поддержка и настройки для клиентов**\n- **NekoBox/Nekoray**\n- Ядро: sing‑box, поддержка множества протоколов (SOCKS, Shadowsocks, VMess, VLESS, Trojan, AnyTLS, ShadowTLS, TUIC, Hysteria, WireGuard) :contentReference[oaicite:5]{index=5}.\n- Пример JSON‑конфига WARP (WireGuard‑транспорт):\n```json\n{\n\"interface_name\":\"WARP\",\n\"local_address\":[\"172.16.0.2/32\"],\n\"mtu\":1408,\n\"peer_public_key\":\"…\",\n\"private_key\":\"…\",\n\"server\":\"engage.cloudflareclient.com\",\n\"server_port\":2408,\n\"system_interface\":false,\n\"tag\":\"proxy\",\"type\":\"wireguard\"\n}\n```\n- Настройка XUDP в Packet encoding для поддержки UDP‑трафика :contentReference[oaicite:6]{index=6}.\n- **Hiddify/Husi/Hidify**\n- Клиент Flutter, полная интеграция sing‑box, TUN‑режим, авто‑пинг, режим split‑tunnel :contentReference[oaicite:7]{index=7}.\n- **SingBox (сервер)**\n- Использование скрипта `sing-box.sh`, конфигурация Reality, Hysteria2, TUIC, ShadowTLS, chain‑proxy :contentReference[oaicite:8]{index=8}.\n- **Karing**\n- Аналогичные JSON-конфиги sing‑box (как у nekobox).\n- **Warp/Cloudflare WireGuard**\n- Проксирование через Warp (CDN‑роли), split‑route, эскейп из DPI :contentReference[oaicite:9]{index=9}.\n\n5. **Интеграция обхода в программы и SDK**\n- Использование Outline SDK, внедрение QUIC+ECH, chain proxy в приложения.\n- Автоматизация через Telegram‑ботов или скрипты.\n\n6. **Сравнительная таблица**\n- Протокол/метод, клиент, DPI‑стойкость, сложность настройки, применение (стримы, обход РКН, P2P‑VPN). Включить рекомендации по каждому кейсу.\n\n7. **Источники**\n- Обязательно 7+ авторитетных ссылок: GitHub (NekoBox, sing‑box, AmneziaVPN, Hiddify), Habr‑руководства, Cybernews, Xeovo Hub, официальная документация AmneziaWG, Wikipedia, Reddit‑гайд, EDIS Global, SpaceCore и др.\n````\n",
+    "en": ""
+  },
+  "compatible_models": [],
+  "category": "technology",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {
+    "author": {
+      "id": "",
+      "name": ""
+    },
+    "source": "",
+    "notes": ""
+  },
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "created_at": "2025-07-01T06:53:05.041968",
+  "updated_at": "2025-07-01T06:53:51.794584"
+}

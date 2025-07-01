@@ -1,13 +1,13 @@
 import logging
 
-import lmstudio as lms
+# import lmstudio as lms
 from PyQt6.QtCore import QTimer, QThreadPool, QRunnable, QThread, pyqtSignal, QObject
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QGroupBox,
     QFormLayout, QLineEdit, QSpinBox,
     QDoubleSpinBox, QPushButton, QTextEdit, QMessageBox, QComboBox, QCheckBox, QLabel
 )
-from lmstudio import LlmInstanceInfo, LLM
+# from lmstudio import LlmInstanceInfo, LLM
 
 
 class AsyncWorker(QRunnable):
@@ -48,7 +48,7 @@ class SyncCheckRunnable(QRunnable):
 
     def run(self):
         try:
-            llm = lms.llm()
+            llm =None # lms.llm()
             response = llm.get_info()  # Синхронный вызов
             if response:
                 model_name = response.display_name
@@ -239,8 +239,8 @@ class LMStudioDialog(QDialog):
         :return: True, если соединение успешно; иначе False.
         """
         try:
-            llm = lms.llm()
-            self.response: LlmInstanceInfo = await llm.get_info()
+            llm = None # lms.llm()
+            self.response = await llm.get_info()
             if self.response:
                 model_name = self.response.display_name
                 self.model_info.setText(f"Текущая модель: {model_name}")
@@ -375,7 +375,7 @@ class LMStudioDialog(QDialog):
             self.logger.debug("Начало обработки запроса")
 
             # Создаем чат и добавляем сообщения
-            chat = lms.Chat()
+            chat = None # lms.Chat()
             
             # Добавляем системный промпт, если есть
             system_prompt = self.system_prompt.toPlainText().strip()
@@ -394,7 +394,7 @@ class LMStudioDialog(QDialog):
 
             # Получаем модель
             try:
-                model = lms.llm()
+                model = None # lms.llm()
                 model_info = model.get_info()
                 self.logger.debug(f"Отправка запроса к LMStudio с моделью {model_info.display_name}")
             except Exception as e:

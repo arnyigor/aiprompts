@@ -1,4 +1,6 @@
 # preview.py
+import sys
+
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QGuiApplication
 from PyQt6.QtWidgets import (QDialog, QTextEdit, QVBoxLayout, QLabel,
@@ -467,25 +469,26 @@ class PromptPreview(QDialog):
                             "Получен пустой результат" if lang == "ru" else "Empty result received"
                         )
             else:
-                # Для LMStudio
-                dialog = LMStudioDialog(prompt_text, self, from_preview=True)
-                if dialog.exec() == QDialog.DialogCode.Accepted:
-                    result = dialog.get_result()
-                    if result:
-                        # Сохраняем текущее состояние в историю
-                        history = self.ru_history if lang == "ru" else self.en_history
-                        history.append(text_edit.toPlainText())
-                        # Обновляем текст
-                        text_edit.setPlainText(result)
-                        self.show_toast(
-                            "Результат получен!" if lang == "ru" else "Result received!"
-                        )
-                    else:
-                        QMessageBox.warning(
-                            self,
-                            "Предупреждение" if lang == "ru" else "Warning",
-                            "Получен пустой результат" if lang == "ru" else "Empty result received"
-                        )
+                if sys.platform == 'darwin':
+                    # Для LMStudio
+                    dialog = LMStudioDialog(prompt_text, self, from_preview=True)
+                    if dialog.exec() == QDialog.DialogCode.Accepted:
+                        result = dialog.get_result()
+                        if result:
+                            # Сохраняем текущее состояние в историю
+                            history = self.ru_history if lang == "ru" else self.en_history
+                            history.append(text_edit.toPlainText())
+                            # Обновляем текст
+                            text_edit.setPlainText(result)
+                            self.show_toast(
+                                "Результат получен!" if lang == "ru" else "Result received!"
+                            )
+                        else:
+                            QMessageBox.warning(
+                                self,
+                                "Предупреждение" if lang == "ru" else "Warning",
+                                "Получен пустой результат" if lang == "ru" else "Empty result received"
+                            )
 
         except Exception as e:
             QMessageBox.critical(

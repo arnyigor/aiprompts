@@ -1,5 +1,6 @@
 import logging
 import re
+import sys
 from typing import List
 
 from PyQt6.QtCore import Qt
@@ -1162,7 +1163,8 @@ class PromptEditor(QDialog):
 
         # Кнопка LMStudio
         en_lm_btn = QPushButton("Execute with LMStudio")
-        en_lm_btn.clicked.connect(lambda: self.show_lmstudio_dialog("en"))
+        if  sys.platform != 'darwin':
+            en_lm_btn.clicked.connect(lambda: self.show_lmstudio_dialog("en"))
         if not self.lm_api:
             en_lm_btn.setEnabled(False)
             en_lm_btn.setToolTip("LMStudio API is not available")
