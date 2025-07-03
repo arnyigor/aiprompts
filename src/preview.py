@@ -7,12 +7,12 @@ from PyQt6.QtWidgets import (QDialog, QTextEdit, QVBoxLayout, QLabel,
                              QPushButton, QHBoxLayout, QMessageBox, QWidget, QTabWidget,
                              QLineEdit, QFormLayout, QGroupBox)
 
+from src.MarkdownPreviewDialog import MarkdownPreviewDialog
 from src.huggingface_api import HuggingFaceAPI
 from src.huggingface_dialog import HuggingFaceDialog
 from src.lmstudio_api import LMStudioInference
 from src.lmstudio_dialog import LMStudioDialog
 from src.prompt_editor import ExampleSelectionDialog
-
 
 class PromptPreview(QDialog):
     def __init__(self, prompt, settings):
@@ -23,22 +23,24 @@ class PromptPreview(QDialog):
         self.ru_history = []  # История изменений для русского текста
         self.en_history = []  # История изменений для английского текста
 
-        # Инициализация API клиентов
-        try:
-            self.hf_api = HuggingFaceAPI(settings=self.settings)
-        except Exception as e:
-            self.hf_api = None
-
-        try:
-            self.lm_api = LMStudioInference()
-        except Exception as e:
-            self.lm_api = None
+        self._init_apis()
 
         self.setWindowTitle("Предпросмотр промпта")
         self.setGeometry(300, 300, 800, 600)
 
         self.init_ui()
         self.load_data()
+
+    def _init_apis(self):
+        # Инициализация API клиентов
+        try:
+            self.hf_api = HuggingFaceAPI(settings=self.settings)
+        except Exception as e:
+            self.hf_api = None
+        try:
+            self.lm_api = LMStudioInference()
+        except Exception as e:
+            self.lm_api = None
 
     def init_ui(self):
         layout = QVBoxLayout()
@@ -147,6 +149,14 @@ class PromptPreview(QDialog):
         ru_layout.addWidget(self.ru_content_edit)
 
         ru_buttons = QHBoxLayout()
+
+        # <<< ДОБАВЛЕНО: Кнопка просмотра Markdown для RU
+        ru_preview_btn = QPushButton("👁️ Просмотр")
+        ru_preview_btn.setToolTip("Просмотреть как Markdown")
+        ru_preview_btn.clicked.connect(lambda: self.show_markdown_preview("ru"))
+        ru_buttons.addWidget(ru_preview_btn)
+        ru_buttons.addStretch() # Добавим растяжение, чтобы остальные кнопки были справа
+
         ru_copy_btn = QPushButton("Копировать RU")
         ru_copy_btn.clicked.connect(lambda: self.copy_content("ru"))
         ru_undo_btn = QPushButton("↩ Отменить")
@@ -185,6 +195,14 @@ class PromptPreview(QDialog):
         en_layout.addWidget(self.en_content_edit)
 
         en_buttons = QHBoxLayout()
+
+        # <<< ДОБАВЛЕНО: Кнопка просмотра Markdown для EN
+        en_preview_btn = QPushButton("👁️ View")
+        en_preview_btn.setToolTip("View as Markdown")
+        en_preview_btn.clicked.connect(lambda: self.show_markdown_preview("en"))
+        en_buttons.addWidget(en_preview_btn)
+        en_buttons.addStretch() # Добавим растяжение
+
         en_copy_btn = QPushButton("Copy EN")
         en_copy_btn.clicked.connect(lambda: self.copy_content("en"))
         en_undo_btn = QPushButton("↩ Undo")
@@ -496,6 +514,29 @@ class PromptPreview(QDialog):
                 "Ошибка" if lang == "ru" else "Error",
                 f"Не удалось выполнить промпт: {str(e)}" if lang == "ru" else f"Failed to execute prompt: {str(e)}"
             )
+
+    # <<< ДОБАВЛЕНО: Новый метод для показа диалога просмотра
+    def show_markdown_preview(self, lang: str):
+        """
+        Открывает диалог для просмотра контента в виде отрендеренного Markdown.
+
+        Args:
+            lang (str): Язык ('ru' или 'en'), для которого нужно показать просмотр.
+        """
+        if lang == "ru":
+            text_edit = self.ru_content_edit
+            title = f"Просмотр: {self.prompt.title} (RU)"
+        elif lang == "en":
+            text_edit = self.en_content_edit
+            title = f"Preview: {self.prompt.title} (EN)"
+        else:
+            return  # Неизвестный язык
+
+        markdown_text = text_edit.toPlainText()
+
+        # Создаем и показываем наш новый диалог
+        dialog = MarkdownPreviewDialog(markdown_text, window_title=title, parent=self)
+        dialog.exec()
 
     def add_huggingface_key(self):
         """Добавление или обновление API ключа Hugging Face"""
