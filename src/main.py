@@ -1,7 +1,7 @@
 # main.py
 import logging
-import sys
 import os
+import sys
 from pathlib import Path
 
 from PyQt6.QtWidgets import QApplication
@@ -38,18 +38,21 @@ def setup_logging():
         # На других платформах рядом с приложением
         log_path = Path('app.log')
 
+    # Создаем обработчик для файла с явным указанием кодировки UTF-8
+    file_handler = logging.FileHandler(str(log_path), encoding='utf-8')
+
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         handlers=[
             logging.StreamHandler(sys.stdout),
-            logging.FileHandler(str(log_path))
+            file_handler
         ]
     )
 
 
 def main():
-    setup_logging()
+    # setup_logging()
     logger = logging.getLogger(__name__)
 
     try:
