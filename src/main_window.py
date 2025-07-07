@@ -33,8 +33,15 @@ class MainWindow(QMainWindow):
         self.favorite_filter.setToolTip("Показать избранное")
 
         # Сортировка
+        # Список вариантов сортировки правильной очередностью
+        self.SORT_OPTIONS = [
+            "Сначала избранное",
+            "По названию",
+            "По дате создания",
+            "По категории"
+        ]
         self.sort_combo = QComboBox()
-        self.sort_combo.addItems(["По названию", "По дате создания", "По категории"])
+        self.sort_combo.addItems(self.SORT_OPTIONS)
         self.sort_direction = QPushButton("↓")
         self.sort_direction.setFixedWidth(30)
         self.sort_direction.clicked.connect(self.toggle_sort_direction)
@@ -314,12 +321,13 @@ class MainWindow(QMainWindow):
             sort_type = self.sort_combo.currentText()
             reverse = not self.sort_ascending
 
-            if sort_type == "По названию":
-                filtered_prompts.sort(key=lambda x: x.title.lower(), reverse=reverse)
-            elif sort_type == "По дате создания":
-                filtered_prompts.sort(key=lambda x: x.created_at, reverse=reverse)
-            elif sort_type == "По категории":
-                filtered_prompts.sort(key=lambda x: x.category.lower(), reverse=reverse)
+            sort_strategies = {
+                self.SORT_OPTIONS[0]: lambda x: (not x.is_favorite, x.title.lower()), #Сначала избранное
+                self.SORT_OPTIONS[1]: lambda x: x.title.lower(),      # По названию
+                self.SORT_OPTIONS[2]: lambda x: x.created_at,         # По дате создания
+                self.SORT_OPTIONS[3]: lambda x: x.category.lower()    # По категории
+            }
+            filtered_prompts.sort(key=sort_strategies[sort_type], reverse=reverse)
 
             # Обновляем список
             self.prompt_list.clear()

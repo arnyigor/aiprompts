@@ -149,8 +149,6 @@ class PromptPreview(QDialog):
         ru_layout.addWidget(self.ru_content_edit)
 
         ru_buttons = QHBoxLayout()
-
-        # <<< ДОБАВЛЕНО: Кнопка просмотра Markdown для RU
         ru_preview_btn = QPushButton("👁️ Просмотр")
         ru_preview_btn.setToolTip("Просмотреть как Markdown")
         ru_preview_btn.clicked.connect(lambda: self.show_markdown_preview("ru"))
@@ -196,7 +194,6 @@ class PromptPreview(QDialog):
 
         en_buttons = QHBoxLayout()
 
-        # <<< ДОБАВЛЕНО: Кнопка просмотра Markdown для EN
         en_preview_btn = QPushButton("👁️ View")
         en_preview_btn.setToolTip("View as Markdown")
         en_preview_btn.clicked.connect(lambda: self.show_markdown_preview("en"))
@@ -515,7 +512,6 @@ class PromptPreview(QDialog):
                 f"Не удалось выполнить промпт: {str(e)}" if lang == "ru" else f"Failed to execute prompt: {str(e)}"
             )
 
-    # <<< ДОБАВЛЕНО: Новый метод для показа диалога просмотра
     def show_markdown_preview(self, lang: str):
         """
         Открывает диалог для просмотра контента в виде отрендеренного Markdown.

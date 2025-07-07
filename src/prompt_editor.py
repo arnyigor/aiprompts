@@ -21,6 +21,7 @@ from PyQt6.QtWidgets import (
     QMenu
 )
 
+from src.MarkdownPreviewDialog import MarkdownPreviewDialog
 from src.category_manager import CategoryManager
 from src.huggingface_api import HuggingFaceAPI
 from src.huggingface_dialog import HuggingFaceDialog
@@ -770,6 +771,9 @@ class PromptEditor(QDialog):
 
         # Базовые поля
         form_layout = QFormLayout()
+        # Устанавливаем политику роста полей, чтобы они растягивались по ширине.
+        # Это сделает поведение на macOS таким же, как на Windows.
+        form_layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
         form_layout.addRow("Название:", self.title_field)
         form_layout.addRow("Версия:", self.version_field)
         form_layout.addRow("Статус:", self.status_selector)
@@ -1082,6 +1086,10 @@ class PromptEditor(QDialog):
         # Кнопки для русской версии
         ru_buttons = QHBoxLayout()
 
+        ru_preview_btn = QPushButton("👁️ Просмотр")
+        ru_preview_btn.setToolTip("Просмотреть как Markdown")
+        ru_preview_btn.clicked.connect(lambda: self.show_markdown_preview("ru"))
+
         # Кнопки Hugging Face
         if self.hf_api:
             ru_hf_btn = QPushButton("Выполнить через Hugging Face")
@@ -1103,6 +1111,7 @@ class PromptEditor(QDialog):
         ru_clear_btn = QPushButton("Очистить")
         ru_clear_btn.clicked.connect(lambda: self.clear_content("ru"))
 
+        ru_buttons.addWidget(ru_preview_btn)
         ru_buttons.addWidget(ru_hf_btn)
         ru_buttons.addWidget(ru_lm_btn)
         ru_buttons.addWidget(ru_copy_btn)
@@ -1152,6 +1161,10 @@ class PromptEditor(QDialog):
         # Кнопки для английской версии
         en_buttons = QHBoxLayout()
 
+        en_preview_btn = QPushButton("👁️ View")
+        en_preview_btn.setToolTip("View as Markdown")
+        en_preview_btn.clicked.connect(lambda: self.show_markdown_preview("en"))
+
         # Кнопки Hugging Face
         if self.hf_api:
             en_hf_btn = QPushButton("Execute with Hugging Face")
@@ -1174,6 +1187,7 @@ class PromptEditor(QDialog):
         en_clear_btn = QPushButton("Clear")
         en_clear_btn.clicked.connect(lambda: self.clear_content("en"))
 
+        en_buttons.addWidget(en_preview_btn)
         en_buttons.addWidget(en_hf_btn)
         en_buttons.addWidget(en_lm_btn)
         en_buttons.addWidget(en_copy_btn)
@@ -1188,6 +1202,27 @@ class PromptEditor(QDialog):
         self.content_tabs.addTab(ru_container, "RU контент")
         self.content_tabs.addTab(en_container, "EN контент")
 
+    def show_markdown_preview(self, lang: str):
+        """
+        Открывает диалог для просмотра контента в виде отрендеренного Markdown.
+
+        Args:
+            lang (str): Язык ('ru' или 'en'), для которого нужно показать просмотр.
+        """
+        if lang == "ru":
+            text_edit = self.ru_user_prompt
+            title = f"Просмотр: {self.title_field.text()} (RU)"
+        elif lang == "en":
+            text_edit = self.en_user_prompt
+            title = f"Preview: {self.title_field.text()} (EN)"
+        else:
+            return  # Неизвестный язык
+
+        markdown_text = text_edit.toPlainText()
+
+        # Создаем и показываем наш новый диалог
+        dialog = MarkdownPreviewDialog(markdown_text, window_title=title, parent=self)
+        dialog.exec()
     def show_huggingface_dialog(self, language):
         """Показывает диалог Hugging Face и обрабатывает результат"""
         try:
