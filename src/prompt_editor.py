@@ -2,7 +2,7 @@ import logging
 import re
 import sys
 from typing import List
-
+from PyQt6.QtCore import QMimeData
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import (
@@ -31,6 +31,27 @@ from src.model_dialog import ModelConfigDialog
 from src.models import Variable
 from src.prompt_manager import PromptManager
 from src.llm_settings import Settings
+
+
+class MarkdownTextEdit(QTextEdit):
+    """
+    Кастомный QTextEdit, который при вставке текста из буфера обмена
+    принудительно использует его текстовое представление (plain text).
+
+    Это решает проблему потери переносов строк и символов Markdown
+    при вставке отформатированного текста из других источников (например, веб-страниц).
+    """
+    def insertFromMimeData(self, source: QMimeData) -> None:
+        """
+        Переопределенный обработчик вставки.
+
+        Args:
+            source: Данные из буфера обмена (MIME data).
+        """
+        # Проверяем, есть ли в буфере обмена текстовые данные
+        if source.hasText():
+            # Вставляем текст как есть, игнорируя HTML и другие форматы
+            self.textCursor().insertText(source.text())
 
 
 class JsonPreviewDialog(QDialog):
@@ -87,7 +108,7 @@ class VariableDialog(QDialog):
 
         # Описание
         description_label = QLabel("Описание:")
-        self.description_field = QTextEdit()
+        self.description_field = MarkdownTextEdit()
         self.description_field.setPlainText(variable_text)
         self.description_field.setMaximumHeight(100)
 
@@ -219,18 +240,18 @@ class PromptEditor(QDialog):
         self.title_field = QLineEdit()
         self.version_field = QLineEdit()
         self.status_selector = QComboBox()
-        self.description_field = QTextEdit()
+        self.description_field = MarkdownTextEdit()
         self.is_local_checkbox = QCheckBox("Локальный промпт")
         self.is_favorite_checkbox = QCheckBox("Добавить в избранное")
         self.rating_score = QDoubleSpinBox()
         self.rating_votes = QSpinBox()
         self.content_tabs = QTabWidget()
-        self.content_ru = QTextEdit()
-        self.content_en = QTextEdit()
-        self.ru_system_prompt = QTextEdit()
-        self.ru_user_prompt = QTextEdit()
-        self.en_system_prompt = QTextEdit()
-        self.en_user_prompt = QTextEdit()
+        self.content_ru = MarkdownTextEdit()
+        self.content_en = MarkdownTextEdit()
+        self.ru_system_prompt = MarkdownTextEdit()
+        self.ru_user_prompt = MarkdownTextEdit()
+        self.en_system_prompt = MarkdownTextEdit()
+        self.en_user_prompt = MarkdownTextEdit()
         self.result_ru = QTextEdit()
         self.result_en = QTextEdit()
         self.category_selector = QComboBox()
@@ -244,7 +265,7 @@ class PromptEditor(QDialog):
         self.author_id_field = QLineEdit()
         self.author_name_field = QLineEdit()
         self.source_field = QLineEdit()
-        self.notes_field = QTextEdit()
+        self.notes_field = MarkdownTextEdit()
         self.save_btn = QPushButton("Сохранить")
         self.save_btn.clicked.connect(self.save_prompt)
         # Настройка базовых полей
@@ -1069,7 +1090,7 @@ class PromptEditor(QDialog):
         ru_prompt_layout.addLayout(ru_var_buttons)
 
         # Поле ввода пользовательского промпта
-        self.ru_user_prompt = QTextEdit()
+        self.ru_user_prompt = MarkdownTextEdit()
         self.ru_user_prompt.setPlaceholderText("Введите промпт на русском...")
         ru_prompt_layout.addWidget(self.ru_user_prompt)
         ru_prompt_group.setLayout(ru_prompt_layout)
@@ -1144,7 +1165,7 @@ class PromptEditor(QDialog):
         en_prompt_layout.addLayout(en_var_buttons)
 
         # Поле ввода пользовательского промпта
-        self.en_user_prompt = QTextEdit()
+        self.en_user_prompt = MarkdownTextEdit()
         self.en_user_prompt.setPlaceholderText("Enter your prompt...")
         en_prompt_layout.addWidget(self.en_user_prompt)
         en_prompt_group.setLayout(en_prompt_layout)
