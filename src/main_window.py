@@ -2,16 +2,26 @@
 import logging
 
 from PyQt6.QtCore import pyqtSlot
-from PyQt6.QtWidgets import QToolButton, QVBoxLayout, QWidget, QHBoxLayout
 from PyQt6.QtWidgets import QMainWindow, QListWidget, QPushButton, \
     QLineEdit, QLabel, QMessageBox, QComboBox
+from PyQt6.QtWidgets import QVBoxLayout, QWidget, QHBoxLayout
 
 from src.api_keys_dialog import ApiKeysDialog
+from src.feedback_dialog import FeedbackDialog
+from src.feedback_sender import send_feedback
 from src.llm_settings import Settings
 from src.preview import PromptPreview
 from src.prompt_editor import PromptEditor
 from src.prompt_manager import PromptManager
 from src.settings_window import SettingsDialog
+
+APP_INFO = {
+    "name": "Prompt Manager Python",
+    "id": "prompt-manager-python",
+    "version": "1.0.0",
+    "packagename": "com.arny.promptmanager"
+}
+
 
 class MainWindow(QMainWindow):
     def __init__(self, prompt_manager: PromptManager, settings: Settings):
@@ -19,13 +29,14 @@ class MainWindow(QMainWindow):
         self.logger = logging.getLogger(__name__)
         self.prompt_manager = prompt_manager
         self.settings = settings
+        self.app_info = APP_INFO
         self.setWindowTitle("Prompt Manager")
         self.setGeometry(100, 100, 800, 600)
 
         # Фильтры
         self.lang_filter = QComboBox()
         self.lang_filter.addItems(["Все", "RU", "EN"])
-        
+
         # Фильтр избранного
         self.favorite_filter = QPushButton("⭐")
         self.favorite_filter.setCheckable(True)
@@ -61,6 +72,9 @@ class MainWindow(QMainWindow):
         self.settings_button.setToolTip("Настройки")
         self.settings_button.adjustSize()
         self.settings_button.clicked.connect(self.show_settings_dialog)
+
+        self.feedback_button = QPushButton("✉️ Обратная связь")
+        self.feedback_button.setToolTip("Отправить отзыв или сообщить о проблеме")
 
         # Фильтр по категориям
         self.category_filter = QComboBox()
@@ -125,8 +139,9 @@ class MainWindow(QMainWindow):
         button_layout.addWidget(self.preview_button)
         button_layout.addWidget(self.edit_button)
         button_layout.addWidget(self.delete_button)
-        button_layout.addWidget(self.settings_button)
         button_layout.addStretch()
+        button_layout.addWidget(self.feedback_button)
+        button_layout.addWidget(self.settings_button)
 
         main_layout.addLayout(left_layout, 4)
         main_layout.addLayout(button_layout, 1)
@@ -147,9 +162,42 @@ class MainWindow(QMainWindow):
         self.sort_combo.currentTextChanged.connect(self.filter_prompts)
         self.prompt_list.itemDoubleClicked.connect(self.show_action_dialog)
         self.preview_button.clicked.connect(self.preview_selected)
+        self.feedback_button.clicked.connect(self.show_feedback_dialog)
 
         # Load initial data
         self.load_prompts()
+
+    @pyqtSlot()
+    def show_feedback_dialog(self):
+        """
+        Открывает диалог для отправки обратной связи.
+        """
+        dialog = FeedbackDialog(self)
+        # exec() - модальный вызов, блокирует основное окно
+        if dialog.exec():
+            feedback_text = dialog.get_feedback_text()
+            if not feedback_text:
+                QMessageBox.warning(self, "Внимание", "Сообщение не может быть пустым.")
+                return
+
+            # Отправляем сообщение
+            # Внимание: эта операция может "заморозить" UI, если сеть медленная.
+            # Для продакшн-приложений лучше выполнять в отдельном потоке.
+            success = send_feedback(feedback_text, self.app_info)
+
+            if success:
+                QMessageBox.information(
+                    self,
+                    "Спасибо!",
+                    "Ваше сообщение успешно отправлено. Спасибо за обратную связь!"
+                )
+            else:
+                QMessageBox.critical(
+                    self,
+                    "Ошибка",
+                    "Не удалось отправить сообщение. "
+                    "Пожалуйста, проверьте ваше интернет-соединение и попробуйте позже."
+                )
 
     # Метод для отображения диалога настроек
     def show_settings_dialog(self):
@@ -322,10 +370,10 @@ class MainWindow(QMainWindow):
             reverse = not self.sort_ascending
 
             sort_strategies = {
-                self.SORT_OPTIONS[0]: lambda x: (not x.is_favorite, x.title.lower()), #Сначала избранное
-                self.SORT_OPTIONS[1]: lambda x: x.title.lower(),      # По названию
-                self.SORT_OPTIONS[2]: lambda x: x.created_at,         # По дате создания
-                self.SORT_OPTIONS[3]: lambda x: x.category.lower()    # По категории
+                self.SORT_OPTIONS[0]: lambda x: (not x.is_favorite, x.title.lower()),  # Сначала избранное
+                self.SORT_OPTIONS[1]: lambda x: x.title.lower(),  # По названию
+                self.SORT_OPTIONS[2]: lambda x: x.created_at,  # По дате создания
+                self.SORT_OPTIONS[3]: lambda x: x.category.lower()  # По категории
             }
             filtered_prompts.sort(key=sort_strategies[sort_type], reverse=reverse)
 

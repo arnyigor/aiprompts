@@ -36,6 +36,26 @@ class HFModelManager:
         if not models:
             # Добавляем модели по умолчанию
             models = {
+                "Qwen2.5-7B-Instruct": {
+                    "id": "Qwen/Qwen2.5-7B-Instruct",
+                    "description": "Флагманская модель от Alibaba. Отличное следование инструкциям, поддержка множества языков (включая русский) и большой контекст. Идеальный баланс мощности и скорости.",
+                    "parameters": {
+                        "max_new_tokens": 4096,  # Модель поддерживает до 128k, но 4096 - хороший старт
+                        "temperature": 0.7,
+                        "top_p": 0.95,
+                        "repetition_penalty": 1.15 # Qwen модели хорошо реагируют на чуть более высокий penalty
+                    }
+                },
+                "Qwen2.5-3B-Instruct": {
+                    "id": "Qwen/Qwen2.5-3B-Instruct",
+                    "description": "Более быстрая и компактная версия 7B. Отлично подходит для задач, где важна скорость ответа или для пакетной обработки. Высокая надежность запуска через API.",
+                    "parameters": {
+                        "max_new_tokens": 4096,
+                        "temperature": 0.7,
+                        "top_p": 0.95,
+                        "repetition_penalty": 1.15
+                    }
+                },
                 "Mistral-7B-Instruct": {
                     "id": "mistralai/Mistral-7B-Instruct-v0.2",
                     "description": "Мощная модель с хорошим балансом качества и производительности. Отлично подходит для русского языка.",
