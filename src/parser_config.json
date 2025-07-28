@@ -183,7 +183,7 @@
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "name": "10 качественных промптов для ChatGPT",
       "url": "https://pikabu.ru/story/10_kachestvennyikh_promptov_dlya_chatgpt_kotoryie_deystvitelno_pomogayut_v_rabote_10836515",
       "parser_config": {
@@ -212,6 +212,105 @@
         },
         "pagination": {
           "type": "none"
+        }
+      }
+    },
+    {
+      "enabled": true,
+      "name": "Лемана Про",
+      "url": "https://chelyabinsk.lemanapro.ru/catalogue/plitka-dlya-vannoy-komnaty/",
+      "parser_config": {
+        "container": {
+          "selector": ".products-list .product-item",
+          "type": "list"
+        },
+        "fields": [
+          {
+            "name": "product_name",
+            "selector": ".product-title",
+            "type": "text",
+            "required": true
+          },
+          {
+            "name": "price",
+            "selector": ".price-value",
+            "type": "text",
+            "regex": "\\d+(?:\\.\\d+)?"
+          },
+          {
+            "name": "rating",
+            "selector": ".rating-stars",
+            "type": "text",
+            "regex": "\\d+\\."
+          },
+          {
+            "name": "details_link",
+            "selector": "a.product-link",
+            "type": "href",
+            "attr": "href"
+          }
+        ],
+        "pagination": {
+          "type": "url_param",
+          "param": "page",
+          "max_pages": 5
+        },
+        "details": {
+          "enabled": true,
+          "follow_link": "details_link",
+          "fields": [
+            {
+              "name": "full_description",
+              "selector": "#product-description",
+              "type": "text"
+            },
+            {
+              "name": "specifications",
+              "selector": ".tech-specs-table td",
+              "type": "list",
+              "join": "\n"
+            },
+            {
+              "name": "main_image",
+              "selector": ".product-main-image img",
+              "type": "src",
+              "attr": "src"
+            }
+          ],
+          "nested_lists": [
+            {
+              "name": "gallery",
+              "selector": ".product-gallery .gallery-item img",
+              "type": "src",
+              "attr": "src"
+            },
+            {
+              "name": "reviews",
+              "selector": ".review-item",
+              "fields": [
+                {
+                  "name": "author",
+                  "selector": ".review-author",
+                  "type": "text"
+                },
+                {
+                  "name": "text",
+                  "selector": ".review-text",
+                  "type": "text"
+                },
+                {
+                  "name": "rating",
+                  "selector": ".review-rating",
+                  "type": "text"
+                },
+                {
+                  "name": "date",
+                  "selector": ".review-date",
+                  "type": "text"
+                }
+              ]
+            }
+          ]
         }
       }
     }
