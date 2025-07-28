@@ -87,59 +87,44 @@ class HuggingFaceDialog(QDialog):
         """Настройка интерфейса"""
         layout = QVBoxLayout()
 
-        # Группа API ключа
+        # ... (Код для 'api_group' и 'model_group' остается без изменений) ...
         api_group = QGroupBox("API ключ")
         api_layout = QHBoxLayout()
-
         self.api_key_label = QLabel()
         self.update_api_key_label()
         api_layout.addWidget(self.api_key_label)
-
         self.api_key_button = QPushButton("⚙️")
         self.api_key_button.setFixedWidth(30)
         self.api_key_button.setToolTip("Управление API ключами")
         self.api_key_button.clicked.connect(self.show_api_keys_dialog)
         api_layout.addWidget(self.api_key_button)
-
         api_group.setLayout(api_layout)
         layout.addWidget(api_group)
 
-        # Группа выбора модели
         model_group = QGroupBox("Модель")
         model_layout = QVBoxLayout()
-
-        # Комбобокс и кнопки
         model_controls = QHBoxLayout()
-
         self.model_combo = QComboBox()
         self.model_combo.addItems(self.api.get_available_models())
         self.model_combo.currentTextChanged.connect(self.update_model_description)
         model_controls.addWidget(self.model_combo)
-
         buttons_layout = QHBoxLayout()
-
         self.check_button = QPushButton("Проверить модель")
         self.check_button.clicked.connect(self.check_model)
         buttons_layout.addWidget(self.check_button)
-
         self.add_model_button = QPushButton("Добавить модель")
         self.add_model_button.clicked.connect(self.add_model)
         buttons_layout.addWidget(self.add_model_button)
-
         self.edit_model_button = QPushButton("Редактировать")
         self.edit_model_button.clicked.connect(self.edit_model)
         buttons_layout.addWidget(self.edit_model_button)
-
         model_controls.addLayout(buttons_layout)
         model_layout.addLayout(model_controls)
-
-        # Описание модели
         self.description_label = QLabel()
         self.description_label.setWordWrap(True)
         self.description_label.setStyleSheet("color: gray;")
         self.update_model_description()
         model_layout.addWidget(self.description_label)
-
         model_group.setLayout(model_layout)
         layout.addWidget(model_group)
 
@@ -156,6 +141,15 @@ class HuggingFaceDialog(QDialog):
             "но увеличит время обработки запроса."
         )
         improve_layout.addWidget(self.improve_prompt_check)
+
+        # >>> ИЗМЕНЕНИЕ 1: Добавляем новую кнопку
+        self.show_prompt_button = QPushButton("Показать итоговый промпт")
+        self.show_prompt_button.setToolTip(
+            "Показывает в поле 'Результат' тот промпт, который будет отправлен модели, для его копирования."
+        )
+        self.show_prompt_button.clicked.connect(self.show_final_prompt)
+        improve_layout.addWidget(self.show_prompt_button)
+
         improve_layout.addStretch()
         prompt_layout.addLayout(improve_layout)
 
@@ -179,30 +173,85 @@ class HuggingFaceDialog(QDialog):
         prompt_group.setLayout(prompt_layout)
         layout.addWidget(prompt_group)
 
-        # Группа результата
+        # ... (Код для 'result_group' и кнопок диалога остается без изменений) ...
         result_group = QGroupBox("Результат")
         result_layout = QVBoxLayout()
-
         self.result_edit = QTextEdit()
         self.result_edit.setPlaceholderText("Здесь появится ответ модели...")
         self.result_edit.setReadOnly(True)
         self.result_edit.setMinimumHeight(150)
         result_layout.addWidget(self.result_edit)
-
         result_group.setLayout(result_layout)
         layout.addWidget(result_group)
 
-        # Кнопки диалога
-        buttons_layout = QHBoxLayout()
-        buttons_layout.addStretch()
-
+        dialog_buttons_layout = QHBoxLayout()
+        dialog_buttons_layout.addStretch()
         self.close_button = QPushButton("Закрыть")
         self.close_button.clicked.connect(self.reject)
-        buttons_layout.addWidget(self.close_button)
-
-        layout.addLayout(buttons_layout)
+        dialog_buttons_layout.addWidget(self.close_button)
+        layout.addLayout(dialog_buttons_layout)
 
         self.setLayout(layout)
+
+    def show_final_prompt(self):
+        """
+        Отображает итоговый промпт в поле результата для копирования.
+        """
+        try:
+            final_prompt = self._get_final_prompt()
+            if final_prompt:
+                self.result_edit.setText(final_prompt)
+                QMessageBox.information(
+                    self,
+                    "Промпт скопирован",
+                    "Итоговый промпт помещен в поле 'Результат'. Теперь вы можете его скопировать."
+                )
+            else:
+                QMessageBox.warning(self, "Ошибка", "Введите текст запроса, чтобы его можно было показать.")
+        except Exception as e:
+            self.logger.error(f"Ошибка при показе итогового промпта: {e}", exc_info=True)
+            QMessageBox.critical(self, "Ошибка", f"Не удалось показать промпт: {e}")
+
+    def _get_final_prompt(self) -> Optional[str]:
+        """
+        Формирует и возвращает итоговый промпт на основе введенного текста
+        и состояния чекбокса "Улучшить промпт".
+
+        Returns:
+            Сформированный промпт в виде строки или None, если исходный промпт пуст.
+        """
+        if self.from_preview:
+            base_prompt = self.prompt
+        else:
+            base_prompt = self.prompt_edit.toPlainText().strip()
+
+        if not base_prompt:
+            return None
+
+        if self.improve_prompt_check.isChecked():
+            # Возвращаем промпт для улучшения промпта
+            return (
+                "Ты - опытный эксперт по промпт-инжинирингу. Твоя задача - улучшить следующий промпт, "
+                "сделав его более эффективным и структурированным.\n\n"
+                "ИСХОДНЫЙ ПРОМПТ:\n"
+                f"{base_prompt}\n\n"
+                "ИНСТРУКЦИИ ПО УЛУЧШЕНИЮ:\n"
+                "1. Определи роль и цель: Четко укажи, какую роль должен играть ИИ и какой результат ожидается\n"
+                "2. Добавь контекст: Предоставь необходимую предысторию и условия\n"
+                "3. Уточни требования: Укажи конкретные параметры, ограничения и критерии качества\n"
+                "4. Структурируй информацию: Используй четкие разделы и маркеры\n"
+                "5. Задай формат ответа: Опиши желаемую структуру и стиль ответа\n"
+                "6. Добавь примеры: Если уместно, включи образцы желаемого результата\n\n"
+                "ВАЖНО:\n"
+                "- Сохрани основную цель и смысл исходного промпта\n"
+                "- Используй четкий и профессиональный язык\n"
+                "- Добавь конкретные метрики успеха\n"
+                "- Учитывай возможные ограничения модели\n\n"
+                "Пожалуйста, верни только улучшенную версию промпта, без дополнительных пояснений."
+            )
+        else:
+            # Возвращаем исходный промпт как есть
+            return base_prompt
 
     def update_api_key_label(self):
         """Обновляет текст метки API ключа"""
@@ -352,12 +401,8 @@ class HuggingFaceDialog(QDialog):
         """Обрабатывает запрос к модели"""
         try:
             # Получаем текст запроса
-            if self.from_preview:
-                prompt = self.prompt
-            else:
-                prompt = self.prompt_edit.toPlainText().strip()
-
-            if not prompt:
+            final_prompt = self._get_final_prompt()
+            if not final_prompt:
                 QMessageBox.warning(self, "Ошибка", "Введите текст запроса")
                 return
 
@@ -377,67 +422,37 @@ class HuggingFaceDialog(QDialog):
             # Корректируем max_new_tokens для phi-2
             if "phi-2" in model_path.lower():
                 max_context = 2048
-                # Примерная оценка количества токенов (4 символа на токен)
-                input_tokens = len(prompt) // 4
-                max_new_tokens = min(params.get('max_new_tokens', 2048), max_context - input_tokens - 100)  # Оставляем запас
+                input_tokens = len(final_prompt) // 4
+                max_new_tokens = min(params.get('max_new_tokens', 2048), max_context - input_tokens - 100)
                 if max_new_tokens <= 0:
                     QMessageBox.warning(
-                        self,
-                        "Предупреждение",
+                        self, "Предупреждение",
                         f"Промпт слишком длинный для модели {model_name}. "
                         f"Максимальная длина контекста: {max_context} токенов"
                     )
                     self._set_request_controls_enabled(True)
                     return
                 params['max_new_tokens'] = max_new_tokens
-                self.logger.info(
-                    f"Скорректирован max_new_tokens для {model_name}: {max_new_tokens} "
-                    f"(длина промпта ~{input_tokens} токенов)"
-                )
+                self.logger.info(f"Скорректирован max_new_tokens для {model_name}: {max_new_tokens}")
 
-            # Улучшаем промпт если нужно
             if self.improve_prompt_check.isChecked():
-                # Для улучшения промпта используем меньше токенов
+                # Улучшаем промпт
                 improve_params = params.copy()
                 improve_params['max_new_tokens'] = min(improve_params.get('max_new_tokens', 2048), 1000)
-                
-                improve_worker = Worker(
-                    self.api,
-                    model_name,
-                    f"" "Ты - опытный эксперт по промпт-инжинирингу. Твоя задача - улучшить следующий промпт, "
-                    "сделав его более эффективным и структурированным.\n\n"
-                    "ИСХОДНЫЙ ПРОМПТ:\n"
-                    f"{prompt}\n\n"
-                    "ИНСТРУКЦИИ ПО УЛУЧШЕНИЮ:\n"
-                    "1. Определи роль и цель: Четко укажи, какую роль должен играть ИИ и какой результат ожидается\n"
-                    "2. Добавь контекст: Предоставь необходимую предысторию и условия\n"
-                    "3. Уточни требования: Укажи конкретные параметры, ограничения и критерии качества\n"
-                    "4. Структурируй информацию: Используй четкие разделы и маркеры\n"
-                    "5. Задай формат ответа: Опиши желаемую структуру и стиль ответа\n"
-                    "6. Добавь примеры: Если уместно, включи образцы желаемого результата\n\n"
-                    "ВАЖНО:\n"
-                    "- Сохрани основную цель и смысл исходного промпта\n"
-                    "- Используй четкий и профессиональный язык\n"
-                    "- Добавь конкретные метрики успеха\n"
-                    "- Учитывай возможные ограничения модели\n\n"
-                    "Пожалуйста, верни только улучшенную версию промпта, без дополнительных пояснений.",
-                    **improve_params
-                )
-                improve_worker.token_received.connect(self._handle_token)
-                improve_worker.finished.connect(self._handle_improve_response)
-                improve_worker.error.connect(self._handle_error)
-                self.current_worker = improve_worker
-                improve_worker.start()
-            else:
-                # Отправляем запрос
-                worker = Worker(self.api, model_name, prompt, **params)
-                worker.token_received.connect(self._handle_token)
-                worker.finished.connect(self._handle_response)
-                worker.error.connect(self._handle_error)
-                self.current_worker = worker
-                worker.start()
 
-            # Очищаем поле результата перед началом генерации
+                worker = Worker(self.api, model_name, final_prompt, **improve_params)
+                worker.token_received.connect(self._handle_token)
+                worker.finished.connect(self._handle_improve_response) # Используем специальный обработчик
+                worker.error.connect(self._handle_error)
+            else:
+                # Отправляем обычный запрос
+                worker = Worker(self.api, model_name, final_prompt, **params)
+                worker.token_received.connect(self._handle_token)
+                worker.finished.connect(self._handle_response) # Обычный обработчик
+                worker.error.connect(self._handle_error)
+
+            self.current_worker = worker
+            worker.start()
             self.result_edit.clear()
 
         except Exception as e:
