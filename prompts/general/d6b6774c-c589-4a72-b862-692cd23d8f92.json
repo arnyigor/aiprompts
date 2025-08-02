@@ -1,0 +1,32 @@
+{
+  "uuid": "d6b6774c-c589-4a72-b862-692cd23d8f92",
+  "title": "тест",
+  "version": "1.0.0",
+  "category": "general",
+  "content": {
+    "ru": "тест",
+    "en": ""
+  },
+  "description": "тест",
+  "tags": [],
+  "prompt_variants": [],
+  "status": "active",
+  "is_local": false,
+  "is_favorite": false,
+  "compatible_models": [],
+  "variables": [],
+  "metadata": {
+    "author": {
+      "id": "",
+      "name": "WebApp Contributor"
+    },
+    "source": "WebApp",
+    "notes": ""
+  },
+  "rating": {
+    "score": 0,
+    "votes": 0
+  },
+  "created_at": "2025-08-02T20:15:28.167Z",
+  "updated_at": "2025-08-02T20:15:28.167Z"
+}
