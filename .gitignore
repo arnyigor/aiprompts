@@ -169,4 +169,4 @@ cython_debug/
 #.idea/
 /aipromptmaster
 *.app
-config.ini
+src/config.ini
