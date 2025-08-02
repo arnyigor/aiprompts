@@ -1,0 +1,23 @@
+name: 'Уведомление о новом Pull Request'
+
+on:
+  pull_request:
+    types: [opened] # Запускать только при создании нового PR
+
+jobs:
+  send-telegram-notification:
+    name: 'Отправка уведомления в Telegram'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 'Формирование сообщения и отправка запроса'
+        run: |
+          # Формируем сообщение, используя данные из события PR
+          # Обратите внимание на использование одинарных и двойных кавычек
+          MESSAGE="✅ *Новый Pull Request на модерацию!*\n\n*Название:* `${{ github.event.pull_request.title }}`\n*Автор:* `${{ github.event.pull_request.user.login }}`\n\n[Посмотреть PR на GitHub](${{ github.event.pull_request.html_url }})"
+
+          # Отправляем POST-запрос на наш универсальный эндпоинт
+          curl --request POST \
+            --url '${{ secrets.VERCEL_NOTICE_URL }}' \
+            --header 'Content-Type: application/json' \
+            --data "{\"message\": \"$MESSAGE\"}"
