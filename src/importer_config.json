@@ -1,0 +1,19 @@
+{
+  "logging_level": "INFO",
+  "input_files": {
+    "index": "input/index.html",
+    "post": "input/post.html"
+  },
+  "output_dir": "output/prompts",
+  "selectors": {
+    "index_mode": {
+      "marker": "div.block-title:contains('ПРОМПТЫ')",
+      "container": "div.post-block",
+      "links": "a[href*='showpost='], a[href*='p=']"
+    },
+    "post_mode": {
+      "post_container": "table[data-post]",
+      "content_block": "div.postcolor"
+    }
+  }
+}

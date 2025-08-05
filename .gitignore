@@ -170,3 +170,5 @@ cython_debug/
 /aipromptmaster
 *.app
 src/config.ini
+/input/*.html
+/output/*.json
