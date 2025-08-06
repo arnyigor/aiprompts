@@ -26,7 +26,10 @@ jobs:
           )
 
           # 3. Отправляем POST-запрос с готовым JSON
+          # Отправляем POST-запрос с ДВУМЯ КЛЮЧАМИ
           curl --request POST \
-            --url '${{ secrets.VERCEL_NOTICE_URL }}' \
-            --header 'Content-Type: application/json' \
-            --data "$JSON_PAYLOAD"
+          --url '${{ secrets.VERCEL_NOTICE_URL }}' \
+          --header 'Content-Type: application/json' \
+          --header 'X-Public-Key: ${{ secrets.PUBLIC_API_KEY }}' \
+          --header 'X-Secret-Key: ${{ secrets.SECRET_API_KEY }}' \
+          --data "$JSON_PAYLOAD"
