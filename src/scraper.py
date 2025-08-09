@@ -1,4 +1,5 @@
 import argparse
+import random
 import time
 from typing import Optional, List
 from dataclasses import dataclass, field
@@ -69,23 +70,16 @@ def parse_posts_from_html(html: str) -> List[Post]:
 
     return parsed_posts
 
-# --- 4. Основной блок выполнения ---
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Scraper and Importer Pipeline for scraping and importing.")
-    parser.add_argument("--url", required=True, help="URL of the topic to scrape.")
-    parser.add_argument("--pages", type=int, default=1, help="Number of pages to scrape.")
-    # Добавляем новый флаг
-    parser.add_argument(
-        "--non-interactive",
-        action="store_true", # Этот флаг не требует значения, его наличие означает True
-        help="Run in non-interactive mode for CI/CD environments."
-    )
-    args = parser.parse_args()
-    # Устанавливаем базовый URL и количество страниц для парсинга
-    base_url = "https://example.com"
-    pages_to_parse = 2 # Для примера возьмем первые 2 страницы
+# --- 4. Основная логика в функции `main` ---
+def main(url: str, pages: int, non_interactive: bool = False):
+    """
+    Основная функция-пайплайн для сбора и обработки постов.
+    """
+    print(f"Запускаю пайплайн для URL: {url}")
+    print(f"Количество страниц для обработки: {pages}")
+    if non_interactive:
+        print("Режим: неинтерактивный.")
 
-    # Настройка Selenium
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')
     options.add_argument('--disable-gpu')
@@ -99,12 +93,9 @@ if __name__ == '__main__':
         service = ChromeService()
         driver = webdriver.Chrome(service=service, options=options)
 
-        # Цикл для прохода по страницам
-        for page_num in range(pages_to_parse):
-            # Вычисляем смещение для URL (st=0, st=20, st=40, ...)
+        for page_num in range(pages):
             start_offset = page_num * 20
-            page_url = f"{base_url}&st={start_offset}"
-
+            page_url = f"{url}&st={start_offset}"
             html_content = get_page_html(page_url, driver)
 
             if html_content:
@@ -115,18 +106,31 @@ if __name__ == '__main__':
                 else:
                     print(f"На странице {page_num + 1} посты не найдены.")
 
-            # Небольшая пауза между запросами, чтобы не нагружать сайт
-            time.sleep(2)
+            # Эта строка теперь будет работать, так как 'random' импортирован
+            sleep_time = random.uniform(2.5, 5.0)
+            print(f"Пауза на {sleep_time:.2f} секунд...")
+            time.sleep(sleep_time)
 
     finally:
         if driver:
             print("Закрываю браузер.")
             driver.quit()
 
-    # Выводим итоговый результат
     print(f"\n\n--- ВСЕГО СОБРАНО {len(all_posts)} ПОСТОВ ---\n")
     for i, post in enumerate(all_posts, 1):
         print(f"--- Пост #{i} (Автор: {post.author}) ---")
         print(f"{post.text[:200].strip()}...")
         print("-" * 20)
 
+# --- 5. Блок для запуска из командной строки ---
+if __name__ == '__main__':
+    DEFAULT_URL = "https://4pda.to/forum/index.php?showtopic=1109539"
+
+    parser = argparse.ArgumentParser(description="Пайплайн для сбора постов с 4PDA.")
+
+    parser.add_argument("--url", default=DEFAULT_URL, help=f"URL темы для сбора. По умолчанию: {DEFAULT_URL}")
+    parser.add_argument("--pages", type=int, default=1, help="Количество страниц для сбора. По умолчанию: 1")
+    parser.add_argument("--non-interactive", action="store_true", help="Запуск в неинтерактивном режиме для CI/CD.")
+
+    args = parser.parse_args()
+    main(url=args.url, pages=args.pages, non_interactive=args.non_interactive)
