@@ -28,8 +28,8 @@ class Settings:
             "local_prompts": {},  # id промпта: True/False
             "local_updated_at": {},  # id промпта: локальное время изменения в ISO формате
             "window": {
-                "size": [800, 600],
-                "position": [100, 100]
+                "size": [1000, 600],
+                "position": [200, 100]
             },
             "filters": {
                 "last_category": "Все категории",

@@ -51,22 +51,22 @@ def setup_logging():
 
 
 def main():
-    # setup_logging()
+    setup_logging()
     logger = logging.getLogger(__name__)
 
     try:
-        # base_path = get_base_path()
-        # prompts_dir = base_path / "prompts"
-        # prompts_dir.mkdir(exist_ok=True)
+        base_path = get_base_path()
+        prompts_dir = base_path / "prompts"
+        prompts_dir.mkdir(exist_ok=True)
 
         logger.info(f"Платформа: {sys.platform}")
-        # logger.info(f"Путь к папке с промптами: {prompts_dir}")
+        logger.info(f"Путь к папке с промптами: {prompts_dir}")
 
         # Инициализируем настройки
         settings = Settings()
 
         app = QApplication(sys.argv)
-        prompt_manager = PromptManager()
+        prompt_manager = PromptManager(storage_path=prompts_dir)
         window = MainWindow(prompt_manager, settings)
         window.show()
         sys.exit(app.exec())
