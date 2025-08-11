@@ -8,10 +8,10 @@ from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt6.QtGui import QTextCursor
 from huggingface_hub import HfApi
 
-from .api_keys_dialog import ApiKeysDialog
-from .hf_model_editor_dialog import ModelEditorDialog
-from .huggingface_api import HuggingFaceAPI
-from .llm_settings import Settings
+from api_keys_dialog import ApiKeysDialog
+from hf_model_editor_dialog import ModelEditorDialog
+from huggingface_api import HuggingFaceAPI
+from llm_settings import Settings
 
 
 class Worker(QThread):

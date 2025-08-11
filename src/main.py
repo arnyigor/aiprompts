@@ -1,14 +1,13 @@
 # main.py
 import logging
-import os
 import sys
 from pathlib import Path
 
 from PyQt6.QtWidgets import QApplication
 
-from src.main_window import MainWindow
-from src.prompt_manager import PromptManager
-from src.llm_settings import Settings
+from llm_settings import Settings
+from main_window import MainWindow
+from prompt_manager import PromptManager
 
 
 def get_base_path() -> Path:
@@ -59,7 +58,7 @@ def main():
         # base_path = get_base_path()
         # prompts_dir = base_path / "prompts"
         # prompts_dir.mkdir(exist_ok=True)
-        
+
         logger.info(f"Платформа: {sys.platform}")
         # logger.info(f"Путь к папке с промптами: {prompts_dir}")
 

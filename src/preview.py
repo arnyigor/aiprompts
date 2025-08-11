@@ -7,12 +7,12 @@ from PyQt6.QtWidgets import (QDialog, QTextEdit, QVBoxLayout, QLabel,
                              QPushButton, QHBoxLayout, QMessageBox, QWidget, QTabWidget,
                              QLineEdit, QFormLayout, QGroupBox)
 
-from src.MarkdownPreviewDialog import MarkdownPreviewDialog
-from src.huggingface_api import HuggingFaceAPI
-from src.huggingface_dialog import HuggingFaceDialog
-from src.lmstudio_api import LMStudioInference
-from src.lmstudio_dialog import LMStudioDialog
-from src.prompt_editor import ExampleSelectionDialog
+from MarkdownPreviewDialog import MarkdownPreviewDialog
+from huggingface_api import HuggingFaceAPI
+from huggingface_dialog import HuggingFaceDialog
+from lmstudio_api import LMStudioInference
+from lmstudio_dialog import LMStudioDialog
+from prompt_editor import ExampleSelectionDialog
 
 class PromptPreview(QDialog):
     def __init__(self, prompt, settings):

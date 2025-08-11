@@ -5,8 +5,8 @@ from pathlib import Path
 from typing import List, Optional
 from datetime import datetime
 
-from src.models import Prompt
-from src.llm_settings import Settings
+from models import Prompt
+from llm_settings import Settings
 
 
 class DateTimeEncoder(json.JSONEncoder):

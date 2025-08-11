@@ -10,7 +10,7 @@ from typing import Dict, Any, Optional
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 
-from src.key_encryption import KeyEncryption
+from key_encryption import KeyEncryption
 
 
 class Settings:

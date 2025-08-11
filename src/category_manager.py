@@ -1,7 +1,7 @@
 from collections import defaultdict, Counter
 from typing import Dict, List, Optional
 
-from src.models import Category
+from models import Category
 
 CATEGORIES = {
     "general": {

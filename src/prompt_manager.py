@@ -8,9 +8,9 @@ from uuid import uuid4
 
 from PyQt6.QtCore import QSettings
 
-from src.category_manager import CategoryManager
-from src.models import Prompt
-from src.storage import LocalStorage
+from category_manager import CategoryManager
+from models import Prompt
+from storage import LocalStorage
 
 
 class PromptManager:

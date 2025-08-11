@@ -6,14 +6,14 @@ from PyQt6.QtWidgets import QMainWindow, QListWidget, QPushButton, \
     QLineEdit, QLabel, QMessageBox, QComboBox
 from PyQt6.QtWidgets import QVBoxLayout, QWidget, QHBoxLayout
 
-from src.api_keys_dialog import ApiKeysDialog
-from src.feedback_dialog import FeedbackDialog
-from src.feedback_sender import send_feedback
-from src.llm_settings import Settings
-from src.preview import PromptPreview
-from src.prompt_editor import PromptEditor
-from src.prompt_manager import PromptManager
-from src.settings_window import SettingsDialog
+from api_keys_dialog import ApiKeysDialog
+from  feedback_dialog import FeedbackDialog
+from feedback_sender import send_feedback
+from llm_settings import Settings
+from preview import PromptPreview
+from prompt_editor import PromptEditor
+from prompt_manager import PromptManager
+from settings_window import SettingsDialog
 
 APP_INFO = {
     "name": "Prompt Manager Python",

@@ -21,16 +21,16 @@ from PyQt6.QtWidgets import (
     QMenu
 )
 
-from src.MarkdownPreviewDialog import MarkdownPreviewDialog
-from src.category_manager import CategoryManager
-from src.huggingface_api import HuggingFaceAPI
-from src.huggingface_dialog import HuggingFaceDialog
-from src.lmstudio_api import LMStudioInference
-from src.lmstudio_dialog import LMStudioDialog
-from src.model_dialog import ModelConfigDialog
-from src.models import Variable
-from src.prompt_manager import PromptManager
-from src.llm_settings import Settings
+from MarkdownPreviewDialog import MarkdownPreviewDialog
+from category_manager import CategoryManager
+from huggingface_api import HuggingFaceAPI
+from huggingface_dialog import HuggingFaceDialog
+from lmstudio_api import LMStudioInference
+from lmstudio_dialog import LMStudioDialog
+from model_dialog import ModelConfigDialog
+from models import Variable
+from prompt_manager import PromptManager
+from llm_settings import Settings
 
 
 class MarkdownTextEdit(QTextEdit):

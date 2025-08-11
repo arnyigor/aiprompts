@@ -4,8 +4,8 @@ from typing import Generator, Dict, Any
 from huggingface_hub import InferenceClient
 from huggingface_hub.errors import HfHubHTTPError
 
-from .hf_model_manager import HFModelManager
-from .llm_settings import Settings
+from hf_model_manager import HFModelManager
+from llm_settings import Settings
 
 class HuggingFaceAPI:
     """API для работы с моделями Hugging Face"""

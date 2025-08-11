@@ -9,6 +9,7 @@ __pycache__/
 src/income
 src/results
 *.zip
+*.iml
 
 # Distribution / packaging
 .Python

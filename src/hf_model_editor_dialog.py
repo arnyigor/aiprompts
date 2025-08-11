@@ -1,12 +1,11 @@
 import logging
 from typing import Optional, Dict, Any
 
-from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QFormLayout, QLineEdit,
-                            QPushButton, QSpinBox, QDoubleSpinBox, QTextEdit,
-                            QMessageBox, QGroupBox, QHBoxLayout)
+                             QPushButton, QSpinBox, QDoubleSpinBox, QTextEdit,
+                             QMessageBox, QGroupBox, QHBoxLayout)
 
-from src.hf_model_manager import HFModelManager
+from hf_model_manager import HFModelManager
 
 
 class ModelEditorDialog(QDialog):
@@ -22,7 +21,7 @@ class ModelEditorDialog(QDialog):
 
         self.setWindowTitle("Редактор модели" if model_name else "Добавление модели")
         self.setup_ui()
-        
+
         if model_name:
             self.load_model_config()
 
@@ -97,13 +96,13 @@ class ModelEditorDialog(QDialog):
 
         # Кнопки
         buttons_layout = QHBoxLayout()
-        
+
         self.save_button = QPushButton("Сохранить")
         self.save_button.clicked.connect(self.save_model)
-        
+
         self.cancel_button = QPushButton("Отмена")
         self.cancel_button.clicked.connect(self.reject)
-        
+
         if self.model_name:
             self.delete_button = QPushButton("Удалить")
             self.delete_button.clicked.connect(self.delete_model)
@@ -189,8 +188,8 @@ class ModelEditorDialog(QDialog):
 
         if "/" not in self.id_edit.text().strip():
             QMessageBox.warning(
-                self, 
-                "Ошибка", 
+                self,
+                "Ошибка",
                 "Некорректный путь к модели. Формат: организация/название-модели"
             )
             return False
@@ -251,4 +250,4 @@ class ModelEditorDialog(QDialog):
                 self.accept()
             except Exception as e:
                 self.logger.error(f"Ошибка при удалении модели: {str(e)}")
-                QMessageBox.critical(self, "Ошибка", f"Не удалось удалить модель: {str(e)}") 
+                QMessageBox.critical(self, "Ошибка", f"Не удалось удалить модель: {str(e)}")
