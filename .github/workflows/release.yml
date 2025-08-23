@@ -30,20 +30,23 @@ on:
         required: true
         type: string
 
+# --- ВАЖНО: ПРЕДОСТАВЛЕНИЕ ПРАВ ---
+# Явно предоставляем права на запись в "contents" репозитория.
+# Это необходимо для создания/обновления релизов и загрузки ассетов.
+# Без этого блока будет ошибка 403 Forbidden.
+permissions:
+  contents: write
+
 jobs:
   # --- ЗАДАЧА 1: Создать релиз на GitHub ---
-  # Эта задача определяет имя тега (в зависимости от способа запуска)
-  # и создает "каркас" релиза на GitHub. Затем она передает URL для
-  # загрузки и имя тега следующим задачам.
   create_release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }} # URL для загрузки ассетов
-      tag_name: ${{ steps.get_tag.outputs.name }}               # Имя тега для других задач
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      tag_name: ${{ steps.get_tag.outputs.name }}
 
     steps:
-      # Шаг 1.1: Определяем имя тега
       - name: Determine Tag Name
         id: get_tag
         run: |
@@ -55,7 +58,6 @@ jobs:
           echo "Используемый тег: $TAG_NAME"
           echo "name=$TAG_NAME" >> $GITHUB_OUTPUT
 
-      # Шаг 1.2: Создаем сам релиз
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -69,10 +71,9 @@ jobs:
           prerelease: ${{ contains(steps.get_tag.outputs.name, '-') }}
 
   # --- ЗАДАЧА 2: Сборка бинарных файлов приложения ---
-  # Эта задача запускается параллельно для Windows и macOS после создания релиза.
   build_assets:
     name: Build App for ${{ matrix.os }}
-    needs: create_release # Запускается после create_release
+    needs: create_release
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -93,7 +94,6 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
-      # Шаг 2.1: Определяем имена для ассетов в зависимости от ОС
       - name: Set Asset Names (Windows)
         if: matrix.os == 'windows-latest'
         run: |
@@ -109,11 +109,9 @@ jobs:
           echo "APP_NAME=PromptManager" >> $GITHUB_ENV
         shell: bash
 
-      # Шаг 2.2: Собираем приложение с помощью PyInstaller
       - name: Build with PyInstaller
         run: pyinstaller --name "${{ env.APP_NAME }}" --onefile --windowed main.py
 
-      # Шаг 2.3: Упаковываем результат в zip-архив
       - name: Archive built artifact (Windows)
         if: matrix.os == 'windows-latest'
         run: Compress-Archive -Path dist/${{ env.APP_NAME }}.exe -DestinationPath ${{ env.ASSET_NAME }}.zip
@@ -123,7 +121,6 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: zip -r ${{ env.ASSET_NAME }}.zip dist/"${{ env.APP_NAME }}.app"
 
-      # Шаг 2.4: Загружаем архив как ассет релиза
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
