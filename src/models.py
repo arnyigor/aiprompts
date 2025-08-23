@@ -15,7 +15,7 @@ class Category(BaseModel):
 
 class Variable(BaseModel):
     name: str
-    type: str  # "string", "number", "list"
+    type: Optional[str] = "string"  # "string", "number", "list"
     description: str
     examples: List[str] = []
 
@@ -56,7 +56,7 @@ class Prompt(BaseModel):
     )
     compatible_models: List[str] = []
     category: str = "general"
-    tags: list[str] = []
+    tags: List[str] = Field(default_factory=list) # Разрешает пустой список
     variables: List[Variable]
     metadata: Dict = {}
     rating: Dict[str, Union[float, int]] = Field(
@@ -83,12 +83,6 @@ class Prompt(BaseModel):
             return v
         else:
             raise ValueError("Контент должен быть строкой или словарем")
-
-    @field_validator('tags')
-    def check_tags(cls, v):
-        if not v:
-            raise ValueError("Теги не могут быть пустыми")
-        return v
 
     def model_post_init(self, __context) -> None:
         # Обновляем updated_at при изменении любых полей
