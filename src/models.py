@@ -17,7 +17,8 @@ class Variable(BaseModel):
     name: str
     type: Optional[str] = "string"  # "string", "number", "list"
     description: str
-    examples: List[str] = []
+    examples: List[str] = Field(default_factory=list)
+    default_value: Optional[str] = ""
 
     @field_validator('type')
     def validate_type(cls, v):
@@ -42,6 +43,15 @@ class Variable(BaseModel):
         return v
 
 
+class VariantId(BaseModel):
+    type: Optional[str]  = "prompt"
+    id: str
+    priority: int
+
+class PromptVariant(BaseModel):
+    variant_id: VariantId
+    content: Dict[str, str]
+
 class Prompt(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()), description="UUID")
     title: str
@@ -62,6 +72,7 @@ class Prompt(BaseModel):
     rating: Dict[str, Union[float, int]] = Field(
         default_factory=lambda: {"score": 0.0, "votes": 0}
     )
+    prompt_variants: Optional[List[PromptVariant]] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 

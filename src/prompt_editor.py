@@ -28,7 +28,7 @@ from huggingface_dialog import HuggingFaceDialog
 from lmstudio_api import LMStudioInference
 from lmstudio_dialog import LMStudioDialog
 from model_dialog import ModelConfigDialog
-from models import Variable
+from models import Variable, PromptVariant
 from prompt_manager import PromptManager
 from llm_settings import Settings
 
@@ -112,6 +112,9 @@ class VariableDialog(QDialog):
         self.description_field.setPlainText(variable_text)
         self.description_field.setMaximumHeight(100)
 
+        default_value_label = QLabel("Значение по умолчанию:")
+        self.default_value_field = QLineEdit()
+
         # Примеры
         examples_label = QLabel("Примеры (через запятую):")
         self.examples_field = QLineEdit()
@@ -130,6 +133,8 @@ class VariableDialog(QDialog):
         layout.addLayout(type_layout)
         layout.addWidget(description_label)
         layout.addWidget(self.description_field)
+        layout.addWidget(default_value_label) # <-- ДОБАВЛЕНО
+        layout.addWidget(self.default_value_field) # <-- ДОБАВЛЕНО
         layout.addWidget(examples_label)
         layout.addWidget(self.examples_field)
         layout.addLayout(buttons)
@@ -142,12 +147,14 @@ class VariableDialog(QDialog):
             name = self.name_field.text().strip()
             var_type = self.type_combo.currentText()
             description = self.description_field.toPlainText().strip()
+            default_value = self.default_value_field.text().strip()
             examples = [ex.strip() for ex in self.examples_field.text().split(",") if ex.strip()]
 
             return Variable(
                 name=name,
                 type=var_type,
                 description=description,
+                default_value=default_value,
                 examples=examples
             )
         except Exception as e:
@@ -165,6 +172,7 @@ class VariableDialog(QDialog):
         if index >= 0:
             self.type_combo.setCurrentIndex(index)
         self.description_field.setPlainText(variable.description)
+        self.default_value_field.setText(variable.default_value)
         if variable.examples:
             self.examples_field.setText(", ".join(variable.examples))
 
@@ -213,6 +221,77 @@ class ExampleSelectionDialog(QDialog):
         return [item.text() for item in self.examples_list.selectedItems()]
 
 
+class VariantEditorWidget(QWidget):
+    """
+    Виджет для редактирования одного экземпляра PromptVariant.
+    """
+    def __init__(self, variant: PromptVariant = None, parent=None):
+        super().__init__(parent)
+        self.setup_ui()
+        if variant:
+            self.set_data(variant)
+
+    def setup_ui(self):
+        main_layout = QVBoxLayout(self)
+
+        # --- Секция ID Варианта ---
+        id_group = QGroupBox("ID Варианта")
+        id_layout = QFormLayout(id_group)
+
+        self.type_field = QLineEdit()
+        self.id_field = QLineEdit()
+        self.priority_spinbox = QSpinBox()
+        self.priority_spinbox.setRange(1, 100)
+
+        id_layout.addRow("Тип (type):", self.type_field)
+        id_layout.addRow("ID:", self.id_field)
+        id_layout.addRow("Приоритет (priority):", self.priority_spinbox)
+        main_layout.addWidget(id_group)
+
+        # --- Секция Контента ---
+        content_group = QGroupBox("Контент Варианта")
+        content_layout = QVBoxLayout(content_group)
+
+        content_tabs = QTabWidget()
+        # RU контент
+        ru_widget = QWidget()
+        ru_layout = QVBoxLayout(ru_widget)
+        self.ru_content_edit = MarkdownTextEdit()
+        ru_layout.addWidget(self.ru_content_edit)
+        content_tabs.addTab(ru_widget, "RU")
+        # EN контент
+        en_widget = QWidget()
+        en_layout = QVBoxLayout(en_widget)
+        self.en_content_edit = MarkdownTextEdit()
+        en_layout.addWidget(self.en_content_edit)
+        content_tabs.addTab(en_widget, "EN")
+
+        content_layout.addWidget(content_tabs)
+        main_layout.addWidget(content_group)
+
+    def set_data(self, variant: PromptVariant):
+        """Заполняет поля данными из объекта PromptVariant."""
+        self.type_field.setText(variant.variant_id.type)
+        self.id_field.setText(variant.variant_id.id)
+        self.priority_spinbox.setValue(variant.variant_id.priority)
+        self.ru_content_edit.setPlainText(variant.content.get('ru', ''))
+        self.en_content_edit.setPlainText(variant.content.get('en', ''))
+
+    def get_data(self) -> dict:
+        """Собирает данные из полей и возвращает в виде словаря."""
+        return {
+            "variant_id": {
+                "type": self.type_field.text(),
+                "id": self.id_field.text(),
+                "priority": self.priority_spinbox.value()
+            },
+            "content": {
+                "ru": self.ru_content_edit.toPlainText(),
+                "en": self.en_content_edit.toPlainText()
+            }
+        }
+
+
 class PromptEditor(QDialog):
     def __init__(self, prompt_manager: PromptManager, settings: Settings, prompt_id=None):
         super().__init__()
@@ -235,6 +314,7 @@ class PromptEditor(QDialog):
         self.prompt_manager = prompt_manager
         self.prompt_id = prompt_id
         self.cat_manager = CategoryManager()
+        self.prompt_variants = []
 
         # Инициализация UI элементов
         self.title_field = QLineEdit()
@@ -317,6 +397,7 @@ class PromptEditor(QDialog):
         self.create_metadata_tab()  # Метаданные
         self.create_variables_tab()  # Переменные
         self.create_models_tab()  # Модели
+        self.create_variants_tab() # Варианты
 
         # Добавляем вкладки в основной layout
         main_layout.addWidget(self.main_tabs)
@@ -683,6 +764,68 @@ class PromptEditor(QDialog):
         layout.addWidget(self.models_list)
         tab.setLayout(layout)
         self.main_tabs.addTab(tab, "Модели")
+
+    def create_variants_tab(self):
+        """Создает вкладку для просмотра и редактирования вариантов."""
+        self.variants_tab_widget = QWidget()
+        layout = QVBoxLayout(self.variants_tab_widget)
+
+        # --- Панель с кнопками управления ---
+        button_panel = QHBoxLayout()
+        add_variant_btn = QPushButton("➕ Добавить вариант")
+        add_variant_btn.clicked.connect(self.add_variant)
+        self.delete_variant_btn = QPushButton("➖ Удалить текущий вариант")
+        self.delete_variant_btn.clicked.connect(self.delete_current_variant)
+        button_panel.addWidget(add_variant_btn)
+        button_panel.addWidget(self.delete_variant_btn)
+        button_panel.addStretch()
+        layout.addLayout(button_panel)
+        # ------------------------------------
+
+        self.variants_tabs = QTabWidget()
+        self.variants_tabs.setTabsClosable(False)
+        self.variants_tabs.setMovable(True) # Позволяем менять варианты местами
+
+        self.no_variants_label = QLabel("Нажмите 'Добавить вариант', чтобы создать первый.")
+        self.no_variants_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        layout.addWidget(self.variants_tabs)
+        layout.addWidget(self.no_variants_label)
+
+        self.main_tabs.addTab(self.variants_tab_widget, "Варианты")
+
+    def add_variant(self):
+        """Добавляет новую пустую вкладку для редактирования варианта."""
+        self.variants_tabs.show()
+        self.no_variants_label.hide()
+
+        # Создаем пустой виджет-редактор
+        new_variant_editor = VariantEditorWidget()
+
+        # Добавляем его в новую вкладку
+        index = self.variants_tabs.addTab(new_variant_editor, f"Новый вариант {self.variants_tabs.count() + 1}")
+        self.variants_tabs.setCurrentIndex(index)
+        self.delete_variant_btn.setEnabled(True)
+
+    def delete_current_variant(self):
+        """Удаляет текущую открытую вкладку с вариантом."""
+        current_index = self.variants_tabs.currentIndex()
+        if current_index == -1:
+            return
+
+        reply = QMessageBox.question(
+            self,
+            "Подтверждение удаления",
+            f"Вы уверены, что хотите удалить '{self.variants_tabs.tabText(current_index)}'?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            self.variants_tabs.removeTab(current_index)
+            if self.variants_tabs.count() == 0:
+                self.variants_tabs.hide()
+                self.no_variants_label.show()
+                self.delete_variant_btn.setEnabled(False)
 
     def edit_model(self):
         """Редактирование выбранной модели"""
@@ -1244,6 +1387,7 @@ class PromptEditor(QDialog):
         # Создаем и показываем наш новый диалог
         dialog = MarkdownPreviewDialog(markdown_text, window_title=title, parent=self)
         dialog.exec()
+
     def show_huggingface_dialog(self, language):
         """Показывает диалог Hugging Face и обрабатывает результат"""
         try:
@@ -1336,16 +1480,25 @@ class PromptEditor(QDialog):
             self.result_en.clear()
 
     def load_prompt_data(self):
-        """Загрузка данных существующего промпта"""
+        """
+        Загружает данные существующего промпта из PromptManager и распределяет их
+        по всем полям и вкладкам редактора.
+        """
         try:
+            self.logger.debug(f"Загрузка данных для промпта ID: {self.prompt_id}")
             prompt = self.prompt_manager.get_prompt(self.prompt_id)
             if not prompt:
+                QMessageBox.critical(self, "Ошибка", f"Промпт с ID {self.prompt_id} не найден.")
+                self.reject() # Закрываем редактор, если промпт не найден
                 return
 
-            # Основная информация
+            # ======================================================================
+            # 1. ВКЛАДКА "ОСНОВНОЕ"
+            # ======================================================================
             self.title_field.setText(prompt.title)
             self.version_field.setText(prompt.version)
             self.status_selector.setCurrentText(prompt.status)
+            self.description_field.setPlainText(prompt.description)
             self.is_local_checkbox.setChecked(prompt.is_local)
             self.is_favorite_checkbox.setChecked(prompt.is_favorite)
             self.description_field.setText(prompt.description)
@@ -1355,51 +1508,51 @@ class PromptEditor(QDialog):
                 self.rating_score.setValue(prompt.rating.get('score', 0))
                 self.rating_votes.setValue(prompt.rating.get('votes', 0))
 
-            # Контент
-            if hasattr(prompt, 'content'):
-                if isinstance(prompt.content, dict):
-                    # Новый формат (словарь с языками)
-                    self.ru_user_prompt.setText(prompt.content.get('ru', ''))
-                    self.en_user_prompt.setText(prompt.content.get('en', ''))
-                else:
-                    # Старый формат (строка)
-                    self.ru_user_prompt.setText(str(prompt.content))
-                    self.en_user_prompt.clear()
+            # ======================================================================
+            # 2. ВКЛАДКА "КОНТЕНТ"
+            # ======================================================================
+            # Обрабатываем и старый (строка), и новый (словарь) формат поля content
+            if isinstance(prompt.content, dict):
+                self.ru_user_prompt.setPlainText(prompt.content.get('ru', ''))
+                self.en_user_prompt.setPlainText(prompt.content.get('en', ''))
+            else:
+                # Обратная совместимость со старым форматом, где content был строкой
+                self.ru_user_prompt.setPlainText(str(prompt.content))
+                self.en_user_prompt.clear()
 
-            # Категория
+            # Установка категории
             if prompt.category:
-                # Получаем все категории
-                categories = self.cat_manager.get_categories()
-                category = prompt.category
-
-                # Если категория является подкатегорией, находим её родителя
-                if category in categories and categories[category]["parent"] != "general":
-                    parent = categories[category]["parent"]
-                    if parent and parent != "general":
-                        category = parent
-
-                # Ищем индекс категории в селекторе
-                index = self.category_selector.findData(category)
+                index = self.category_selector.findData(prompt.category)
                 if index >= 0:
                     self.category_selector.setCurrentIndex(index)
                 else:
-                    # Если категория не найдена, устанавливаем general
+                    self.logger.warning(f"Категория '{prompt.category}' не найдена в селекторе. Установлена 'general'.")
                     index = self.category_selector.findData("general")
-                if index >= 0:
-                    self.category_selector.setCurrentIndex(index)
+                    if index >= 0:
+                        self.category_selector.setCurrentIndex(index)
 
-            # Совместимые модели
-            if hasattr(prompt, 'compatible_models'):
-                for i in range(self.models_list.count()):
-                    item = self.models_list.item(i)
-                    if item and item.text() in prompt.compatible_models:
-                        item.setSelected(True)
-
-            # Теги
+            # Загрузка тегов
             if prompt.tags:
                 self.tags_field.setText(", ".join(prompt.tags))
 
-            # Переменные
+            # ======================================================================
+            # 3. ВКЛАДКА "МЕТАДАННЫЕ"
+            # ======================================================================
+            if prompt.metadata: # Проверяем, что словарь metadata вообще существует и не None
+                # Безопасно получаем вложенный словарь 'author'. Если его нет, .get() вернет пустой словарь {}
+                author_data = prompt.metadata.get('author', {})
+
+                # Теперь работаем с author_data, который точно является словарем
+                self.author_id_field.setText(author_data.get('id', ''))
+                self.author_name_field.setText(author_data.get('name', ''))
+
+                # Безопасно получаем остальные поля из metadata
+                self.source_field.setText(prompt.metadata.get('source', ''))
+                self.notes_field.setPlainText(prompt.metadata.get('notes', ''))
+
+            # ======================================================================
+            # 4. ВКЛАДКА "ПЕРЕМЕННЫЕ"
+            # ======================================================================
             self.variables_list.clear()
             if prompt.variables:
                 for var in prompt.variables:
@@ -1407,17 +1560,41 @@ class PromptEditor(QDialog):
                     item.setData(Qt.ItemDataRole.UserRole, var)
                     self.variables_list.addItem(item)
 
-            # Метаданные
-            if hasattr(prompt, 'metadata'):
-                metadata = prompt.metadata
-                if isinstance(metadata, dict):
-                    author = metadata.get('author', {})
-                    self.author_id_field.setText(author.get('id', ''))
-                    self.author_name_field.setText(author.get('name', ''))
-                    self.source_field.setText(metadata.get('source', ''))
-                    self.notes_field.setText(metadata.get('notes', ''))
+            # ======================================================================
+            # 5. ВКЛАДКА "МОДЕЛИ"
+            # ======================================================================
+            if prompt.compatible_models:
+                for i in range(self.models_list.count()):
+                    item = self.models_list.item(i)
+                    # Проверяем, что это не заголовок провайдера и что текст совпадает
+                    if item and (item.flags() & Qt.ItemFlag.ItemIsSelectable):
+                        if item.text() in prompt.compatible_models:
+                            item.setSelected(True)
 
-            # Обновляем предпросмотр JSON
+            # ======================================================================
+            # 6. ВКЛАДКА "ВАРИАНТЫ" (версия для редактирования)
+            # ======================================================================
+            self.variants_tabs.clear()
+
+            if prompt.prompt_variants:
+                self.variants_tabs.show()
+                self.no_variants_label.hide()
+                self.delete_variant_btn.setEnabled(True)
+
+                for i, variant in enumerate(prompt.prompt_variants):
+                    # Создаем виджет-редактор и заполняем его данными
+                    variant_editor_widget = VariantEditorWidget(variant)
+
+                    tab_title = f"Вариант {i + 1} ({variant.variant_id.type})"
+                    self.variants_tabs.addTab(variant_editor_widget, tab_title)
+            else:
+                self.variants_tabs.hide()
+                self.no_variants_label.show()
+                self.delete_variant_btn.setEnabled(False)
+
+            # ======================================================================
+            # Финальный шаг: обновить предпросмотр JSON после загрузки всех данных
+            # ======================================================================
             self.update_json_preview()
 
         except Exception as e:
@@ -1498,6 +1675,16 @@ class PromptEditor(QDialog):
         # Добавляем поддерживаемые модели только если они выбраны
         if selected_models:
             data["compatible_models"] = selected_models
+
+        # Собираем данные из всех вкладок-редакторов вариантов
+        prompt_variants_data = []
+        for i in range(self.variants_tabs.count()):
+            editor_widget = self.variants_tabs.widget(i)
+            if isinstance(editor_widget, VariantEditorWidget):
+                prompt_variants_data.append(editor_widget.get_data())
+
+        if prompt_variants_data:
+            data["prompt_variants"] = prompt_variants_data
 
         return data
 
