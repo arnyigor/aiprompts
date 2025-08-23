@@ -15,6 +15,7 @@ from preview import PromptPreview
 from prompt_editor import PromptEditor
 from prompt_manager import PromptManager
 from settings_window import SettingsDialog
+from src.sync_log_dialog import SyncLogDialog
 from src.sync_manager import SyncManager
 from src.sync_worker import SyncWorker
 
@@ -177,39 +178,48 @@ class MainWindow(QMainWindow):
         self.load_prompts()
 
     def run_sync(self):
-    # Диалог-индикатор
-        self._sync_dlg = QProgressDialog(
-            "Подготовка…", None, 0, 0, self)
-        self._sync_dlg.setWindowTitle("Синхронизация")
-        self._sync_dlg.setWindowModality(Qt.WindowModality.ApplicationModal)
-        self._sync_dlg.setMinimumDuration(0)   # показать сразу
-        self._sync_dlg.show()
+        # 1. Создаем наш новый диалог логов
+        self._sync_log_dialog = SyncLogDialog(self)
 
-        # Поток и воркер
+        # 2. Создаем менеджер, передавая путь
+        # ВАЖНО: менеджер создается здесь, чтобы каждый раз был свежий
+        sync_manager = SyncManager(Path(self.prompt_manager.storage_path))
+
+        # 3. Создаем воркер и передаем ему менеджер
         self._sync_thread = QThread(self)
-        worker = SyncWorker(self.sync_manager)
+        worker = SyncWorker(sync_manager)
         worker.moveToThread(self._sync_thread)
 
-        # Обратная связь
-        worker.progress.connect(self._sync_dlg.setLabelText)
+        # 4. Соединяем сигналы воркера со слотами диалога и главного окна
+        worker.progress.connect(self._sync_log_dialog.set_status)
+        worker.log_message.connect(self._sync_log_dialog.add_log_message)
         worker.finished.connect(self._on_sync_finished)
 
-        # Запуск
+        # Стандартная обвязка для запуска потока
         self._sync_thread.started.connect(worker.run)
         worker.finished.connect(worker.deleteLater)
         worker.finished.connect(self._sync_thread.quit)
         self._sync_thread.finished.connect(self._sync_thread.deleteLater)
+
+        # 5. Запускаем поток и показываем диалог
         self._sync_thread.start()
         self.sync_button.setEnabled(False)
+        self._sync_log_dialog.exec() # `exec()` делает окно модальным
 
     @pyqtSlot(bool, str)
     def _on_sync_finished(self, ok: bool, msg: str):
-        self._sync_dlg.close()
+        # 1. Разблокируем кнопку и делаем диалог завершенным
         self.sync_button.setEnabled(True)
+        if hasattr(self, '_sync_log_dialog'):
+            self._sync_log_dialog.mark_as_finished()
+            # Диалог закроется сам по нажатию "Ок" пользователем.
+            # Если хотите закрывать автоматически, можно вызвать self._sync_log_dialog.accept()
 
+        # 2. Обновляем данные и показываем финальное сообщение
         if ok:
             self.load_prompts()
-            QMessageBox.information(self, "Синхронизация", msg)
+            # Финальное сообщение можно не показывать, т.к. лог уже есть
+            # QMessageBox.information(self, "Синхронизация", msg)
         else:
             QMessageBox.critical(self, "Синхронизация", msg)
 
