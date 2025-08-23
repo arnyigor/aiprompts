@@ -1,9 +1,10 @@
 # main_window.py
 import logging
+from pathlib import Path
 
-from PyQt6.QtCore import pyqtSlot
+from PyQt6.QtCore import pyqtSlot, QThread, Qt
 from PyQt6.QtWidgets import QMainWindow, QListWidget, QPushButton, \
-    QLineEdit, QLabel, QMessageBox, QComboBox
+    QLineEdit, QLabel, QMessageBox, QComboBox, QProgressDialog
 from PyQt6.QtWidgets import QVBoxLayout, QWidget, QHBoxLayout
 
 from api_keys_dialog import ApiKeysDialog
@@ -14,6 +15,8 @@ from preview import PromptPreview
 from prompt_editor import PromptEditor
 from prompt_manager import PromptManager
 from settings_window import SettingsDialog
+from src.sync_manager import SyncManager
+from src.sync_worker import SyncWorker
 
 APP_INFO = {
     "name": "Prompt Manager Python",
@@ -66,6 +69,11 @@ class MainWindow(QMainWindow):
         self.preview_button = QPushButton("Просмотр")
         self.edit_button = QPushButton("Редактировать")
         self.delete_button = QPushButton("Удалить")
+
+        # объект менеджера
+        self.sync_manager = SyncManager(Path(self.prompt_manager.storage_path))
+        self.sync_button = QPushButton("🔄 Синхронизация")
+        self.sync_button.clicked.connect(self.run_sync)
 
         # Инициализация компонентов
         self.settings_button = QPushButton("⚙️")
@@ -140,6 +148,7 @@ class MainWindow(QMainWindow):
         button_layout.addWidget(self.edit_button)
         button_layout.addWidget(self.delete_button)
         button_layout.addStretch()
+        button_layout.addWidget(self.sync_button)
         button_layout.addWidget(self.feedback_button)
         button_layout.addWidget(self.settings_button)
 
@@ -166,6 +175,43 @@ class MainWindow(QMainWindow):
 
         # Load initial data
         self.load_prompts()
+
+    def run_sync(self):
+    # Диалог-индикатор
+        self._sync_dlg = QProgressDialog(
+            "Подготовка…", None, 0, 0, self)
+        self._sync_dlg.setWindowTitle("Синхронизация")
+        self._sync_dlg.setWindowModality(Qt.WindowModality.ApplicationModal)
+        self._sync_dlg.setMinimumDuration(0)   # показать сразу
+        self._sync_dlg.show()
+
+        # Поток и воркер
+        self._sync_thread = QThread(self)
+        worker = SyncWorker(self.sync_manager)
+        worker.moveToThread(self._sync_thread)
+
+        # Обратная связь
+        worker.progress.connect(self._sync_dlg.setLabelText)
+        worker.finished.connect(self._on_sync_finished)
+
+        # Запуск
+        self._sync_thread.started.connect(worker.run)
+        worker.finished.connect(worker.deleteLater)
+        worker.finished.connect(self._sync_thread.quit)
+        self._sync_thread.finished.connect(self._sync_thread.deleteLater)
+        self._sync_thread.start()
+        self.sync_button.setEnabled(False)
+
+    @pyqtSlot(bool, str)
+    def _on_sync_finished(self, ok: bool, msg: str):
+        self._sync_dlg.close()
+        self.sync_button.setEnabled(True)
+
+        if ok:
+            self.load_prompts()
+            QMessageBox.information(self, "Синхронизация", msg)
+        else:
+            QMessageBox.critical(self, "Синхронизация", msg)
 
     @pyqtSlot()
     def show_feedback_dialog(self):
