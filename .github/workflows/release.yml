@@ -110,7 +110,7 @@ jobs:
         shell: bash
 
       - name: Build with PyInstaller
-        run: pyinstaller --name "${{ env.APP_NAME }}" --onefile --windowed main.py
+        run: pyinstaller --name "${{ env.APP_NAME }}" --onefile --windowed --paths ./src src/main.py
 
       - name: Archive built artifact (Windows)
         if: matrix.os == 'windows-latest'
