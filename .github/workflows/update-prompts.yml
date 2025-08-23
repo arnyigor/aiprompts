@@ -1,0 +1,44 @@
+# .github/workflows/update-prompts.yml
+# ВОРКФЛОУ ДЛЯ ОБНОВЛЕНИЯ АРХИВА С ПРОМПТАМИ
+
+name: Update Prompts Library
+
+on:
+  # 1. Запускать автоматически при любом изменении в папке prompts в основной ветке
+  push:
+    branches:
+      - main # Укажите здесь вашу основную ветку (main или master)
+    paths:
+      - 'prompts/**'
+
+  # 2. Позволяет запускать обновление вручную
+  workflow_dispatch:
+
+jobs:
+  update_prompts_archive:
+    name: Package and Update Prompts Archive
+    runs-on: ubuntu-latest
+
+    steps:
+      # Шаг 1: Получаем код репозитория
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Шаг 2: Создаем zip-архив с папкой prompts
+      - name: Archive prompts directory
+        run: zip -r prompts.zip ./prompts
+
+      # Шаг 3: Обновляем ассет в "живом" релизе
+      # Используем специальный action, который умеет создавать/обновлять релиз
+      # и перезаписывать его ассеты. Это проще, чем удалять и загружать вручную.
+      - name: Update or Create Release with Prompts Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: latest-prompts # Стабильный тег, который мы будем использовать
+          name: "Prompts Library (Latest)"
+          body: "Автоматически обновляемая библиотека промптов. Этот релиз всегда содержит самую свежую версию."
+          draft: false
+          prerelease: false
+          files: prompts.zip # Action сам найдет и перезапишет этот файл, если он уже существует
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,39 +1,83 @@
-name: Create Release and Build Assets
+# ==============================================================================
+# GitHub Workflow: Сборка и публикация релиза ПРИЛОЖЕНИЯ
+# ==============================================================================
+# Этот воркфлоу отвечает ИСКЛЮЧИТЕЛЬНО за сборку и публикацию
+# исполняемых файлов приложения (для Windows и macOS).
+#
+# Он НЕ занимается обновлением библиотеки промптов. Для этого существует
+# отдельный воркфлоу `update-prompts.yml`.
+#
+# --- ТРИГГЕРЫ ЗАПУСКА ---
+# 1. АВТОМАТИЧЕСКИ: при пуше нового тега в репозиторий (например, `git push --tags`).
+#    Формат тега должен быть `v*.*.*` (например, v1.0.0, v1.2.3, v1.2.3-beta1).
+# 2. ВРУЧНУЮ: через вкладку "Actions" в репозитории GitHub.
+#    Нужно нажать "Run workflow" и указать имя создаваемого тега.
+# ==============================================================================
+
+name: Create App Release
 
 on:
+  # 1. Автоматический запуск по тегу
   push:
     tags:
-      - 'v*.*.*' # Запускать только при пуше тегов вида v1.2.3
+      - 'v*.*.*'
+
+  # 2. Возможность ручного запуска
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Укажите тег для релиза приложения (например, v1.2.3)'
+        required: true
+        type: string
 
 jobs:
+  # --- ЗАДАЧА 1: Создать релиз на GitHub ---
+  # Эта задача определяет имя тега (в зависимости от способа запуска)
+  # и создает "каркас" релиза на GitHub. Затем она передает URL для
+  # загрузки и имя тега следующим задачам.
   create_release:
-    name: Create Release
+    name: Create GitHub Release
     runs-on: ubuntu-latest
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }} # URL для загрузки артефактов
+      upload_url: ${{ steps.create_release.outputs.upload_url }} # URL для загрузки ассетов
+      tag_name: ${{ steps.get_tag.outputs.name }}               # Имя тега для других задач
+
     steps:
+      # Шаг 1.1: Определяем имя тега
+      - name: Determine Tag Name
+        id: get_tag
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            TAG_NAME="${{ github.ref_name }}"
+          else
+            TAG_NAME="${{ github.event.inputs.tag }}"
+          fi
+          echo "Используемый тег: $TAG_NAME"
+          echo "name=$TAG_NAME" >> $GITHUB_OUTPUT
+
+      # Шаг 1.2: Создаем сам релиз
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Токен для аутентификации
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref_name }} # Имя тега, который вызвал workflow
-          release_name: Release ${{ github.ref_name }}
-          body: | # Описание релиза (можно генерировать или брать из файла)
-            New release: ${{ github.ref_name }}
-            See CHANGELOG.md for details.
+          tag_name: ${{ steps.get_tag.outputs.name }}
+          release_name: App Release ${{ steps.get_tag.outputs.name }}
+          body: "Сборка приложения Prompt Manager версии ${{ steps.get_tag.outputs.name }}."
           draft: false
-          prerelease: ${{ contains(github.ref_name, '-') }} # Помечать как pre-release, если тег содержит '-' (например, v1.0.0-beta)
+          prerelease: ${{ contains(steps.get_tag.outputs.name, '-') }}
 
+  # --- ЗАДАЧА 2: Сборка бинарных файлов приложения ---
+  # Эта задача запускается параллельно для Windows и macOS после создания релиза.
   build_assets:
-    name: Build Assets (${{ matrix.os }})
-    needs: create_release # Запускать после создания релиза
+    name: Build App for ${{ matrix.os }}
+    needs: create_release # Запускается после create_release
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, macos-latest] # Матрица для сборки под разные ОС
-        # Можно добавить python-version, если нужно
+        os: [windows-latest, macos-latest]
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -41,62 +85,51 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9' # Укажите вашу версию Python
+          python-version: '3.9'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt # Установите зависимости
-          pip install pyinstaller # Установите сборщик (PyInstaller как пример)
+          pip install -r requirements.txt
+          pip install pyinstaller
 
-      # --- Шаг Сборки (Пример для PyInstaller) ---
-      - name: Build with PyInstaller (Windows)
+      # Шаг 2.1: Определяем имена для ассетов в зависимости от ОС
+      - name: Set Asset Names (Windows)
         if: matrix.os == 'windows-latest'
         run: |
-          pyinstaller --name myprogram-${{ github.ref_name }}-windows-x64 --onefile --windowed main.py # Пример команды
-          # Возможно, нужно будет упаковать в ZIP вместе с другими файлами
-          Compress-Archive -Path dist/myprogram-${{ github.ref_name }}-windows-x64.exe -DestinationPath myprogram-${{ github.ref_name }}-windows-x64.zip
-        # Настройте команду сборки под ваш проект!
+          echo "ASSET_NAME=PromptManager-${{ needs.create_release.outputs.tag_name }}-windows-x64" >> $env:GITHUB_ENV
+          echo "APP_NAME=PromptManager" >> $env:GITHUB_ENV
+        shell: pwsh
 
-      - name: Build with PyInstaller (macOS)
+      - name: Set Asset Names (macOS)
         if: matrix.os == 'macos-latest'
         run: |
-          pyinstaller --name myprogram-${{ github.ref_name }}-macos --onefile --windowed main.py # Пример команды
-          # Создание DMG или ZIP для macOS
-          # hdiutil create -volname "MyProgram ${github.ref_name}" -srcfolder dist/myprogram-${{ github.ref_name }}-macos.app -ov -format UDZO myprogram-${{ github.ref_name }}-macos-$(uname -m).dmg
-          zip -r myprogram-${{ github.ref_name }}-macos-$(uname -m).zip dist/myprogram-${{ github.ref_name }}-macos.app
-        # Настройте команду сборки под ваш проект! Учтите архитектуру (uname -m -> x86_64 или arm64)
+          echo "ARCH=$(uname -m)" >> $GITHUB_ENV
+          echo "ASSET_NAME=PromptManager-${{ needs.create_release.outputs.tag_name }}-macos-$(uname -m)" >> $GITHUB_ENV
+          echo "APP_NAME=PromptManager" >> $GITHUB_ENV
+        shell: bash
 
-      # --- Шаг Загрузки Артефакта ---
-      - name: Upload Release Asset (${{ matrix.os }})
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }} # URL из шага create_release
-          asset_path: ./myprogram-${{ github.ref_name }}-${{ matrix.os == 'windows-latest' && 'windows-x64' || 'macos'}}-$(matrix.os == 'macos-latest' && uname -m || '').${{ matrix.os == 'windows-latest' && 'zip' || 'zip' }} # Путь к собранному файлу (скорректируйте!)
-          asset_name: myprogram-${{ github.ref_name }}-${{ matrix.os == 'windows-latest' && 'windows-x64' || 'macos'}}-$(matrix.os == 'macos-latest' && uname -m || '').${{ matrix.os == 'windows-latest' && 'zip' || 'zip' }} # Имя файла на GitHub (скорректируйте!)
-          asset_content_type: application/zip # Тип контента (application/octet-stream, application/zip, application/x-apple-diskimage)
+      # Шаг 2.2: Собираем приложение с помощью PyInstaller
+      - name: Build with PyInstaller
+        run: pyinstaller --name "${{ env.APP_NAME }}" --onefile --windowed main.py
 
-  # --- Отдельная задача для упаковки и загрузки промптов (можно совместить) ---
-  package_and_upload_prompts:
-    name: Package and Upload Prompts
-    needs: create_release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      # Шаг 2.3: Упаковываем результат в zip-архив
+      - name: Archive built artifact (Windows)
+        if: matrix.os == 'windows-latest'
+        run: Compress-Archive -Path dist/${{ env.APP_NAME }}.exe -DestinationPath ${{ env.ASSET_NAME }}.zip
+        shell: pwsh
 
-      - name: Archive prompts
-        run: zip -r prompts-${{ github.ref_name }}.zip ./prompts # Укажите правильный путь к папке с промптами
+      - name: Archive built artifact (macOS)
+        if: matrix.os == 'macos-latest'
+        run: zip -r ${{ env.ASSET_NAME }}.zip dist/"${{ env.APP_NAME }}.app"
 
-      - name: Upload Prompts Asset
+      # Шаг 2.4: Загружаем архив как ассет релиза
+      - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ./prompts-${{ github.ref_name }}.zip
-          asset_name: prompts-${{ github.ref_name }}.zip
+          asset_path: ./${{ env.ASSET_NAME }}.zip
+          asset_name: ${{ env.ASSET_NAME }}.zip
           asset_content_type: application/zip
-
