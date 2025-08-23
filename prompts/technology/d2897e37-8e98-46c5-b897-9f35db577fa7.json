@@ -39,6 +39,13 @@
   "tags": [
     "general"
   ],
+  "variables": [
+    {
+      "name": "prompt_text",
+      "description": "prompt_text",
+      "default_value": ""
+    }
+  ],
   "metadata": {
     "author": {
       "id": "",
