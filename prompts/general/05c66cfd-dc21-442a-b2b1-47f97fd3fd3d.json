@@ -3,7 +3,7 @@
   "title": "Я слышал об инвестиционных фондах, но не до конца понимаю, что это так...",
   "version": "1.0.0",
   "status": "draft",
-  "is_local": true,
+  "is_local": false,
   "is_favorite": false,
   "description": "Русский",
   "content": {

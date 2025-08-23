@@ -3,7 +3,7 @@
   "title": "Придумай идеи для постов о [праздник/сезонное событие] в социальных се...",
   "version": "1.0.0",
   "status": "draft",
-  "is_local": true,
+  "is_local": false,
   "is_favorite": false,
   "description": "Русский",
   "content": {

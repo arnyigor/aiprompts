@@ -3,7 +3,7 @@
   "title": "Дай пример срочного призыва к действию",
   "version": "1.0.0",
   "status": "draft",
-  "is_local": true,
+  "is_local": false,
   "is_favorite": false,
   "description": "Русский",
   "content": {

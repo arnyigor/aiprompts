@@ -3,7 +3,7 @@
   "title": "Дайте мне рецепты, которые я могу приготовить с этими ингредиентами (п...",
   "version": "1.0.0",
   "status": "draft",
-  "is_local": true,
+  "is_local": false,
   "is_favorite": false,
   "description": "Русский",
   "content": {

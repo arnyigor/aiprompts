@@ -3,7 +3,7 @@
   "title": "Какие книги могут научить меня основам медитации и осознанности?",
   "version": "1.0.0",
   "status": "draft",
-  "is_local": true,
+  "is_local": false,
   "is_favorite": false,
   "description": "Русский",
   "content": {

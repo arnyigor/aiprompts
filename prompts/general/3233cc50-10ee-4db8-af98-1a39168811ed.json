@@ -3,7 +3,7 @@
   "title": "Составь 10 коротких твитов о трендах энергосбережения",
   "version": "1.0.0",
   "status": "draft",
-  "is_local": true,
+  "is_local": false,
   "is_favorite": false,
   "description": "Русский",
   "content": {

@@ -3,7 +3,7 @@
   "title": "Мне нужно решить, покупать или арендовать автомобиль. Можете помочь вз...",
   "version": "1.0.0",
   "status": "draft",
-  "is_local": true,
+  "is_local": false,
   "is_favorite": false,
   "description": "Русский",
   "content": {

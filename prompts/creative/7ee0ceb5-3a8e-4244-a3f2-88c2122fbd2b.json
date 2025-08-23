@@ -3,7 +3,7 @@
   "title": "Подведи итоги эссе (вставь текст эссе сюда) простыми словами для ребен...",
   "version": "1.0.0",
   "status": "draft",
-  "is_local": true,
+  "is_local": false,
   "is_favorite": false,
   "description": "Русский",
   "content": {

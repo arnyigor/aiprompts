@@ -3,7 +3,7 @@
   "title": "Медитация набирает популярность. Знаешь ли ты её ключевые преимущества...",
   "version": "1.0.0",
   "status": "draft",
-  "is_local": true,
+  "is_local": false,
   "is_favorite": false,
   "description": "Русский",
   "content": {

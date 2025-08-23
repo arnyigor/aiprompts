@@ -3,7 +3,7 @@
   "title": "Дай 5 забавных или абсурдных идей для стендапа",
   "version": "1.0.0",
   "status": "draft",
-  "is_local": true,
+  "is_local": false,
   "is_favorite": false,
   "description": "Русский",
   "content": {

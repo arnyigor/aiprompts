@@ -3,7 +3,7 @@
   "title": "Как WebAssembly влияет на веб-разработку и какие его преимущества?",
   "version": "1.0.0",
   "status": "draft",
-  "is_local": true,
+  "is_local": false,
   "is_favorite": false,
   "description": "Русский",
   "content": {

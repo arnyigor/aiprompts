@@ -3,7 +3,7 @@
   "title": "Я застрял с постами о [тема] в социальных сетях. Можешь предложить кре...",
   "version": "1.0.0",
   "status": "draft",
-  "is_local": true,
+  "is_local": false,
   "is_favorite": false,
   "description": "Русский",
   "content": {

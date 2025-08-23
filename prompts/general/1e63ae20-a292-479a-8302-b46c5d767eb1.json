@@ -3,7 +3,7 @@
   "title": "Предложи подписи, которые вызовут интерес и возбуждение по поводу ново...",
   "version": "1.0.0",
   "status": "draft",
-  "is_local": true,
+  "is_local": false,
   "is_favorite": false,
   "description": "Русский",
   "content": {

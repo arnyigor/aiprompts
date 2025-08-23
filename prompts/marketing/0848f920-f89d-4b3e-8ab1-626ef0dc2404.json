@@ -3,7 +3,7 @@
   "title": "Я хочу продвигать свой [продукт/услугу] в социальных сетях. Подскажи и...",
   "version": "1.0.0",
   "status": "draft",
-  "is_local": true,
+  "is_local": false,
   "is_favorite": false,
   "description": "Русский",
   "content": {

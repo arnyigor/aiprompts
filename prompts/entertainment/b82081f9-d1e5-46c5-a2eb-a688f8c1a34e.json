@@ -3,7 +3,7 @@
   "title": "Ищете игры для вечернего кооператива с друзьями? Xbox предлагает много...",
   "version": "1.0.0",
   "status": "draft",
-  "is_local": true,
+  "is_local": false,
   "is_favorite": false,
   "description": "Русский",
   "content": {

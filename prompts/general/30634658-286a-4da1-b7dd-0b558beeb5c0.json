@@ -3,7 +3,7 @@
   "title": "Кто входит в топ-5 футболистов 21 века?",
   "version": "1.0.0",
   "status": "draft",
-  "is_local": true,
+  "is_local": false,
   "is_favorite": false,
   "description": "Русский",
   "content": {
