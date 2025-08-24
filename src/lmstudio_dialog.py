@@ -1,6 +1,6 @@
 import logging
 
-# import lmstudio as lms
+import lmstudio as lms
 from PyQt6.QtCore import QTimer, QThreadPool, QRunnable, QThread, pyqtSignal, QObject
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QGroupBox,
@@ -48,7 +48,7 @@ class SyncCheckRunnable(QRunnable):
 
     def run(self):
         try:
-            llm =None # lms.llm()
+            llm = lms.llm()
             response = llm.get_info()  # Синхронный вызов
             if response:
                 model_name = response.display_name
@@ -186,7 +186,7 @@ class LMStudioDialog(QDialog):
         params_layout.addRow("Температура:", self.temperature)
 
         self.max_tokens = QSpinBox()
-        self.max_tokens.setRange(64, 4096)
+        self.max_tokens.setRange(64, 1024*256)
         self.max_tokens.setValue(256)
         params_layout.addRow("Макс. токенов:", self.max_tokens)
 
@@ -375,7 +375,7 @@ class LMStudioDialog(QDialog):
             self.logger.debug("Начало обработки запроса")
 
             # Создаем чат и добавляем сообщения
-            chat = None # lms.Chat()
+            chat = lms.Chat()
             
             # Добавляем системный промпт, если есть
             system_prompt = self.system_prompt.toPlainText().strip()
@@ -394,7 +394,7 @@ class LMStudioDialog(QDialog):
 
             # Получаем модель
             try:
-                model = None # lms.llm()
+                model = lms.llm()
                 model_info = model.get_info()
                 self.logger.debug(f"Отправка запроса к LMStudio с моделью {model_info.display_name}")
             except Exception as e:
