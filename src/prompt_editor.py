@@ -26,11 +26,11 @@ from category_manager import CategoryManager
 from huggingface_api import HuggingFaceAPI
 from huggingface_dialog import HuggingFaceDialog
 from lmstudio_api import LMStudioInference
-from lmstudio_dialog import LMStudioDialog
 from model_dialog import ModelConfigDialog
 from models import Variable, PromptVariant
 from prompt_manager import PromptManager
 from llm_settings import Settings
+from src.ai_dialog import AIDialog
 
 
 class MarkdownTextEdit(QTextEdit):
@@ -1435,7 +1435,7 @@ class PromptEditor(QDialog):
                 QMessageBox.warning(self, "Предупреждение", "Введите промпт")
                 return
 
-            dialog = LMStudioDialog(user_prompt, self, from_preview=False)
+            dialog = AIDialog(user_prompt, self, from_preview=False)
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 result = dialog.get_result()
                 if result:

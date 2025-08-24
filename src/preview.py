@@ -9,9 +9,9 @@ from MarkdownPreviewDialog import MarkdownPreviewDialog
 from huggingface_api import HuggingFaceAPI
 from huggingface_dialog import HuggingFaceDialog
 from lmstudio_api import LMStudioInference
-from lmstudio_dialog import LMStudioDialog
 from models import Prompt, Variable
 from prompt_editor import ExampleSelectionDialog
+from src.ai_dialog import AIDialog
 
 
 class PromptPreview(QDialog):
@@ -401,7 +401,7 @@ class PromptPreview(QDialog):
             if api == "hf":
                 dialog = HuggingFaceDialog(self.hf_api, self.settings, prompt_text, self, from_preview=True)
             elif api == "lm":
-                dialog = LMStudioDialog(prompt_text, self, from_preview=True)
+                dialog = AIDialog(prompt_text, self, from_preview=True)
             else:
                 return
 
