@@ -10,4 +10,3 @@ markdown~=3.8.2
 selenium~=4.34.2
 fake-useragent~=2.2.0
 cloudscraper~=1.2.71
-lmstudio~=1.5.0
