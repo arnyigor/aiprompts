@@ -120,12 +120,21 @@ class CheckConnectionRunnable(QRunnable):
 
 class RequestWorker(QRunnable):
     """QRunnable для выполнения запроса с замерами статистики на клиенте."""
+
     def __init__(self, parent_dialog, model_config: dict, prompt_text: str, logger):
         super().__init__()
-        self.parent = parent_dialog; self.model_config = model_config; self.prompt_text = prompt_text; self.logger = logger
-        self.signals = WorkerSignals(); self._is_cancelled = False; self.is_thinking = False; self.buffer = ""
+        self.parent = parent_dialog;
+        self.model_config = model_config;
+        self.prompt_text = prompt_text;
+        self.logger = logger
+        self.signals = WorkerSignals();
+        self._is_cancelled = False;
+        self.is_thinking = False;
+        self.buffer = ""
 
-    def cancel(self): self._is_cancelled = True
+    def cancel(self):
+        self._is_cancelled = True
+
     def _parse_think_response(self, text: str) -> Dict[str, str]:
         think_pattern = r'<think>(.*?)</think>'
         match = re.search(think_pattern, text, re.DOTALL)
@@ -133,9 +142,12 @@ class RequestWorker(QRunnable):
         cleaned = re.sub(think_pattern, '', text, flags=re.DOTALL).strip()
         return {"thinking_response": thinking, "llm_response": cleaned}
 
+    # В файле ai_dialog.py, класс RequestWorker
+
     def run(self):
         try:
             if self._is_cancelled: return
+
             self.signals.clear_all.emit()
 
             prompt_tokens = round(len(self.prompt_text) / 4)
@@ -151,7 +163,7 @@ class RequestWorker(QRunnable):
 
             if use_stream:
                 response_or_stream = llm_client.chat(messages, stream=use_stream)
-                main_response_chunks = []
+                full_response_text = "" # Будем собирать полный текст для кнопки "Применить"
 
                 is_first_chunk = True
                 first_chunk_time = 0
@@ -187,35 +199,42 @@ class RequestWorker(QRunnable):
                                 self.is_thinking = False
                             else:
                                 self.signals.update_thinking.emit(self.buffer)
-                                # self.buffer = ""  <-- ОШИБКА БЫЛА ЗДЕСЬ, ТЕПЕРЬ ИСПРАВЛЕНО
                                 break
-                        else:
+                        else: # Если не в режиме "мышления"
                             start_tag_pos = self.buffer.find('<think>')
                             if start_tag_pos != -1:
-                                main_response_chunks.append(self.buffer[:start_tag_pos])
+                                # Нашли тег. Стримим всё, что было до него, в основной результат.
+                                part_to_stream = self.buffer[:start_tag_pos]
+                                self.signals.update_output.emit(part_to_stream)
+                                full_response_text += part_to_stream
+
                                 self.buffer = self.buffer[start_tag_pos + len('<think>'):]
                                 self.is_thinking = True
                             else:
-                                main_response_chunks.append(self.buffer)
-                                self.buffer = ""; break
+                                # Тега нет. Стримим весь буфер в основной результат.
+                                self.signals.update_output.emit(self.buffer)
+                                full_response_text += self.buffer
+                                self.buffer = ""
+                                break
 
                 if not self._is_cancelled:
-                    # Если в буфере что-то осталось, добавляем это в основной ответ
-                    if self.buffer:
-                        main_response_chunks.append(self.buffer)
+                    # Добавляем остаток из буфера, если он есть
+                    if self.buffer and not self.is_thinking:
+                        self.signals.update_output.emit(self.buffer)
+                        full_response_text += self.buffer
 
-                    final_text = "".join(main_response_chunks)
-                    self.signals.update_output.emit(final_text)
-                    if final_text: self.parent.result = final_text; self.signals.enable_apply.emit(True)
+                    # Сохраняем итоговый результат
+                    final_text = full_response_text.strip()
+                    if final_text:
+                        self.parent.result = final_text
+                        self.signals.enable_apply.emit(True)
             else:
                 response_dict = llm_client.chat(messages, stream=False)
                 metadata = provider.extract_metadata_from_response(response_dict)
                 if metadata: self.signals.update_final_metrics.emit(metadata)
-
                 choices = provider.extract_choices(response_dict)
                 final_response_str = provider.extract_content_from_choice(choices[0]) if choices else ""
                 parsed = self._parse_think_response(final_response_str)
-
                 if parsed["thinking_response"]: self.signals.update_thinking.emit(parsed["thinking_response"])
                 text = parsed["llm_response"]
                 self.signals.update_output.emit(text)
@@ -380,7 +399,8 @@ class AIDialog(QDialog):
         QThreadPool.globalInstance().start(worker)
 
     def on_check_connection_finished(self):
-        self.check_connection_btn.setEnabled(True); self.check_connection_btn.setText("Проверить соединение")
+        self.check_connection_btn.setEnabled(True);
+        self.check_connection_btn.setText("Проверить соединение")
 
     def show_message_box(self, title, message):
         if title.lower() == "успех":
@@ -391,7 +411,8 @@ class AIDialog(QDialog):
             QMessageBox.critical(self, title, message)
 
     def update_output(self, text: str):
-        self.output_field.setPlainText(text); self.output_field.moveCursor(QTextCursor.MoveOperation.End)
+        self.output_field.insertPlainText(text)
+        self.output_field.moveCursor(QTextCursor.MoveOperation.End)
 
     def update_thinking_output(self, text: str):
         if text.strip() and not self.thinking_accordion.is_expanded: self.thinking_accordion.set_expanded(True)
@@ -451,7 +472,8 @@ class AIDialog(QDialog):
         QThreadPool.globalInstance().start(self.active_worker)
 
     def _on_request_finished(self):
-        self._set_ui_for_request(False); self.active_worker = None
+        self._set_ui_for_request(False);
+        self.active_worker = None
 
     def _set_ui_for_request(self, is_running: bool):
         self.run_button.setVisible(not is_running);

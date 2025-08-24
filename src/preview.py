@@ -154,7 +154,7 @@ class PromptPreview(QDialog):
             ru_hf_btn = QPushButton("Добавить API ключ Hugging Face")
             ru_hf_btn.clicked.connect(self.add_huggingface_key)
             ru_hf_btn.setStyleSheet("background-color: #4CAF50; color: white;")
-        ru_lm_btn = QPushButton("Выполнить через LMStudio")
+        ru_lm_btn = QPushButton("Отправить запрос к LLM")
         ru_lm_btn.clicked.connect(lambda: self.execute_prompt("ru", "lm"))
         if not self.lm_api:
             ru_lm_btn.setEnabled(False)
@@ -187,7 +187,7 @@ class PromptPreview(QDialog):
             en_hf_btn = QPushButton("Add Hugging Face API Key")
             en_hf_btn.clicked.connect(self.add_huggingface_key)
             en_hf_btn.setStyleSheet("background-color: #4CAF50; color: white;")
-        en_lm_btn = QPushButton("Execute with LMStudio")
+        en_lm_btn = QPushButton("Send a request to the LLM")
         en_lm_btn.clicked.connect(lambda: self.execute_prompt("en", "lm"))
         if not self.lm_api:
             en_lm_btn.setEnabled(False)

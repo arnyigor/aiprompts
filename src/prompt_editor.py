@@ -1264,7 +1264,7 @@ class PromptEditor(QDialog):
             ru_hf_btn.setToolTip("API Hugging Face недоступен")
 
         # Кнопка LMStudio
-        ru_lm_btn = QPushButton("Выполнить через LMStudio")
+        ru_lm_btn = QPushButton("Отправить запрос к LLM")
         ru_lm_btn.clicked.connect(lambda: self.show_lmstudio_dialog("ru"))
         if not self.lm_api:
             ru_lm_btn.setEnabled(False)
@@ -1338,8 +1338,7 @@ class PromptEditor(QDialog):
             en_hf_btn.setEnabled(False)
             en_hf_btn.setToolTip("Hugging Face API is not available")
 
-        # Кнопка LMStudio
-        en_lm_btn = QPushButton("Execute with LMStudio")
+        en_lm_btn = QPushButton("Send a request to the LLM")
         if  sys.platform != 'darwin':
             en_lm_btn.clicked.connect(lambda: self.show_lmstudio_dialog("en"))
         if not self.lm_api:
