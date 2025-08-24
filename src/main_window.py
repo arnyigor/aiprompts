@@ -1,8 +1,10 @@
 # main_window.py
 import logging
+import os
 from pathlib import Path
 
 from PyQt6.QtCore import pyqtSlot, QThread, Qt
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QMainWindow, QListWidget, QPushButton, \
     QLineEdit, QLabel, QMessageBox, QComboBox, QProgressDialog
 from PyQt6.QtWidgets import QVBoxLayout, QWidget, QHBoxLayout
@@ -36,6 +38,14 @@ class MainWindow(QMainWindow):
         self.app_info = APP_INFO
         self.setWindowTitle("Prompt Manager")
         self.setGeometry(100, 100, 800, 600)
+
+        # Установка иконки приложения (от корня проекта)
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        icon_path = os.path.join(project_root, "assets", "icon.png")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
+        else:
+            self.logger.warning(f"Icon not found at {icon_path}")
 
         # Фильтры
         self.lang_filter = QComboBox()

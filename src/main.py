@@ -1,8 +1,11 @@
 # main.py
 import logging
+import os
 import sys
 from pathlib import Path
 
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication
 
 from llm_settings import Settings
@@ -50,6 +53,16 @@ def setup_logging():
     )
 
 
+# Исправление для Windows - установка Application User Model ID
+# Исправление только для Windows
+if sys.platform.startswith('win'):
+    try:
+        import ctypes
+        myappid = 'arnyigor.aiprompts.app.version'
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+    except (ImportError, AttributeError, OSError):
+        pass  # Игнорируем ошибки даже на Windows
+
 def main():
     setup_logging()
     logger = logging.getLogger(__name__)
@@ -65,16 +78,36 @@ def main():
         # Инициализируем настройки
         settings = Settings()
 
+        # Настройка политики округления перед созданием QApplication
+        QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.Round)
+
         app = QApplication(sys.argv)
+
+        # Установка иконки приложения - УЛУЧШЕННАЯ ВЕРСИЯ
+        project_root = os.path.dirname(os.path.abspath(__file__))
+        icon_path = os.path.join(project_root, "assets", "icon.png")
+
+        if os.path.exists(icon_path):
+            icon = QIcon(icon_path)
+            # Устанавливаем иконку для приложения (по умолчанию для всех окон)
+            app.setWindowIcon(icon)
+            logger.info(f"Иконка приложения загружена: {icon_path}")
+        else:
+            logger.warning(f"Файл иконки не найден: {icon_path}")
+
         prompt_manager = PromptManager(storage_path=prompts_dir)
         window = MainWindow(prompt_manager, settings)
+
+        # ВАЖНО: Дополнительно устанавливаем иконку для главного окна
+        if os.path.exists(icon_path):
+            window.setWindowIcon(QIcon(icon_path))
+
         window.show()
         sys.exit(app.exec())
 
     except Exception as e:
         logger.error(f"Критическая ошибка: {str(e)}", exc_info=True)
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()

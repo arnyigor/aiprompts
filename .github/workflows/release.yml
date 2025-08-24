@@ -1,28 +1,20 @@
 # ==============================================================================
 # GitHub Workflow: Сборка и публикация релиза ПРИЛОЖЕНИЯ
 # ==============================================================================
-# Этот воркфлоу отвечает ИСКЛЮЧИТЕЛЬНО за сборку и публикацию
-# исполняемых файлов приложения (для Windows и macOS).
-#
-# Он НЕ занимается обновлением библиотеки промптов. Для этого существует
-# отдельный воркфлоу `update-prompts.yml`.
+# Этот воркфлоу отвечает за сборку исполняемых файлов для Windows,
+# macOS и Linux (.AppImage).
 #
 # --- ТРИГГЕРЫ ЗАПУСКА ---
-# 1. АВТОМАТИЧЕСКИ: при пуше нового тега в репозиторий (например, `git push --tags`).
-#    Формат тега должен быть `v*.*.*` (например, v1.0.0, v1.2.3, v1.2.3-beta1).
+# 1. АВТОМАТИЧЕСКИ: при пуше нового тега в репозиторий (например, v1.2.3).
 # 2. ВРУЧНУЮ: через вкладку "Actions" в репозитории GitHub.
-#    Нужно нажать "Run workflow" и указать имя создаваемого тега.
 # ==============================================================================
 
 name: Create App Release
 
 on:
-  # 1. Автоматический запуск по тегу
   push:
     tags:
       - 'v*.*.*'
-
-  # 2. Возможность ручного запуска
   workflow_dispatch:
     inputs:
       tag:
@@ -30,22 +22,17 @@ on:
         required: true
         type: string
 
-# --- ВАЖНО: ПРЕДОСТАВЛЕНИЕ ПРАВ ---
-# Явно предоставляем права на запись в "contents" репозитория.
-# Это необходимо для создания/обновления релизов и загрузки ассетов.
-# Без этого блока будет ошибка 403 Forbidden.
 permissions:
   contents: write
 
 jobs:
-  # --- ЗАДАЧА 1: Создать релиз на GitHub ---
+  # --- ЗАДАЧА 1: Создать релиз на GitHub (без изменений) ---
   create_release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       tag_name: ${{ steps.get_tag.outputs.name }}
-
     steps:
       - name: Determine Tag Name
         id: get_tag
@@ -57,7 +44,6 @@ jobs:
           fi
           echo "Используемый тег: $TAG_NAME"
           echo "name=$TAG_NAME" >> $GITHUB_OUTPUT
-
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -70,14 +56,15 @@ jobs:
           draft: false
           prerelease: ${{ contains(steps.get_tag.outputs.name, '-') }}
 
-  # --- ЗАДАЧА 2: Сборка бинарных файлов приложения ---
+  # --- ЗАДАЧА 2: Сборка бинарных файлов для всех ОС ---
   build_assets:
     name: Build App for ${{ matrix.os }}
     needs: create_release
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, macos-latest]
+        # ДОБАВЛЕНО: ubuntu-latest для сборки AppImage
+        os: [windows-latest, macos-latest, ubuntu-latest]
 
     steps:
       - name: Checkout code
@@ -88,7 +75,14 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install dependencies
+      # НОВЫЙ ШАГ: Установка зависимостей для AppImage в Linux
+      - name: Install AppImage prerequisites (Linux only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2
+
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
@@ -104,13 +98,54 @@ jobs:
       - name: Set Asset Names (macOS)
         if: matrix.os == 'macos-latest'
         run: |
-          echo "ARCH=$(uname -m)" >> $GITHUB_ENV
           echo "ASSET_NAME=PromptManager-${{ needs.create_release.outputs.tag_name }}-macos-$(uname -m)" >> $GITHUB_ENV
           echo "APP_NAME=PromptManager" >> $GITHUB_ENV
         shell: bash
 
-      - name: Build with PyInstaller
+      # НОВЫЙ ШАГ: Установка имён для Linux
+      - name: Set Asset Names (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          echo "ASSET_NAME=PromptManager-${{ needs.create_release.outputs.tag_name }}-linux-x86_64.AppImage" >> $GITHUB_ENV
+          echo "APP_NAME=PromptManager" >> $GITHUB_ENV
+        shell: bash
+
+      # ИЗМЕНЕНО: Сборка разделена для разных ОС
+      - name: Build with PyInstaller (Windows/macOS)
+        if: matrix.os == 'windows-latest' || matrix.os == 'macos-latest'
         run: pyinstaller --name "${{ env.APP_NAME }}" --onefile --windowed --paths ./src src/main.py
+
+      - name: Build with PyInstaller (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: pyinstaller --name "${{ env.APP_NAME }}" --noconfirm --windowed --paths ./src src/main.py
+
+      # НОВЫЙ ШАГ: Создание AppImage из сборки PyInstaller
+      - name: Build AppImage (Linux only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          # 1. Скачиваем утилиту для сборки AppImage
+          wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool.AppImage
+          chmod +x appimagetool.AppImage
+          
+          # 2. Создаем структуру AppDir
+          mkdir -p AppDir/usr/bin
+          cp -r dist/${{ env.APP_NAME }}/* AppDir/usr/bin/
+          
+          # 3. Создаем .desktop файл для меню приложений
+          # ЗАМЕНИТЕ 'YourAppName' и 'Utilities' при необходимости
+          echo "[Desktop Entry]
+          Name=${{ env.APP_NAME }}
+          Exec=${{ env.APP_NAME }}
+          Icon=icon
+          Type=Application
+          Categories=Utility;" > AppDir/${{ env.APP_NAME }}.desktop
+          
+          # 4. Копируем иконку (ВАЖНО: у вас должен быть файл assets/icon.png)
+          # Если путь другой, измените его здесь.
+          cp assets/icon.png AppDir/icon.png
+          
+          # 5. Запускаем сборку AppImage
+          ./appimagetool.AppImage AppDir "${{ env.ASSET_NAME }}"
 
       - name: Archive built artifact (Windows)
         if: matrix.os == 'windows-latest'
@@ -121,7 +156,9 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: zip -r ${{ env.ASSET_NAME }}.zip dist/"${{ env.APP_NAME }}.app"
 
-      - name: Upload Release Asset
+      # ИЗМЕНЕНО: Загрузка разделена для разных ОС
+      - name: Upload Release Asset (Windows/macOS)
+        if: matrix.os == 'windows-latest' || matrix.os == 'macos-latest'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -130,3 +167,14 @@ jobs:
           asset_path: ./${{ env.ASSET_NAME }}.zip
           asset_name: ${{ env.ASSET_NAME }}.zip
           asset_content_type: application/zip
+
+      - name: Upload Release Asset (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ./${{ env.ASSET_NAME }}
+          asset_name: ${{ env.ASSET_NAME }}
+          asset_content_type: application/x-appimage
