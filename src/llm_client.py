@@ -26,7 +26,8 @@ class LLMClient:
             - Если stream=True: Итератор по JSON-чанкам ответа.
         """
         log.info("Вызван метод chat (stream=%s)", stream)
-
+        # Извлекаем API-ключ из конфигурации
+        api_key = self.model_config.get("api_key")
         all_opts = self.model_config.get('generation', {}).copy()
         all_opts.update(self.model_config.get('inference', {}))
         all_opts.update(kwargs)
@@ -37,4 +38,4 @@ class LLMClient:
         )
         log.debug("--- Финальный Payload ---\n%s", payload)
 
-        return self.provider.send_request(payload)
+        return self.provider.send_request(payload,api_key=api_key)

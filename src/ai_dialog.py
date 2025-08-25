@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QGroupBox,
     QFormLayout, QLineEdit, QSpinBox,
     QDoubleSpinBox, QPushButton, QTextEdit, QMessageBox, QComboBox, QCheckBox, QLabel,
-    QProgressBar, QWidget
+    QProgressBar, QWidget, QApplication
 )
 
 # Используем ваш рабочий блок импортов
@@ -149,11 +149,27 @@ class CheckConnectionRunnable(QRunnable):
         if not config.get('client_type'):
             return "Не указан тип клиента"
 
-        if config['client_type'] in ['openai', 'openai_compatible'] and not config.get('api_base'):
+        api_base = config.get('api_base', '')
+
+        if config['client_type'] in ['openai', 'openai_compatible'] and not api_base:
             return "Не указан URL API для OpenAI-совместимого сервера"
+
+        # Валидация URL формата
+        if api_base:
+            import urllib.parse
+            try:
+                parsed = urllib.parse.urlparse(api_base)
+                if not all([parsed.scheme, parsed.netloc]):
+                    return "Некорректный формат URL API"
+            except Exception:
+                return "Некорректный формат URL API"
 
         if not config.get('name') or config['name'] == 'default-model':
             return "Не указано название модели"
+
+        # Дополнительная валидация для Hugging Face
+        if 'huggingface.co' in api_base and not config.get('api_key'):
+            return "Для Hugging Face требуется API ключ"
 
         return None
 
@@ -351,28 +367,40 @@ class AIDialog(QDialog):
     def _setup_main_ui(self, prompt_text, from_preview):
         layout = QVBoxLayout(self)
         # --- API Group ---
-        api_group = QGroupBox("Настройки соединения");
+        api_group = QGroupBox("Настройки соединения")
         api_layout = QFormLayout(api_group)
-        self.provider_selector = QComboBox();
+        self.provider_selector = QComboBox()
         self.providers = {
             "LM Studio": {"type": "lmstudio", "url": "http://127.0.0.1:1234/v1"},
             "Ollama": {"type": "ollama", "url": "http://localhost:11434"},
             "Jan": {"type": "jan", "url": "http://127.0.0.1:1337/v1"},
+            "Hugging Face": {"type": "openai_compatible", "url": "https://api-inference.huggingface.co"},
             "Другой (OpenAI-совм.)": {"type": "openai_compatible", "url": ""},
         }
-        self.provider_selector.addItems(self.providers.keys());
+        self.provider_selector.addItems(self.providers.keys())
         self.provider_selector.currentTextChanged.connect(self.on_provider_changed)
-        self.api_url = QLineEdit();
-        self.model_name_field = QLineEdit();
+
+        self.api_url = QLineEdit()
+        self.model_name_field = QLineEdit()
         self.model_name_field.setPlaceholderText("(необязательно)")
-        api_layout.addRow("Провайдер:", self.provider_selector);
-        api_layout.addRow("URL API:", self.api_url);
+
+        # Поле для API ключа - добавляем его в layout
+        self.api_key_field = QLineEdit()
+        self.api_key_field.setEchoMode(QLineEdit.EchoMode.Password)
+        self.api_key_field.setVisible(False)  # по умолчанию скрыто
+
+        api_layout.addRow("Провайдер:", self.provider_selector)
+        api_layout.addRow("URL API:", self.api_url)
+        api_layout.addRow("API ключ:", self.api_key_field)  # <- ЭТА СТРОКА ДОБАВЛЕНА
         api_layout.addRow("Имя модели:", self.model_name_field)
-        self.model_info = QLabel("Статус: не определен");
+
+        self.model_info = QLabel("Статус: не определен")
         api_layout.addRow(self.model_info)
-        self.check_connection_btn = QPushButton("Проверить соединение");
+
+        self.check_connection_btn = QPushButton("Проверить соединение")
         self.check_connection_btn.clicked.connect(self.check_connection)
-        api_layout.addRow(self.check_connection_btn);
+        api_layout.addRow(self.check_connection_btn)
+
         self.on_provider_changed(self.provider_selector.currentText())
         # --- Params Group ---
         params_group = QGroupBox("Параметры");
@@ -457,15 +485,36 @@ class AIDialog(QDialog):
         layout.addLayout(button_layout)
 
     def on_provider_changed(self, provider_name: str):
-        config = self.providers.get(provider_name);
-        if config: self.api_url.setText(config["url"])
+        config = self.providers.get(provider_name)
+        if config:
+            self.api_url.setText(config["url"])
+            # Показываем поле API ключа только для Hugging Face
+            is_hf = provider_name == "Hugging Face"
+            self.api_key_field.setVisible(is_hf)
+            if is_hf:
+                self.api_key_field.setPlaceholderText("Введите ваш Hugging Face API ключ")
+            else:
+                self.api_key_field.setPlaceholderText("")
 
     def get_current_model_config(self) -> dict:
-        p_name = self.provider_selector.currentText();
+        p_name = self.provider_selector.currentText()
         p_type = self.providers.get(p_name, {}).get("type", "openai_compatible")
-        return {"name": self.model_name_field.text().strip() or "default-model", "client_type": p_type,
-                "api_base": self.api_url.text().strip(), "inference": {"stream": self.stream_checkbox.isChecked()},
-                "generation": {"max_tokens": self.max_tokens.value(), "temperature": self.temperature.value()}}
+        config = {
+            "name": self.model_name_field.text().strip() or "default-model",
+            "client_type": p_type,
+            "api_base": self.api_url.text().strip(),
+            "inference": {"stream": self.stream_checkbox.isChecked()},
+            "generation": {
+                "max_tokens": self.max_tokens.value(),
+                "temperature": self.temperature.value()
+            }
+        }
+
+        # Добавляем API ключ, если используется Hugging Face
+        if p_name == "Hugging Face":
+            config["api_key"] = self.api_key_field.text().strip()
+
+        return config
 
     def check_connection(self):
         self.check_connection_btn.setEnabled(False);
@@ -529,8 +578,6 @@ class AIDialog(QDialog):
         self.speed_label.setText(f"{speed} токен/сек")
         self.tokens_prompt_label.setText(str(prompt_tokens));
         self.tokens_eval_label.setText(str(eval_tokens))
-
-    # ----------------------------------------
 
     def execute_prompt(self):
         prompt_text = self.prompt_field.toPlainText().strip()

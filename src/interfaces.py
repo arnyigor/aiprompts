@@ -85,7 +85,8 @@ class ProviderClient(ABC):
     @abstractmethod
     def send_request(
             self,
-            payload: Dict[str, Any]
+            payload: Dict[str, Any],
+            api_key: Optional[str]
     ) -> Union[Dict[str, Any], Iterable[Dict[str, Any]]]:
         """
         Отправляет подготовленный payload на эндпоинт API.

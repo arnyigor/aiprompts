@@ -29,13 +29,18 @@ class OpenAICompatibleClient(ProviderClient):
         payload.update(kwargs)
         return {k: v for k, v in payload.items() if v is not None}
 
-    def send_request(self, payload: Dict[str, Any]) -> Union[Dict[str, Any], Iterable[Dict[str, Any]]]:
+    def send_request(self, payload: Dict[str, Any], api_key: Optional[str] = None) -> Union[Dict[str, Any], Iterable[Dict[str, Any]]]:
         is_stream = payload.get("stream", False)
-        timeout = payload.pop('timeout', 180) # Используем и удаляем, чтобы не отправлять в API
+        timeout = payload.pop('timeout', 180)  # Используем и удаляем, чтобы не отправлять в API
+
+        # Подготавливаем заголовки
+        headers = {}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
 
         log.info("Отправка запроса на %s (stream=%s)...", self.endpoint, is_stream)
         try:
-            resp = self.session.post(self.endpoint, json=payload, stream=is_stream, timeout=timeout)
+            resp = self.session.post(self.endpoint, json=payload, headers=headers, stream=is_stream, timeout=timeout)
             resp.raise_for_status()
             log.info("Запрос успешно выполнен.")
             if is_stream:

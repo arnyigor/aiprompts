@@ -26,7 +26,7 @@ class OllamaClient(ProviderClient):
         log.info("Нативный Ollama HTTP клиент инициализирован. Endpoint: %s", self.endpoint)
 
     def prepare_payload(self, messages: List[Dict[str, str]], model: str, *, stream: bool = False, **kwargs: Any) -> \
-    Dict[str, Any]:
+            Dict[str, Any]:
         top_level_args = {'format', 'keep_alive', 'think'}
         payload = {"model": model, "messages": messages, "stream": stream}
         options = {}
@@ -40,7 +40,8 @@ class OllamaClient(ProviderClient):
             payload['options'] = options
         return {k: v for k, v in payload.items() if v is not None}
 
-    def send_request(self, payload: Dict[str, Any]) -> Union[Dict[str, Any], Iterable[Dict[str, Any]]]:
+    def send_request(self, payload: Dict[str, Any], api_key: Optional[str] = None) -> Union[
+        Dict[str, Any], Iterable[Dict[str, Any]]]:
         """
         Отправляет запрос к API, генерируя информативные и типизированные исключения.
         """
@@ -62,7 +63,7 @@ class OllamaClient(ProviderClient):
                     # Ollama обычно возвращает ошибку в ключе 'error'
                     error_message = error_details.get('error', str(error_details))
                 except json.JSONDecodeError:
-                    error_message = resp.text.strip() # Если ответ не JSON
+                    error_message = resp.text.strip()  # Если ответ не JSON
 
                 # Создаем наше кастомное, информативное исключение
                 raise LLMRequestError(
@@ -84,6 +85,7 @@ class OllamaClient(ProviderClient):
                         raise LLMResponseError(f"Ошибка при чтении потокового ответа: {e}") from e
                     except json.JSONDecodeError as e:
                         raise LLMResponseError(f"Ошибка декодирования JSON из потока: {e}") from e
+
                 return stream_generator()
             else:
                 try:
