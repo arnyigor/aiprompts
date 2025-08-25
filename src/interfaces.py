@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Iterable, Union, List, Optional
+from typing import Dict, Any, Iterable, Union, List, Optional, Tuple
 
 
 class ILLMClient(ABC):
@@ -127,15 +127,23 @@ class ProviderClient(ABC):
         ...
 
     @abstractmethod
-    def extract_delta_from_chunk(self, chunk: Dict[str, Any]) -> str:
+    def extract_delta_from_chunk(self, chunk: Dict[str, Any]) -> Tuple[str, Optional[Dict], Optional[str]]:
         """
-        Извлекает текстовую дельту из одного чанка в потоковом режиме.
+        Извлекает данные из одного чанка в потоковом режиме.
+
+        Этот метод должен парсить чанк ответа от API и извлекать из него:
+        - фрагмент текста (content)
+        - информацию о вероятностях токенов (logprobs), если она есть
+        - причину завершения генерации (finish_reason), если она указана
 
         Args:
-            chunk: Один чанк (словарь) из итератора, возвращенного `send_request`.
+            chunk: Один чанк (словарь) из итератора, возвращенного API.
 
         Returns:
-            Строка с фрагментом текста.
+            Кортеж (content, logprobs, finish_reason), где:
+            - content (str): Фрагмент сгенерированного текста.
+            - logprobs (Optional[Dict]): Словарь с данными logprobs или None.
+            - finish_reason (Optional[str]): Строка с причиной завершения или None.
         """
         ...
 

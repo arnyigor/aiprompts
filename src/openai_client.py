@@ -1,7 +1,8 @@
 import json
+import time
 from collections.abc import Iterable, Generator
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Tuple
 import requests
 import logging
 
@@ -14,9 +15,9 @@ class OpenAICompatibleClient(ProviderClient):
     Клиент для взаимодействия с любым API, совместимым с OpenAI.
     """
     def __init__(self, api_key: Optional[str] = None, base_url: str = "https://api.openai.com/v1"):
-        self.base_url = base_url.rstrip('/')
-        self.endpoint = f"{self.base_url}/chat/completions"
-        log.info("OpenAICompatibleClient инициализирован. Endpoint: %s", self.endpoint)
+        self.base_url = base_url.rstrip('/').strip()
+        # Сохраняем базовый URL, endpoint будем формировать динамически
+        log.info("OpenAICompatibleClient инициализирован. Base URL: %s", self.base_url)
 
         self.session = requests.Session()
         headers = {"Content-Type": "application/json"}
@@ -26,21 +27,34 @@ class OpenAICompatibleClient(ProviderClient):
 
     def prepare_payload(self, messages: List[Dict[str, str]], model: str, *, stream: bool = False, **kwargs: Any) -> Dict[str, Any]:
         payload: Dict[str, Any] = {"model": model, "messages": messages, "stream": stream}
+
+        # Проверяем, используем ли мы Hugging Face Inference Providers
+        is_hf_router = getattr(self, 'base_url', '').startswith('https://router.huggingface.co')
+
+        if is_hf_router:
+            # Для Hugging Face устанавливаем provider по умолчанию, если не задан
+            if 'provider' not in kwargs and 'provider' not in payload:
+                payload["provider"] = "auto"
+
         payload.update(kwargs)
         return {k: v for k, v in payload.items() if v is not None}
 
     def send_request(self, payload: Dict[str, Any], api_key: Optional[str] = None) -> Union[Dict[str, Any], Iterable[Dict[str, Any]]]:
         is_stream = payload.get("stream", False)
-        timeout = payload.pop('timeout', 180)  # Используем и удаляем, чтобы не отправлять в API
+        timeout = payload.pop('timeout', 180)
 
         # Подготавливаем заголовки
-        headers = {}
+        headers = {"Content-Type": "application/json"}
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
 
-        log.info("Отправка запроса на %s (stream=%s)...", self.endpoint, is_stream)
+        # Формируем endpoint: используем базовый URL + /chat/completions
+        url = f"{self.base_url}/chat/completions"
+        request_payload = payload # Используем стандартный OpenAI формат для всех
+
+        log.info("Отправка запроса на %s (stream=%s)...", url, is_stream)
         try:
-            resp = self.session.post(self.endpoint, json=payload, headers=headers, stream=is_stream, timeout=timeout)
+            resp = self.session.post(url, json=request_payload, headers=headers, stream=is_stream, timeout=timeout)
             resp.raise_for_status()
             log.info("Запрос успешно выполнен.")
             if is_stream:
@@ -48,7 +62,7 @@ class OpenAICompatibleClient(ProviderClient):
             else:
                 return resp.json()
         except requests.exceptions.RequestException as e:
-            log.error("Сетевая ошибка при запросе к %s: %s", self.endpoint, e)
+            log.error("Сетевая ошибка при запросе к %s: %s", url, e)
             raise LLMConnectionError(f"Сетевая ошибка: {e}") from e
 
     def _handle_stream(self, response: requests.Response) -> Generator[Dict[str, Any], None, None]:
@@ -73,8 +87,35 @@ class OpenAICompatibleClient(ProviderClient):
     def extract_content_from_choice(self, choice: Dict[str, Any]) -> str:
         return choice.get("message", {}).get("content", "")
 
-    def extract_delta_from_chunk(self, chunk: Dict[str, Any]) -> str:
-        return chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+    def extract_delta_from_chunk(self, chunk: Dict[str, Any]) -> Tuple[str, Optional[Dict], Optional[str]]:
+        """
+        Извлекает из чанка ответа текст, информацию о вероятностях токенов (logprobs)
+        и причину завершения генерации.
+
+        Args:
+            chunk (Dict[str, Any]): Чанк данных, полученный от API.
+
+        Returns:
+            Tuple[str, Optional[Dict], Optional[str]]: Кортеж, содержащий:
+            - Текстовое содержимое дельты (content)
+            - Информацию о logprobs, если она доступна
+            - Причину завершения генерации, если она указана
+        """
+        choices = chunk.get("choices", [])
+        if not choices:
+            return "", None, None
+
+        choice = choices[0]
+        delta = choice.get("delta", {})
+        content = delta.get("content", "")
+
+        # Извлечение logprobs, если они есть в чанке
+        logprobs = choice.get("logprobs")
+
+        # Извлечение причины завершения
+        finish_reason = choice.get("finish_reason")
+
+        return content, logprobs, finish_reason
 
     def extract_metadata_from_response(self, response: Dict[str, Any]) -> Dict[str, Any]:
         """

@@ -56,34 +56,63 @@ class AdapterLLMClient(ILLMClient):
     # Эти методы должны быть внутри вашего класса Adapter
     def _handle_stream_response(self, response_generator: Generator) -> tuple[
         str, dict, float | None, float]:
-        """Обрабатывает потоковый ответ, собирает текст и метаданные."""
+        """Обрабатывает потоковый ответ, собирая текст, "мышление" и метаданные."""
         log.info("Начало получения потокового ответа...")
         print(">>> LLM Stream: ", end="", flush=True)
 
-        chunks_text = []
+        # Переменные для сбора данных
+        full_content_parts = []
+        final_logprobs = None
+        final_finish_reason = None
         server_metadata = {}
+
+        # Переменные для таймингов
         ttft_time: float | None = None
         first_chunk = True
 
         for chunk_dict in response_generator:
-            # log.debug("RAW CHUNK RECEIVED: %s", chunk_dict)
             if first_chunk:
                 ttft_time = time.perf_counter()
                 first_chunk = False
 
-            delta = self.new_client.provider.extract_delta_from_chunk(chunk_dict)
-            if delta:
-                print(delta, end="", flush=True)
-                chunks_text.append(delta)
+            # 1. Извлекаем все данные из чанка с помощью нового метода
+            content, logprobs, finish_reason = self.new_client.provider.extract_delta_from_chunk(chunk_dict)
 
+            # 2. Обрабатываем текстовый контент
+            if content:
+                # Выводим в консоль в реальном времени
+                print(content, end="", flush=True)
+                full_content_parts.append(content)
+
+            # 3. Агрегируем метаданные
+            if logprobs:
+                # Logprobs обычно приходят с каждым токеном.
+                # Можно либо собирать их все в список, либо сохранять последние.
+                # Для примера, просто обновим server_metadata.
+                # В реальном приложении логика может быть сложнее.
+                if 'logprobs' not in server_metadata:
+                    server_metadata['logprobs'] = []
+                server_metadata['logprobs'].append(logprobs)
+
+            if finish_reason:
+                # Причина завершения обычно приходит в последнем чанке
+                final_finish_reason = finish_reason
+                server_metadata['finish_reason'] = finish_reason
+
+            # Сохраняем совместимость с вашим старым `extract_metadata_from_chunk`, если он нужен
             chunk_metadata = self.new_client.provider.extract_metadata_from_chunk(chunk_dict)
             if chunk_metadata:
                 server_metadata.update(chunk_metadata)
 
         end_time = time.perf_counter()
         print("\n")
-        final_response_str = "".join(chunks_text)
+
+        # 4. Собираем итоговый результат
+        final_response_str = "".join(full_content_parts)
         log.info("Потоковый ответ полностью получен (длина: %d символов).", len(final_response_str))
+        if final_finish_reason:
+            log.info("Причина завершения генерации: %s", final_finish_reason)
+
 
         return final_response_str, server_metadata, ttft_time, end_time
 

@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QGroupBox,
     QFormLayout, QLineEdit, QSpinBox,
     QDoubleSpinBox, QPushButton, QTextEdit, QMessageBox, QComboBox, QCheckBox, QLabel,
-    QProgressBar, QWidget, QApplication
+    QProgressBar, QWidget
 )
 
 # Используем ваш рабочий блок импортов
@@ -128,8 +128,10 @@ class CheckConnectionRunnable(QRunnable):
             is_connected, response_time, error_msg = self._test_connection(llm_client, provider)
 
             if is_connected:
-                self.signals.update_text.emit(f"Сервер '{model_config['client_type']}' доступен ({response_time:.2f}ms)")
-                self.signals.show_info.emit("Успех", f"Соединение с API-сервером успешно установлено.\nВремя отклика: {response_time:.2f}ms")
+                self.signals.update_text.emit(
+                    f"Сервер '{model_config['client_type']}' доступен ({response_time:.2f}ms)")
+                self.signals.show_info.emit("Успех",
+                                            f"Соединение с API-сервером успешно установлено.\nВремя отклика: {response_time:.2f}ms")
             else:
                 self.signals.update_text.emit("Статус: ошибка соединения")
                 self.signals.show_critical.emit("Ошибка соединения", error_msg)
@@ -174,13 +176,11 @@ class CheckConnectionRunnable(QRunnable):
         return None
 
     def _test_connection(self, llm_client, provider) -> Tuple[bool, float, str]:
-        """Фактическая проверка соединения с API."""
         try:
             import time
-
             start_time = time.perf_counter()
 
-            # Отправляем минимальный тестовый запрос
+            # Отправляем минимальный тестовый запрос в формате OpenAI
             test_messages = [{"role": "user", "content": "Hello, are you available?"}]
 
             # Используем небольшие параметры для быстрой проверки
@@ -190,20 +190,18 @@ class CheckConnectionRunnable(QRunnable):
                 "stream": False
             }
 
+            # Для Hugging Face указываем тестовую модель
+            provider_url = getattr(provider, 'api_base', '')
+            if 'huggingface.co' in provider_url:
+                test_config['model'] = "google/gemma-2-9b-it"  # или другая доступная модель
+
             response = llm_client.chat(test_messages, **test_config)
 
             end_time = time.perf_counter()
             response_time_ms = (end_time - start_time) * 1000
 
-            # Проверяем, что получили валидный ответ
             if response is None:
                 return False, 0, "Получен пустой ответ от сервера"
-
-            # Для разных типов провайдеров проверяем разные поля
-            if hasattr(provider, 'extract_content_from_choice'):
-                choices = provider.extract_choices(response)
-                if not choices:
-                    return False, 0, "Сервер вернул пустой ответ"
 
             return True, response_time_ms, ""
 
@@ -241,14 +239,16 @@ class RequestWorker(QRunnable):
 
     def run(self):
         try:
-            if self._is_cancelled: return
+            if self._is_cancelled:
+                return
 
+            # 1. Начальная настройка
             self.signals.clear_all.emit()
-
-            prompt_tokens = round(len(self.prompt_text) / 4)
+            prompt_tokens = round(len(self.prompt_text) / 4) # Приблизительный подсчет
             self.signals.update_generation_metrics.emit(0, 0.0)
             self.parent.tokens_prompt_label.setText(str(prompt_tokens))
 
+            # 2. Инициализация клиента
             provider = LLMClientFactory.create_provider(self.model_config)
             llm_client = LLMClient(provider, self.model_config)
             messages = [{"role": "user", "content": self.prompt_text}]
@@ -257,95 +257,138 @@ class RequestWorker(QRunnable):
             start_time = time.perf_counter()
 
             if use_stream:
-                response_or_stream = llm_client.chat(messages, stream=use_stream)
-                full_response_text = ""  # Будем собирать полный текст для кнопки "Применить"
-
-                is_first_chunk = True
-                first_chunk_time = 0
-                total_tokens = 0
-
-                for chunk in response_or_stream:
-                    if self._is_cancelled: break
-
-                    if is_first_chunk:
-                        first_chunk_time = time.perf_counter()
-                        ttft_ms = (first_chunk_time - start_time) * 1000
-                        self.signals.update_ttft.emit(ttft_ms)
-                        is_first_chunk = False
-
-                    delta = provider.extract_delta_from_chunk(chunk)
-                    if not delta: continue
-                    if isinstance(delta, dict): delta = delta.get("content", "")
-                    if not isinstance(delta, str): continue
-
-                    total_tokens += (len(delta) / 4)
-                    elapsed_generation_time = time.perf_counter() - first_chunk_time
-                    speed = total_tokens / elapsed_generation_time if elapsed_generation_time > 0 else 0
-                    self.signals.update_generation_metrics.emit(round(total_tokens), speed)
-
-                    self.buffer += delta
-
-                    while True:
-                        if self.is_thinking:
-                            end_tag_pos = self.buffer.find('</think>')
-                            if end_tag_pos != -1:
-                                self.signals.update_thinking.emit(self.buffer[:end_tag_pos])
-                                self.buffer = self.buffer[end_tag_pos + len('</think>'):]
-                                self.is_thinking = False
-                            else:
-                                self.signals.update_thinking.emit(self.buffer)
-                                break
-                        else:  # Если не в режиме "мышления"
-                            start_tag_pos = self.buffer.find('<think>')
-                            if start_tag_pos != -1:
-                                # Нашли тег. Стримим всё, что было до него, в основной результат.
-                                part_to_stream = self.buffer[:start_tag_pos]
-                                self.signals.update_output.emit(part_to_stream)
-                                full_response_text += part_to_stream
-
-                                self.buffer = self.buffer[start_tag_pos + len('<think>'):]
-                                self.is_thinking = True
-                            else:
-                                # Тега нет. Стримим весь буфер в основной результат.
-                                self.signals.update_output.emit(self.buffer)
-                                full_response_text += self.buffer
-                                self.buffer = ""
-                                break
-
-                if not self._is_cancelled:
-                    # Добавляем остаток из буфера, если он есть
-                    if self.buffer and not self.is_thinking:
-                        self.signals.update_output.emit(self.buffer)
-                        full_response_text += self.buffer
-
-                    # Сохраняем итоговый результат
-                    final_text = full_response_text.strip()
-                    if final_text:
-                        self.parent.result = final_text
-                        self.signals.enable_apply.emit(True)
-            else:
+                response_stream = llm_client.chat(messages, stream=True)
+                self._process_stream(response_stream, provider, start_time)
+            else: # Непотоковый режим
                 response_dict = llm_client.chat(messages, stream=False)
-                metadata = provider.extract_metadata_from_response(response_dict)
-                if metadata: self.signals.update_final_metrics.emit(metadata)
-                choices = provider.extract_choices(response_dict)
-                final_response_str = provider.extract_content_from_choice(choices[0]) if choices else ""
-                parsed = self._parse_think_response(final_response_str)
-                if parsed["thinking_response"]: self.signals.update_thinking.emit(parsed["thinking_response"])
-                text = parsed["llm_response"]
-                self.signals.update_output.emit(text)
-                if text: self.parent.result = text; self.signals.enable_apply.emit(True)
+                self._process_non_stream(response_dict, provider)
 
         except Exception as e:
             if not self._is_cancelled:
-                self.logger.critical("Неперехваченное исключение!", exc_info=True)
+                self.logger.critical("Неперехваченное исключение в потоке!", exc_info=True)
                 self.signals.update_output.emit(f"\n\n--- ОШИБКА ---\n{e}")
         finally:
             self.signals.finished.emit()
 
+    def _process_stream(self, response_stream, provider, start_time):
+        """Вспомогательный метод для обработки потокового ответа."""
+        full_response_text = ""
+        first_chunk_time = 0
+        total_completion_tokens = 0
+        is_first_chunk = True
+
+        for chunk in response_stream:
+            self.logger.info(f"stream chunk: {chunk}")
+            if self._is_cancelled:
+                break
+
+            if is_first_chunk:
+                first_chunk_time = time.perf_counter()
+                ttft_ms = (first_chunk_time - start_time) * 1000
+                self.signals.update_ttft.emit(ttft_ms)
+                is_first_chunk = False
+
+            # --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ ---
+            # Получаем структурированные данные из чанка
+            content, logprobs, finish_reason = provider.extract_delta_from_chunk(chunk)
+            # ---------------------------
+
+            if content:
+                # Обновляем метрики генерации
+                # Приблизительный подсчет токенов на основе длины текста
+                total_completion_tokens += (len(content) / 4)
+                elapsed_time = time.perf_counter() - first_chunk_time
+                speed = total_completion_tokens / elapsed_time if elapsed_time > 0 else 0
+                self.signals.update_generation_metrics.emit(round(total_completion_tokens), speed)
+
+                # Обрабатываем текст (включая <think> теги)
+                full_response_text += self._handle_thinking_and_content(content)
+
+            if finish_reason:
+                self.logger.info(f"Причина завершения генерации: {finish_reason}")
+                # Здесь можно добавить логику для отправки final_metrics
+
+        if not self._is_cancelled:
+            # Обрабатываем остаток в буфере
+            if self.buffer and not self.is_thinking:
+                self.signals.update_output.emit(self.buffer)
+                full_response_text += self.buffer
+                self.buffer = ""
+
+            # Сохраняем итоговый результат
+            final_text = full_response_text.strip()
+            if final_text:
+                self.parent.result = final_text
+                self.signals.enable_apply.emit(True)
+
+    def _handle_thinking_and_content(self, text_chunk: str) -> str:
+        """Обрабатывает текстовый чанк, разделяя 'мышление' и 'контент'."""
+        self.buffer += text_chunk
+        streamed_text = ""
+
+        while True:
+            if self.is_thinking:
+                end_tag_pos = self.buffer.find('</think>')
+                if end_tag_pos != -1:
+                    # Завершили блок мышления
+                    part_to_think = self.buffer[:end_tag_pos]
+                    self.signals.update_thinking.emit(part_to_think)
+                    self.buffer = self.buffer[end_tag_pos + len('</think>'):]
+                    self.is_thinking = False
+                else:
+                    # Мышление продолжается, отправляем текущий буфер
+                    self.signals.update_thinking.emit(self.buffer)
+                    break # Ждем следующий чанк
+            else:
+                start_tag_pos = self.buffer.find('<think>')
+                if start_tag_pos != -1:
+                    # Начался блок мышления
+                    part_to_stream = self.buffer[:start_tag_pos]
+                    self.signals.update_output.emit(part_to_stream)
+                    streamed_text += part_to_stream
+                    self.buffer = self.buffer[start_tag_pos + len('<think>'):]
+                    self.is_thinking = True
+                else:
+                    # Блока мышления нет, все отправляем в основной вывод
+                    self.signals.update_output.emit(self.buffer)
+                    streamed_text += self.buffer
+                    self.buffer = ""
+                    break
+        return streamed_text
+
+
+    def _process_non_stream(self, response_dict, provider):
+        """Вспомогательный метод для обработки непотокового ответа."""
+        metadata = provider.extract_metadata_from_response(response_dict)
+        if metadata:
+            self.signals.update_final_metrics.emit(metadata)
+
+        choices = provider.extract_choices(response_dict)
+        full_response_str = provider.extract_content_from_choice(choices[0]) if choices else ""
+
+        # Парсинг <think> тегов в полном ответе
+        think_tag_start = full_response_str.find('<think>')
+        think_tag_end = full_response_str.find('</think>')
+
+        if think_tag_start != -1 and think_tag_end != -1:
+            thinking_response = full_response_str[think_tag_start + len('<think>'):think_tag_end]
+            llm_response = full_response_str[:think_tag_start] + full_response_str[think_tag_end + len('</think>'):]
+            self.signals.update_thinking.emit(thinking_response.strip())
+        else:
+            llm_response = full_response_str
+
+        final_text = llm_response.strip()
+        self.signals.update_output.emit(final_text)
+        if final_text:
+            self.parent.result = final_text
+            self.signals.enable_apply.emit(True)
+
+
 
 class AIDialog(QDialog):
-    def __init__(self, prompt_text="", parent=None, from_preview=False):
-        super().__init__(parent);
+    def __init__(self, prompt_text="", parent=None, from_preview=False, settings=None):
+        super().__init__(parent)
+        self.settings = settings
         self.logger = logging.getLogger(__name__);
         self.result = None;
         self.active_worker = None
@@ -372,27 +415,53 @@ class AIDialog(QDialog):
         self.provider_selector = QComboBox()
         self.providers = {
             "LM Studio": {"type": "lmstudio", "url": "http://127.0.0.1:1234/v1"},
-            "Ollama": {"type": "ollama", "url": "http://localhost:11434"},
+            "Ollama": {"type": "ollama", "url": "http://localhost:11434/v1"},
             "Jan": {"type": "jan", "url": "http://127.0.0.1:1337/v1"},
-            "Hugging Face": {"type": "openai_compatible", "url": "https://api-inference.huggingface.co"},
+            "Hugging Face": {"type": "openai_compatible", "url": "https://router.huggingface.co/v1"},
             "Другой (OpenAI-совм.)": {"type": "openai_compatible", "url": ""},
         }
         self.provider_selector.addItems(self.providers.keys())
         self.provider_selector.currentTextChanged.connect(self.on_provider_changed)
 
-        self.api_url = QLineEdit()
         self.model_name_field = QLineEdit()
         self.model_name_field.setPlaceholderText("(необязательно)")
+        self.model_name_field.setMinimumWidth(300)  # Увеличиваем ширину
 
-        # Поле для API ключа - добавляем его в layout
+        # Поле для API ключа
         self.api_key_field = QLineEdit()
         self.api_key_field.setEchoMode(QLineEdit.EchoMode.Password)
         self.api_key_field.setVisible(False)  # по умолчанию скрыто
 
+        # Кнопка управления API ключами (для Hugging Face)
+        self.api_key_button = QPushButton("⚙️")
+        self.api_key_button.setFixedWidth(30)
+        self.api_key_button.setVisible(False)  # по умолчанию скрыто
+        self.api_key_button.setToolTip("Управление API ключами")
+        self.api_key_button.clicked.connect(self.show_api_keys_dialog)
+
         api_layout.addRow("Провайдер:", self.provider_selector)
+
+        self.api_url = QLineEdit()
         api_layout.addRow("URL API:", self.api_url)
-        api_layout.addRow("API ключ:", self.api_key_field)  # <- ЭТА СТРОКА ДОБАВЛЕНА
-        api_layout.addRow("Имя модели:", self.model_name_field)
+
+        # Создаем горизонтальный layout для API ключа и кнопки настроек
+        api_key_layout = QHBoxLayout()
+        api_key_layout.addWidget(self.api_key_field)
+        api_key_layout.addWidget(self.api_key_button)
+        api_layout.addRow("API ключ:", api_key_layout)
+
+        # Кнопка для поиска моделей
+        self.search_models_button = QPushButton("🔍 Поиск моделей")
+        self.search_models_button.setToolTip("Открыть поиск моделей на huggingface.co")
+        self.search_models_button.clicked.connect(self.open_models_search)
+
+        # Создаем горизонтальный layout для поля имени модели и кнопки поиска
+        model_name_layout = QHBoxLayout()
+        model_name_layout.addWidget(self.model_name_field)
+        model_name_layout.addWidget(self.search_models_button)
+
+        # Добавляем составной layout в основной layout
+        api_layout.addRow("Имя модели:", model_name_layout)
 
         self.model_info = QLabel("Статус: не определен")
         api_layout.addRow(self.model_info)
@@ -488,13 +557,35 @@ class AIDialog(QDialog):
         config = self.providers.get(provider_name)
         if config:
             self.api_url.setText(config["url"])
-            # Показываем поле API ключа только для Hugging Face
+            # Показываем поле API ключа и кнопку настроек только для Hugging Face
             is_hf = provider_name == "Hugging Face"
             self.api_key_field.setVisible(is_hf)
+            self.api_key_button.setVisible(is_hf)
+
             if is_hf:
-                self.api_key_field.setPlaceholderText("Введите ваш Hugging Face API ключ")
+                self.api_key_field.setPlaceholderText("Введите API ключ или используйте кнопку настроек")
+                # Загружаем сохраненный ключ, если есть
+                if hasattr(self, 'settings'):
+                    saved_key = self.settings.get_api_key("huggingface")
+                    if saved_key:
+                        self.api_key_field.setText(saved_key)
             else:
                 self.api_key_field.setPlaceholderText("")
+
+    def show_api_keys_dialog(self):
+        """Показать диалог управления API ключами"""
+        try:
+            # Предполагается, что у вас есть ApiKeysDialog
+            from api_keys_dialog import ApiKeysDialog
+            dialog = ApiKeysDialog(self.settings, self)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                # Загружаем ключ после закрытия диалога
+                saved_key = self.settings.get_api_key("huggingface")
+                if saved_key:
+                    self.api_key_field.setText(saved_key)
+        except Exception as e:
+            self.logger.error(f"Ошибка при открытии диалога API ключей: {str(e)}", exc_info=True)
+            QMessageBox.critical(self, "Ошибка", f"Не удалось открыть диалог: {str(e)}")
 
     def get_current_model_config(self) -> dict:
         p_name = self.provider_selector.currentText()
@@ -510,9 +601,11 @@ class AIDialog(QDialog):
             }
         }
 
-        # Добавляем API ключ, если используется Hugging Face
+        # Добавляем API ключ для Hugging Face
         if p_name == "Hugging Face":
-            config["api_key"] = self.api_key_field.text().strip()
+            api_key = self.api_key_field.text().strip()
+            if api_key:
+                config["api_key"] = api_key
 
         return config
 
@@ -525,6 +618,29 @@ class AIDialog(QDialog):
         worker.signals.show_info.connect(self.show_message_box);
         worker.signals.show_critical.connect(self.show_message_box)
         QThreadPool.globalInstance().start(worker)
+
+    # Улучшенная функция поиска моделей
+    def open_models_search(self):
+        """Открыть страницу поиска моделей в зависимости от выбранного провайдера"""
+        provider_name = self.provider_selector.currentText()
+
+        urls = {
+            "LM Studio": "https://huggingface.co/models?pipeline_tag=text-generation&sort=downloads",
+            "Ollama": "https://ollama.com/library",
+            "Jan": "https://openrouter.ai/models",
+            "Hugging Face": "https://huggingface.co/models?pipeline_tag=text-generation&inference_provider=together,fireworks-ai,nebius,novita,cerebras&sort=trending",
+            "Другой (OpenAI-совм.)": "https://huggingface.co/models?pipeline_tag=text-generation&sort=downloads"
+        }
+
+        url = urls.get(provider_name, "https://huggingface.co/models")
+
+        try:
+            import webbrowser
+            webbrowser.open(url)
+            self.logger.info(f"Открыта страница поиска моделей для {provider_name}: {url}")
+        except Exception as e:
+            self.logger.error(f"Ошибка при открытии браузера: {str(e)}")
+            QMessageBox.warning(self, "Ошибка", f"Не удалось открыть браузер: {str(e)}")
 
     def on_check_connection_finished(self):
         self.check_connection_btn.setEnabled(True);

@@ -23,9 +23,6 @@ from PyQt6.QtWidgets import (
 
 from MarkdownPreviewDialog import MarkdownPreviewDialog
 from category_manager import CategoryManager
-from huggingface_api import HuggingFaceAPI
-from huggingface_dialog import HuggingFaceDialog
-from lmstudio_api import LMStudioInference
 from model_dialog import ModelConfigDialog
 from models import Variable, PromptVariant
 from prompt_manager import PromptManager
@@ -299,18 +296,6 @@ class PromptEditor(QDialog):
         # Базовая инициализация
         self.logger = logging.getLogger(__name__)
         self.settings = settings
-        try:
-            self.hf_api = HuggingFaceAPI(settings=self.settings)
-        except Exception as e:
-            self.logger.error(f"Ошибка инициализации HuggingFaceAPI: {str(e)}", exc_info=True)
-            self.hf_api = None
-
-        try:
-            self.lm_api = LMStudioInference()
-        except Exception as e:
-            self.logger.error(f"Ошибка инициализации LMStudioInference: {str(e)}", exc_info=True)
-            self.lm_api = None
-
         self.prompt_manager = prompt_manager
         self.prompt_id = prompt_id
         self.cat_manager = CategoryManager()
@@ -1254,21 +1239,9 @@ class PromptEditor(QDialog):
         ru_preview_btn.setToolTip("Просмотреть как Markdown")
         ru_preview_btn.clicked.connect(lambda: self.show_markdown_preview("ru"))
 
-        # Кнопки Hugging Face
-        if self.hf_api:
-            ru_hf_btn = QPushButton("Выполнить через Hugging Face")
-            ru_hf_btn.clicked.connect(lambda: self.show_huggingface_dialog("ru"))
-        else:
-            ru_hf_btn = QPushButton("Выполнить через Hugging Face")
-            ru_hf_btn.setEnabled(False)
-            ru_hf_btn.setToolTip("API Hugging Face недоступен")
-
-        # Кнопка LMStudio
+        # Кнопка LLM
         ru_lm_btn = QPushButton("Отправить запрос к LLM")
-        ru_lm_btn.clicked.connect(lambda: self.show_lmstudio_dialog("ru"))
-        if not self.lm_api:
-            ru_lm_btn.setEnabled(False)
-            ru_lm_btn.setToolTip("LMStudio API недоступен")
+        ru_lm_btn.clicked.connect(lambda: self.show_llm_dialog("ru"))
 
         ru_copy_btn = QPushButton("Копировать результат в промпт")
         ru_copy_btn.clicked.connect(lambda: self.copy_result_to_prompt("ru"))
@@ -1276,7 +1249,6 @@ class PromptEditor(QDialog):
         ru_clear_btn.clicked.connect(lambda: self.clear_content("ru"))
 
         ru_buttons.addWidget(ru_preview_btn)
-        ru_buttons.addWidget(ru_hf_btn)
         ru_buttons.addWidget(ru_lm_btn)
         ru_buttons.addWidget(ru_copy_btn)
         ru_buttons.addWidget(ru_clear_btn)
@@ -1329,21 +1301,9 @@ class PromptEditor(QDialog):
         en_preview_btn.setToolTip("View as Markdown")
         en_preview_btn.clicked.connect(lambda: self.show_markdown_preview("en"))
 
-        # Кнопки Hugging Face
-        if self.hf_api:
-            en_hf_btn = QPushButton("Execute with Hugging Face")
-            en_hf_btn.clicked.connect(lambda: self.show_huggingface_dialog("en"))
-        else:
-            en_hf_btn = QPushButton("Execute with Hugging Face")
-            en_hf_btn.setEnabled(False)
-            en_hf_btn.setToolTip("Hugging Face API is not available")
-
         en_lm_btn = QPushButton("Send a request to the LLM")
         if  sys.platform != 'darwin':
-            en_lm_btn.clicked.connect(lambda: self.show_lmstudio_dialog("en"))
-        if not self.lm_api:
-            en_lm_btn.setEnabled(False)
-            en_lm_btn.setToolTip("LMStudio API is not available")
+            en_lm_btn.clicked.connect(lambda: self.show_llm_dialog("en"))
 
         en_copy_btn = QPushButton("Copy result to prompt")
         en_copy_btn.clicked.connect(lambda: self.copy_result_to_prompt("en"))
@@ -1351,7 +1311,6 @@ class PromptEditor(QDialog):
         en_clear_btn.clicked.connect(lambda: self.clear_content("en"))
 
         en_buttons.addWidget(en_preview_btn)
-        en_buttons.addWidget(en_hf_btn)
         en_buttons.addWidget(en_lm_btn)
         en_buttons.addWidget(en_copy_btn)
         en_buttons.addWidget(en_clear_btn)
@@ -1387,39 +1346,7 @@ class PromptEditor(QDialog):
         dialog = MarkdownPreviewDialog(markdown_text, window_title=title, parent=self)
         dialog.exec()
 
-    def show_huggingface_dialog(self, language):
-        """Показывает диалог Hugging Face и обрабатывает результат"""
-        try:
-            # Получаем пользовательский промпт
-            if language == "ru":
-                user_prompt = self.ru_user_prompt.toPlainText()
-                result_field = self.result_ru
-            else:
-                user_prompt = self.en_user_prompt.toPlainText()
-                result_field = self.result_en
-
-            if not user_prompt.strip():
-                QMessageBox.warning(self, "Предупреждение", "Введите промпт")
-                return
-
-            dialog = HuggingFaceDialog(self.hf_api, self.settings, user_prompt, self,
-                                       from_preview=False)
-            if dialog.exec() == QDialog.DialogCode.Accepted:
-                result = dialog.get_result()
-                if result:
-                    result_field.setPlainText(result)
-                    self.logger.debug("Результат успешно добавлен")
-                else:
-                    self.logger.warning("Получен пустой результат от диалога")
-                    QMessageBox.warning(self, "Предупреждение", "Получен пустой результат")
-            else:
-                self.logger.debug("Диалог был закрыт без сохранения результата")
-
-        except Exception as e:
-            self.logger.error(f"Ошибка при открытии диалога: {str(e)}", exc_info=True)
-            QMessageBox.critical(self, "Ошибка", f"Не удалось открыть диалог: {str(e)}")
-
-    def show_lmstudio_dialog(self, language):
+    def show_llm_dialog(self, language):
         """Показывает диалог LMStudio и обрабатывает результат"""
         try:
             # Получаем пользовательский промпт
@@ -1434,7 +1361,7 @@ class PromptEditor(QDialog):
                 QMessageBox.warning(self, "Предупреждение", "Введите промпт")
                 return
 
-            dialog = AIDialog(user_prompt, self, from_preview=False)
+            dialog = AIDialog(user_prompt, self, from_preview=False,settings=self.settings)
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 result = dialog.get_result()
                 if result:

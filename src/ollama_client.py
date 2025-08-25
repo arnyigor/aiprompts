@@ -1,7 +1,7 @@
 import json
 import logging
 from collections.abc import Iterable
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Tuple
 
 import requests
 
@@ -108,24 +108,46 @@ class OllamaClient(ProviderClient):
     def extract_content_from_choice(self, choice: Dict[str, Any]) -> str:
         return choice.get("message", {}).get("content", "")
 
-    def extract_delta_from_chunk(self, chunk: Dict[str, Any]) -> str:
+    def extract_delta_from_chunk(self, chunk: Dict[str, Any]) -> Tuple[str, Optional[Dict], Optional[str]]:
         """
-        Извлекает содержимое (content) или мышление (thinking) из чанка.
-        Возвращает строку с мышлением в тегах <think>, если оно есть, иначе content.
+        Извлекает данные из чанка ответа Ollama, включая "мышление" модели.
+
+        В потоковом режиме Ollama присылает чанки, где "мышление" и "контент"
+        находятся внутри ключа 'message'. Этот метод обрабатывает оба поля.
+
+        Args:
+            chunk: Один чанк (словарь) из итератора ответа Ollama.
+
+        Returns:
+            Кортеж (content, logprobs, finish_reason), где:
+            - content (str): Фрагмент сгенерированного текста или "мышления".
+            - logprobs (Optional[Dict]): Всегда None для Ollama.
+            - finish_reason (Optional[str]): Причина завершения или None.
         """
-        # Попробуем извлечь message или delta (для потоковых ответов)
-        message = chunk.get("message") or chunk.get("delta") or {}
+        thinking_part = ""
+        content_part = ""
 
-        # Извлекаем thinking и content
-        thinking_part = message.get("thinking")
-        content_part = message.get("content")
+        # Структура чанка Ollama: { "message": { "content": "...", "thinking": "..." } }
+        message = chunk.get("message", {})
+        if isinstance(message, dict):
+            # Извлекаем "мышление", если оно есть
+            thinking_text = message.get("thinking")
+            if thinking_text:
+                thinking_part = f"<think>{thinking_text}</think>"
 
-        # Если есть мышление — возвращаем его с тегами
-        if thinking_part:
-            return f"<think>{thinking_part}</think>"
+            # Извлекаем обычный контент
+            content_part = message.get("content", "")
 
-        # Иначе возвращаем content, если он есть
-        return content_part if content_part is not None else ""
+        # Приоритет отдаем "мышлению", если оно есть в данном чанке
+        final_content = thinking_part if thinking_part else content_part
+
+        # Извлекаем причину завершения из корня чанка
+        finish_reason = chunk.get("done_reason")
+
+        # Ollama API в текущей версии не предоставляет logprobs в стандартном виде
+        logprobs = None
+
+        return final_content, logprobs, finish_reason
 
     def extract_metadata_from_response(self, response: Dict[str, Any]) -> Dict[str, Any]:
         """

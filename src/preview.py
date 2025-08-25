@@ -4,10 +4,8 @@ from PyQt6.QtGui import QGuiApplication
 from PyQt6.QtWidgets import (QDialog, QTextEdit, QVBoxLayout, QLabel,
                              QPushButton, QHBoxLayout, QMessageBox, QWidget, QTabWidget,
                              QLineEdit, QFormLayout, QGroupBox)
-from functools import partial
+
 from MarkdownPreviewDialog import MarkdownPreviewDialog
-from huggingface_api import HuggingFaceAPI
-from huggingface_dialog import HuggingFaceDialog
 from lmstudio_api import LMStudioInference
 from models import Prompt, Variable
 from prompt_editor import ExampleSelectionDialog
@@ -147,13 +145,6 @@ class PromptPreview(QDialog):
         ru_copy_btn.clicked.connect(lambda: self.copy_content("ru"))
         ru_undo_btn = QPushButton("↩ Отменить")
         ru_undo_btn.clicked.connect(lambda: self.undo_changes("ru"))
-        if self.hf_api:
-            ru_hf_btn = QPushButton("Выполнить через Hugging Face")
-            ru_hf_btn.clicked.connect(lambda: self.execute_prompt("ru", "hf"))
-        else:
-            ru_hf_btn = QPushButton("Добавить API ключ Hugging Face")
-            ru_hf_btn.clicked.connect(self.add_huggingface_key)
-            ru_hf_btn.setStyleSheet("background-color: #4CAF50; color: white;")
         ru_lm_btn = QPushButton("Отправить запрос к LLM")
         ru_lm_btn.clicked.connect(lambda: self.execute_prompt("ru", "lm"))
         if not self.lm_api:
@@ -161,7 +152,6 @@ class PromptPreview(QDialog):
             ru_lm_btn.setToolTip("LMStudio API недоступен")
         ru_buttons.addWidget(ru_copy_btn)
         ru_buttons.addWidget(ru_undo_btn)
-        ru_buttons.addWidget(ru_hf_btn)
         ru_buttons.addWidget(ru_lm_btn)
         ru_layout.addLayout(ru_buttons)
         self.content_tabs.addTab(ru_container, "Русский")
@@ -291,7 +281,7 @@ class PromptPreview(QDialog):
                 # --- ИЗМЕНЕНИЯ ЗДЕСЬ ---
                 # Создаем горизонтальный layout для кнопок
                 button_layout = QHBoxLayout()
-                button_layout.addStretch() # Прижимаем кнопки к правому краю
+                button_layout.addStretch()  # Прижимаем кнопки к правому краю
 
                 # Кнопка просмотра Markdown
                 preview_variant_btn = QPushButton("👁️ Просмотр")
@@ -300,7 +290,8 @@ class PromptPreview(QDialog):
                 combined_markdown = f"# Русский вариант\n\n{ru_content}\n\n---\n\n# Английский вариант\n\n{en_content}"
                 # Используем аргументы по умолчанию для захвата текущих значений
                 preview_variant_btn.clicked.connect(
-                    lambda checked, text=combined_markdown, index=i: self.show_markdown_preview_for_variant(text, index + 1)
+                    lambda checked, text=combined_markdown, index=i: self.show_markdown_preview_for_variant(text,
+                                                                                                            index + 1)
                 )
                 button_layout.addWidget(preview_variant_btn)
 
@@ -346,7 +337,7 @@ class PromptPreview(QDialog):
             return
         if isinstance(self.prompt.content, dict):
             text = self.prompt.content.get(lang, '')
-        else: # Обработка старого формата
+        else:  # Обработка старого формата
             text = str(self.prompt.content) if lang == 'ru' else ''
 
         text_edit = self.ru_content_edit if lang == "ru" else self.en_content_edit
@@ -398,10 +389,8 @@ class PromptPreview(QDialog):
                 QMessageBox.warning(self, "Предупреждение", "Промпт не может быть пустым.")
                 return
 
-            if api == "hf":
-                dialog = HuggingFaceDialog(self.hf_api, self.settings, prompt_text, self, from_preview=True)
-            elif api == "lm":
-                dialog = AIDialog(prompt_text, self, from_preview=True)
+            if api == "lm":
+                dialog = AIDialog(prompt_text, self, from_preview=True, settings=self.settings)
             else:
                 return
 
@@ -455,7 +444,7 @@ class PromptPreview(QDialog):
                 new_key = key_input.text().strip()
                 if new_key:
                     self.settings.set_api_key("huggingface", new_key)
-                    self._init_apis() # Пересоздаем API клиент
+                    self._init_apis()  # Пересоздаем API клиент
                     # Полностью перестраиваем UI, чтобы обновить кнопки
                     # Удаляем старый layout
                     while self.layout().count():

@@ -44,7 +44,7 @@ def setup_logging():
     file_handler = logging.FileHandler(str(log_path), encoding='utf-8')
 
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         handlers=[
             logging.StreamHandler(sys.stdout),
