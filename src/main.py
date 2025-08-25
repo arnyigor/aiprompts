@@ -83,24 +83,20 @@ def main():
 
         app = QApplication(sys.argv)
 
-        # Установка иконки приложения - УЛУЧШЕННАЯ ВЕРСИЯ
-        project_root = os.path.dirname(os.path.abspath(__file__))
-        icon_path = os.path.join(project_root, "assets", "icon.png")
-
-        if os.path.exists(icon_path):
-            icon = QIcon(icon_path)
-            # Устанавливаем иконку для приложения (по умолчанию для всех окон)
-            app.setWindowIcon(icon)
-            logger.info(f"Иконка приложения загружена: {icon_path}")
-        else:
-            logger.warning(f"Файл иконки не найден: {icon_path}")
-
         prompt_manager = PromptManager(storage_path=prompts_dir)
         window = MainWindow(prompt_manager, settings)
 
-        # ВАЖНО: Дополнительно устанавливаем иконку для главного окна
-        if os.path.exists(icon_path):
-            window.setWindowIcon(QIcon(icon_path))
+        # Текущий скрипт находится в src/
+        project_root = Path(__file__).resolve().parent.parent
+        icon_path = project_root / "assets" / "icon.png"
+
+        if icon_path.exists():
+            icon = QIcon(str(icon_path))  # преобразуем в строку для QIcon
+            app.setWindowIcon(icon)
+            window.setWindowIcon(icon)  # тоже преобразуем в строку
+            logger.info(f"Иконка приложения загружена: {icon_path}")
+        else:
+            logger.warning(f"Файл иконки не найден: {icon_path}")
 
         window.show()
         sys.exit(app.exec())

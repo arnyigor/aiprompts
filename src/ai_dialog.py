@@ -2,7 +2,7 @@
 import logging
 import re
 import time
-from typing import Dict
+from typing import Dict, Tuple, Optional
 
 from PyQt6.QtCore import QThreadPool, QRunnable, pyqtSignal, QObject
 from PyQt6.QtGui import QTextCursor
@@ -92,30 +92,111 @@ class WorkerSignals(QObject):
 
 
 class CheckConnectionRunnable(QRunnable):
-    """Простой и надежный QRunnable для проверки соединения."""
+    """Улучшенный QRunnable для проверки соединения с LLM."""
 
     def __init__(self, parent_dialog, logger):
-        super().__init__();
-        self.parent = parent_dialog;
-        self.logger = logger;
+        super().__init__()
+        self.parent = parent_dialog
+        self.logger = logger
         self.signals = WorkerSignals()
 
     def run(self):
         try:
-            if not YOUR_CLIENT_AVAILABLE: self.signals.show_critical.emit("Ошибка", IMPORT_ERROR_MESSAGE); return
+            # Проверка наличия клиента
+            if not YOUR_CLIENT_AVAILABLE:
+                self.signals.show_critical.emit("Ошибка", IMPORT_ERROR_MESSAGE)
+                return
+
+            # Получаем конфигурацию
             model_config = self.parent.get_current_model_config()
-            LLMClientFactory.create_provider(model_config)
-            self.signals.update_text.emit(f"Сервер '{model_config['client_type']}' доступен")
-            self.signals.show_info.emit("Успех", "Соединение с API-сервером успешно установлено.")
+
+            # Базовая валидация конфигурации
+            validation_error = self._validate_config(model_config)
+            if validation_error:
+                self.signals.update_text.emit("Статус: ошибка конфигурации")
+                self.signals.show_critical.emit("Ошибка конфигурации", validation_error)
+                return
+
+            # Создаем провайдера
+            provider = LLMClientFactory.create_provider(model_config)
+            llm_client = LLMClient(provider, model_config)
+
+            # Проверяем соединение с таймаутом
+            self.signals.update_text.emit("Проверка соединения...")
+
+            # Выполняем фактический запрос к API
+            is_connected, response_time, error_msg = self._test_connection(llm_client, provider)
+
+            if is_connected:
+                self.signals.update_text.emit(f"Сервер '{model_config['client_type']}' доступен ({response_time:.2f}ms)")
+                self.signals.show_info.emit("Успех", f"Соединение с API-сервером успешно установлено.\nВремя отклика: {response_time:.2f}ms")
+            else:
+                self.signals.update_text.emit("Статус: ошибка соединения")
+                self.signals.show_critical.emit("Ошибка соединения", error_msg)
+
         except (LLMConnectionError, ValueError) as e:
             self.logger.warning(f"Ошибка при проверке соединения: {str(e)}")
-            self.signals.update_text.emit("Статус: ошибка соединения");
+            self.signals.update_text.emit("Статус: ошибка соединения")
             self.signals.show_critical.emit("Ошибка соединения", str(e))
         except Exception as e:
-            self.logger.critical("Неперехваченное исключение!", exc_info=True);
+            self.logger.critical("Неперехваченное исключение!", exc_info=True)
             self.signals.show_critical.emit("Критическая ошибка", str(e))
         finally:
             self.signals.check_finished.emit()
+
+    def _validate_config(self, config: dict) -> Optional[str]:
+        """Валидация конфигурации перед проверкой соединения."""
+        if not config.get('client_type'):
+            return "Не указан тип клиента"
+
+        if config['client_type'] in ['openai', 'openai_compatible'] and not config.get('api_base'):
+            return "Не указан URL API для OpenAI-совместимого сервера"
+
+        if not config.get('name') or config['name'] == 'default-model':
+            return "Не указано название модели"
+
+        return None
+
+    def _test_connection(self, llm_client, provider) -> Tuple[bool, float, str]:
+        """Фактическая проверка соединения с API."""
+        try:
+            import time
+
+            start_time = time.perf_counter()
+
+            # Отправляем минимальный тестовый запрос
+            test_messages = [{"role": "user", "content": "Hello, are you available?"}]
+
+            # Используем небольшие параметры для быстрой проверки
+            test_config = {
+                "max_tokens": 10,
+                "temperature": 0.1,
+                "stream": False
+            }
+
+            response = llm_client.chat(test_messages, **test_config)
+
+            end_time = time.perf_counter()
+            response_time_ms = (end_time - start_time) * 1000
+
+            # Проверяем, что получили валидный ответ
+            if response is None:
+                return False, 0, "Получен пустой ответ от сервера"
+
+            # Для разных типов провайдеров проверяем разные поля
+            if hasattr(provider, 'extract_content_from_choice'):
+                choices = provider.extract_choices(response)
+                if not choices:
+                    return False, 0, "Сервер вернул пустой ответ"
+
+            return True, response_time_ms, ""
+
+        except TimeoutError:
+            return False, 0, "Превышено время ожидания ответа от сервера"
+        except ConnectionError as e:
+            return False, 0, f"Ошибка подключения: {str(e)}"
+        except Exception as e:
+            return False, 0, f"Ошибка при тестовом запросе: {str(e)}"
 
 
 class RequestWorker(QRunnable):
@@ -142,8 +223,6 @@ class RequestWorker(QRunnable):
         cleaned = re.sub(think_pattern, '', text, flags=re.DOTALL).strip()
         return {"thinking_response": thinking, "llm_response": cleaned}
 
-    # В файле ai_dialog.py, класс RequestWorker
-
     def run(self):
         try:
             if self._is_cancelled: return
@@ -163,7 +242,7 @@ class RequestWorker(QRunnable):
 
             if use_stream:
                 response_or_stream = llm_client.chat(messages, stream=use_stream)
-                full_response_text = "" # Будем собирать полный текст для кнопки "Применить"
+                full_response_text = ""  # Будем собирать полный текст для кнопки "Применить"
 
                 is_first_chunk = True
                 first_chunk_time = 0
@@ -200,7 +279,7 @@ class RequestWorker(QRunnable):
                             else:
                                 self.signals.update_thinking.emit(self.buffer)
                                 break
-                        else: # Если не в режиме "мышления"
+                        else:  # Если не в режиме "мышления"
                             start_tag_pos = self.buffer.find('<think>')
                             if start_tag_pos != -1:
                                 # Нашли тег. Стримим всё, что было до него, в основной результат.

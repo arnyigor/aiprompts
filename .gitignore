@@ -173,3 +173,4 @@ cython_debug/
 src/config.ini
 /input/*.html
 /output/*.json
+.DS_Store
