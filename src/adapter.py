@@ -1,7 +1,7 @@
 import logging
 import re
 import time
-from typing import Dict, Any, Generator
+from typing import Dict, Any, Generator, Optional
 
 from src.interfaces import ILLMClient, LLMClientError
 from src.llm_client import LLMClient
@@ -39,18 +39,26 @@ class AdapterLLMClient(ILLMClient):
 
         return {"thinking_response": thinking_response, "llm_response": llm_response}
 
-    # Сначала определим эвристическую функцию. Ее можно сделать статическим методом.
     @staticmethod
     def _estimate_tokens_heuristic(text: str) -> int:
-        if not text: return 0
+        if not text:
+            return 0
         return int(len(text) / 4.0) + 1
 
-    def _count_tokens_client(self, text: str) -> int | None:
-        if getattr(self, 'tokenizer', None):
-            log.warning(f"Используется эвристика.")
-            return self._estimate_tokens_heuristic(text)
+    def _count_tokens_client(self, text: str) -> Optional[int]:
+        # Проверяем, есть ли tokenizer
+        tokenizer = getattr(self, 'tokenizer', None)
+        if tokenizer is not None:
+            try:
+                # Пример: tiktoken или подобный
+                tokens = tokenizer.encode(text)
+                return len(tokens)
+            except Exception as e:
+                log.warning(f"Ошибка при использовании tokenizer: {e}. Используется эвристика.")
+                return self._estimate_tokens_heuristic(text)
         else:
-            # Не логируем здесь, чтобы не спамить, если токенизатор не настроен
+            # Токенизатор не настроен — используем эвристику
+            log.warning("Токенизатор не настроен. Используется эвристика.")
             return self._estimate_tokens_heuristic(text)
 
     # Эти методы должны быть внутри вашего класса Adapter
