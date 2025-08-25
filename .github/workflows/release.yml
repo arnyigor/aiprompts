@@ -156,26 +156,33 @@ jobs:
       - name: Build AppImage (Linux only)
         if: matrix.os == 'ubuntu-latest'
         run: |
-          # 1. Скачиваем утилиту для сборки AppImage
+          # Скачиваем и делаем исполняемым appimagetool
           wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool.AppImage
           chmod +x appimagetool.AppImage
 
-          # 2. Создаем структуру AppDir
+          # Создаём структуру AppDir
           mkdir -p AppDir/usr/bin
-          cp -r dist/${{ env.APP_NAME }}/* AppDir/usr/bin/
+          # Копируем один бинарник (не папку!)
+          cp dist/${{ env.APP_NAME }} AppDir/usr/bin/
 
-          # 3. Создаем .desktop файл
-          echo "[Desktop Entry]
+          # Создаём .desktop файл
+          cat << EOF > AppDir/${{ env.APP_NAME }}.desktop
+          [ Desktop Entry ]
           Name=${{ env.APP_NAME }}
           Exec=${{ env.APP_NAME }}
           Icon=icon
           Type=Application
-          Categories=Utility;" > AppDir/${{ env.APP_NAME }}.desktop
-
-          # 4. Копируем иконку
+          Categories=Utility;
+          Terminal=false
+          EOF
+          
+          # Копируем иконку (убедитесь, что она существует)
           cp assets/icon.png AppDir/icon.png
-
-          # 5. Запускаем сборку AppImage
+          
+          # Делаем бинарник исполняемым
+          chmod +x AppDir/usr/bin/${{ env.APP_NAME }}
+          
+          # Собираем AppImage
           ./appimagetool.AppImage AppDir "${{ env.ASSET_NAME }}"
       # --- Архивация для Windows и macOS ---
       - name: Archive built artifact (Windows)
