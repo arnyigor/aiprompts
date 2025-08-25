@@ -58,37 +58,12 @@ jobs:
 
   # --- ЗАДАЧА 2: Сборка бинарных файлов для всех ОС ---
   build_assets:
-    name: Build App for ${{ matrix.os }} (${{ matrix.arch }})
+    name: Build App for ${{ matrix.os }}
     needs: create_release
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        include:
-          # Windows x64
-          - os: windows
-            runner: windows-latest
-            arch: x64
-            asset_ext: zip
-            content_type: application/zip
-          # macOS Intel (x86_64) via Rosetta
-          - os: macos
-            runner: macos-latest
-            arch: x64
-            emulate: true
-            asset_ext: zip
-            content_type: application/zip
-          # macOS Apple Silicon (arm64)
-          - os: macos
-            runner: macos-latest
-            arch: arm64
-            asset_ext: zip
-            content_type: application/zip
-          # Linux x86_64 (AppImage)
-          - os: linux
-            runner: ubuntu-latest
-            arch: x86_64
-            asset_ext: AppImage
-            content_type: application/x-appimage
+        os: [windows-latest, macos-latest, macos-12, ubuntu-latest]
 
     steps:
       - name: Checkout code
@@ -99,9 +74,9 @@ jobs:
         with:
           python-version: '3.9'
 
-      # Установка зависимостей для Linux
+      # НОВЫЙ ШАГ: Установка зависимостей для AppImage в Linux
       - name: Install AppImage prerequisites (Linux only)
-        if: matrix.os == 'linux'
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y libfuse2
@@ -112,95 +87,93 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
-      # --- Установка имён файлов ---
       - name: Set Asset Names (Windows)
-        if: matrix.os == 'windows'
+        if: matrix.os == 'windows-latest'
         run: |
           echo "ASSET_NAME=PromptManager-${{ needs.create_release.outputs.tag_name }}-windows-x64" >> $env:GITHUB_ENV
           echo "APP_NAME=PromptManager" >> $env:GITHUB_ENV
         shell: pwsh
 
       - name: Set Asset Names (macOS)
-        if: matrix.os == 'macos'
+        if: matrix.os == 'macos-latest'
         run: |
-          echo "ASSET_NAME=PromptManager-${{ needs.create_release.outputs.tag_name }}-macos-${{ matrix.arch }}" >> $GITHUB_ENV
+          echo "ASSET_NAME=PromptManager-${{ needs.create_release.outputs.tag_name }}-macos-$(uname -m)" >> $GITHUB_ENV
           echo "APP_NAME=PromptManager" >> $GITHUB_ENV
         shell: bash
 
+      # НОВЫЙ ШАГ: Установка имён для Linux
       - name: Set Asset Names (Linux)
-        if: matrix.os == 'linux'
+        if: matrix.os == 'ubuntu-latest'
         run: |
           echo "ASSET_NAME=PromptManager-${{ needs.create_release.outputs.tag_name }}-linux-x86_64.AppImage" >> $GITHUB_ENV
           echo "APP_NAME=PromptManager" >> $GITHUB_ENV
         shell: bash
 
-      # --- Включение Rosetta для x64 на Apple Silicon ---
-      - name: Enable Rosetta (macOS x64 only)
-        if: matrix.os == 'macos' && matrix.emulate == 'true'
-        run: |
-          sudo softwareupdate --install-rosetta --agree-to-license
-          echo "ROSETTA_ENABLED=1" >> $GITHUB_ENV
+      # ИЗМЕНЕНО: Сборка разделена для разных ОС
+      - name: Build with PyInstaller (Windows/macOS)
+        if: matrix.os == 'windows-latest' || matrix.os == 'macos-latest'
+        run: pyinstaller --name "${{ env.APP_NAME }}" --onefile --windowed --paths ./src src/main.py
 
-      # --- Сборка ---
-      - name: Build with PyInstaller
-        run: |
-          # Для x64 на arm64 через Rosetta
-          if [[ "${{ matrix.os }}" == "macos" && "${{ matrix.arch }}" == "x64" ]]; then
-            arch -x86_64 pyinstaller --name "${{ env.APP_NAME }}" --onefile --windowed --paths ./src src/main.py
-          else
-            pyinstaller --name "${{ env.APP_NAME }}" --onefile --windowed --paths ./src src/main.py
-          fi
-        shell: bash
+      - name: Build with PyInstaller (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: pyinstaller --name "${{ env.APP_NAME }}" --noconfirm --windowed --paths ./src src/main.py
 
-      # --- Сборка AppImage только для Linux ---
+      # НОВЫЙ ШАГ: Создание AppImage из сборки PyInstaller
       - name: Build AppImage (Linux only)
         if: matrix.os == 'ubuntu-latest'
         run: |
-          # Скачиваем и делаем исполняемым appimagetool
+          # 1. Скачиваем утилиту для сборки AppImage
           wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool.AppImage
           chmod +x appimagetool.AppImage
-
-          # Создаём структуру AppDir
+          
+          # 2. Создаем структуру AppDir
           mkdir -p AppDir/usr/bin
-          # Копируем один бинарник (не папку!)
-          cp dist/${{ env.APP_NAME }} AppDir/usr/bin/
-
-          # Создаём .desktop файл
-          cat << EOF > AppDir/${{ env.APP_NAME }}.desktop
-          [ Desktop Entry ]
+          cp -r dist/${{ env.APP_NAME }}/* AppDir/usr/bin/
+          
+          # 3. Создаем .desktop файл для меню приложений
+          # ЗАМЕНИТЕ 'YourAppName' и 'Utilities' при необходимости
+          echo "[Desktop Entry]
           Name=${{ env.APP_NAME }}
           Exec=${{ env.APP_NAME }}
           Icon=icon
           Type=Application
-          Categories=Utility;
-          Terminal=false
-          EOF
+          Categories=Utility;" > AppDir/${{ env.APP_NAME }}.desktop
           
-          # Копируем иконку (убедитесь, что она существует)
+          # 4. Копируем иконку (ВАЖНО: у вас должен быть файл assets/icon.png)
+          # Если путь другой, измените его здесь.
           cp assets/icon.png AppDir/icon.png
           
-          # Делаем бинарник исполняемым
-          chmod +x AppDir/usr/bin/${{ env.APP_NAME }}
-          
-          # Собираем AppImage
+          # 5. Запускаем сборку AppImage
           ./appimagetool.AppImage AppDir "${{ env.ASSET_NAME }}"
-      # --- Архивация для Windows и macOS ---
+
       - name: Archive built artifact (Windows)
-        if: matrix.os == 'windows'
+        if: matrix.os == 'windows-latest'
         run: Compress-Archive -Path dist/${{ env.APP_NAME }}.exe -DestinationPath ${{ env.ASSET_NAME }}.zip
         shell: pwsh
 
       - name: Archive built artifact (macOS)
-        if: matrix.os == 'macos'
+        if: matrix.os == 'macos-latest'
         run: zip -r ${{ env.ASSET_NAME }}.zip dist/"${{ env.APP_NAME }}.app"
 
-      # --- Загрузка артефактов ---
-      - name: Upload Release Asset
+      # ИЗМЕНЕНО: Загрузка разделена для разных ОС
+      - name: Upload Release Asset (Windows/macOS)
+        if: matrix.os == 'windows-latest' || matrix.os == 'macos-latest'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ./${{ env.ASSET_NAME }}${{ matrix.asset_ext == 'zip' && '.zip' || '' }}
-          asset_name: ${{ env.ASSET_NAME }}${{ matrix.asset_ext == 'zip' && '.zip' || '' }}
-          asset_content_type: ${{ matrix.content_type }}
+          asset_path: ./${{ env.ASSET_NAME }}.zip
+          asset_name: ${{ env.ASSET_NAME }}.zip
+          asset_content_type: application/zip
+
+      - name: Upload Release Asset (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ./${{ env.ASSET_NAME }}
+          asset_name: ${{ env.ASSET_NAME }}
+          asset_content_type: application/x-appimage
