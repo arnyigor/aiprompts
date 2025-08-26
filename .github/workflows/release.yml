@@ -128,7 +128,7 @@ jobs:
           
           # 2. Создаем структуру AppDir
           mkdir -p AppDir/usr/bin
-          cp -r dist/${{ env.APP_NAME }}/* AppDir/usr/bin/
+          cp dist/${{ env.APP_NAME }} AppDir/usr/bin/
           chmod +x AppDir/usr/bin/"${{ env.APP_NAME }}"
 
           # 3. Создаем .desktop файл для меню приложений
