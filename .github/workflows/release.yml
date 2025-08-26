@@ -122,30 +122,28 @@ jobs:
       - name: Build AppImage (Linux only)
         if: matrix.os == 'ubuntu-latest'
         run: |
-          # 1. Скачиваем утилиту для сборки AppImage
-          wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool.AppImage
-          chmod +x appimagetool.AppImage
-          
+          # 1. Скачиваем linuxdeploy для сборки AppImage без FUSE
+          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage -O linuxdeploy.AppImage
+          chmod +x linuxdeploy.AppImage
+
           # 2. Создаем структуру AppDir
           mkdir -p AppDir/usr/bin
           cp dist/${{ env.APP_NAME }} AppDir/usr/bin/
           chmod +x AppDir/usr/bin/"${{ env.APP_NAME }}"
 
           # 3. Создаем .desktop файл для меню приложений
-          # ЗАМЕНИТЕ 'YourAppName' и 'Utilities' при необходимости
           echo "[Desktop Entry]
           Name=${{ env.APP_NAME }}
           Exec=${{ env.APP_NAME }}
           Icon=icon
           Type=Application
           Categories=Utility;" > AppDir/${{ env.APP_NAME }}.desktop
-          
-          # 4. Копируем иконку (ВАЖНО: у вас должен быть файл assets/icon.png)
-          # Если путь другой, измените его здесь.
+
+          # 4. Копируем иконку
           cp assets/icon.png AppDir/icon.png
-          
-          # 5. Запускаем сборку AppImage
-          ./appimagetool.AppImage AppDir "${{ env.ASSET_NAME }}"
+
+          # 5. Запускаем сборку AppImage с linuxdeploy (без FUSE)
+          ./linuxdeploy.AppImage --appdir AppDir --output appimage --executable "${{ env.APP_NAME }}"
 
       - name: Archive built artifact (Windows)
         if: matrix.os == 'windows-latest'
