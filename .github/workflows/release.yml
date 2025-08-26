@@ -79,7 +79,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libfuse2
+          sudo apt-get install -y libfuse3
 
       - name: Install Python dependencies
         run: |
@@ -116,7 +116,7 @@ jobs:
 
       - name: Build with PyInstaller (Linux)
         if: matrix.os == 'ubuntu-latest'
-        run: pyinstaller --name "${{ env.APP_NAME }}" --noconfirm --windowed --paths ./src src/main.py
+        run: pyinstaller --name "${{ env.APP_NAME }}" --onefile --noconfirm --windowed --paths ./src src/main.py
 
       # НОВЫЙ ШАГ: Создание AppImage из сборки PyInstaller
       - name: Build AppImage (Linux only)
@@ -129,7 +129,8 @@ jobs:
           # 2. Создаем структуру AppDir
           mkdir -p AppDir/usr/bin
           cp -r dist/${{ env.APP_NAME }}/* AppDir/usr/bin/
-          
+          chmod +x AppDir/usr/bin/"${{ env.APP_NAME }}"
+
           # 3. Создаем .desktop файл для меню приложений
           # ЗАМЕНИТЕ 'YourAppName' и 'Utilities' при необходимости
           echo "[Desktop Entry]
