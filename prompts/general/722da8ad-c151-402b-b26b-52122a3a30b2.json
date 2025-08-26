@@ -1,0 +1,32 @@
+{
+  "id": "722da8ad-c151-402b-b26b-52122a3a30b2",
+  "title": "test",
+  "version": "1.0.0",
+  "category": "general",
+  "description": "",
+  "content": {
+    "ru": "test",
+    "en": ""
+  },
+  "prompt_variants": [],
+  "compatible_models": [],
+  "tags": [],
+  "variables": [],
+  "status": "active",
+  "is_local": false,
+  "is_favorite": false,
+  "metadata": {
+    "author": {
+      "id": "",
+      "name": "WebApp Contributor"
+    },
+    "source": "WebApp",
+    "notes": ""
+  },
+  "rating": {
+    "score": 0,
+    "votes": 0
+  },
+  "updated_at": "2025-08-26T06:30:25.608",
+  "created_at": "2025-08-26T06:30:25.605"
+}
