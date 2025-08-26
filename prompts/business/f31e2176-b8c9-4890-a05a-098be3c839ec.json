@@ -1,0 +1,32 @@
+{
+  "id": "f31e2176-b8c9-4890-a05a-098be3c839ec",
+  "title": "test",
+  "version": "1.0.0",
+  "category": "business",
+  "description": "",
+  "content": {
+    "ru": "test",
+    "en": ""
+  },
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "status": "draft",
+  "is_local": true,
+  "is_favorite": false,
+  "metadata": {
+    "author": {
+      "id": "",
+      "name": ""
+    },
+    "source": "",
+    "notes": ""
+  },
+  "rating": {
+    "score": 0,
+    "votes": 0
+  },
+  "created_at": "2025-08-26T07:26:01.665",
+  "updated_at": "2025-08-26T07:26:01.665"
+}
