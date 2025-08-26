@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Union, Tuple
 import requests
 import logging
 
-from .interfaces import ProviderClient, LLMResponseError, LLMConnectionError
+from interfaces import ProviderClient, LLMResponseError, LLMConnectionError
 
 log = logging.getLogger(__name__)
 

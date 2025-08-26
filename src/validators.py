@@ -1,4 +1,4 @@
-from src.models import Prompt, Variable
+from models import Prompt, Variable
 from typing import List
 
 def validate_prompt(prompt: Prompt):

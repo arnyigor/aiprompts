@@ -33,13 +33,15 @@
         "октябре",
         "ноябре",
         "декабре"
-      ]
+      ],
+      "default_value": ""
     },
     {
       "name": "days_count",
       "type": "number",
       "description": "количество дней",
-      "examples": []
+      "examples": [],
+      "default_value": ""
     },
     {
       "name": "summ",
@@ -47,7 +49,8 @@
       "description": "сумма",
       "examples": [
         "200 000 руб"
-      ]
+      ],
+      "default_value": ""
     },
     {
       "name": "target",
@@ -57,13 +60,15 @@
         "пляжи",
         "горы",
         "города"
-      ]
+      ],
+      "default_value": ""
     },
     {
       "name": "destination",
       "type": "string",
       "description": "направление",
-      "examples": []
+      "examples": [],
+      "default_value": ""
     }
   ],
   "metadata": {
@@ -78,6 +83,7 @@
     "score": 0.0,
     "votes": 0
   },
+  "prompt_variants": [],
   "created_at": "2025-07-01T06:42:54.691039",
-  "updated_at": "2025-07-01T06:50:32.537500"
+  "updated_at": "2025-08-26T07:37:01.061395"
 }

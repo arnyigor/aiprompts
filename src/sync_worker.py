@@ -1,6 +1,6 @@
 # src/sync_worker.py
 from PyQt6.QtCore import QObject, pyqtSignal, QThread
-from src.sync_manager import SyncManager # <-- Убедитесь, что импорт правильный
+from sync_manager import SyncManager # <-- Убедитесь, что импорт правильный
 
 class SyncWorker(QObject):
     finished = pyqtSignal(bool, str)

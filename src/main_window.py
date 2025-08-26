@@ -17,9 +17,9 @@ from preview import PromptPreview
 from prompt_editor import PromptEditor
 from prompt_manager import PromptManager
 from settings_window import SettingsDialog
-from src.sync_log_dialog import SyncLogDialog
-from src.sync_manager import SyncManager
-from src.sync_worker import SyncWorker
+from sync_log_dialog import SyncLogDialog
+from sync_manager import SyncManager
+from sync_worker import SyncWorker
 
 APP_INFO = {
     "name": "Prompt Manager Python",
@@ -56,6 +56,12 @@ class MainWindow(QMainWindow):
         self.favorite_filter.setCheckable(True)
         self.favorite_filter.setFixedWidth(30)
         self.favorite_filter.setToolTip("Показать избранное")
+
+        # Фильтр только локальные
+        self.local_filter = QPushButton("🏠")
+        self.local_filter.setCheckable(True)
+        self.local_filter.setFixedWidth(30)
+        self.local_filter.setToolTip("Показать только локальные")
 
         # Сортировка
         # Список вариантов сортировки правильной очередностью
@@ -128,6 +134,12 @@ class MainWindow(QMainWindow):
         fav_layout.addWidget(self.favorite_filter)
         filters_layout.addLayout(fav_layout)
 
+        # Local filter
+        local_layout = QVBoxLayout()
+        local_layout.addWidget(QLabel("Локальные:"))
+        local_layout.addWidget(self.local_filter)
+        filters_layout.addLayout(local_layout)
+
         # Category filter
         cat_layout = QVBoxLayout()
         cat_layout.addWidget(QLabel("Категория:"))
@@ -176,6 +188,7 @@ class MainWindow(QMainWindow):
         self.search_field.textChanged.connect(self.filter_prompts)
         self.lang_filter.currentTextChanged.connect(self.filter_prompts)
         self.favorite_filter.clicked.connect(self.filter_prompts)
+        self.local_filter.clicked.connect(self.filter_prompts)
         self.category_filter.currentTextChanged.connect(self.filter_prompts)
         self.tag_filter.currentTextChanged.connect(self.filter_prompts)
         self.sort_combo.currentTextChanged.connect(self.filter_prompts)
@@ -295,6 +308,7 @@ class MainWindow(QMainWindow):
             'tag': self.tag_filter.currentText(),
             'lang': self.lang_filter.currentText(),
             'favorite': self.favorite_filter.isChecked(),
+            'local': self.local_filter.isChecked(),
             'sort': self.sort_combo.currentText(),
             'sort_direction': self.sort_ascending
         }
@@ -312,6 +326,7 @@ class MainWindow(QMainWindow):
         if index >= 0:
             self.lang_filter.setCurrentIndex(index)
         self.favorite_filter.setChecked(state['favorite'])
+        self.local_filter.setChecked(state.get('local', False))  # По умолчанию False для обратной совместимости
         index = self.sort_combo.findText(state['sort'])
         if index >= 0:
             self.sort_combo.setCurrentIndex(index)
@@ -396,6 +411,7 @@ class MainWindow(QMainWindow):
             lang_filter = self.lang_filter.currentText()
             tag_filter = self.tag_filter.currentText()
             show_favorites = self.favorite_filter.isChecked()
+            show_local_only = self.local_filter.isChecked()
 
             # self.logger.debug(f"filter_prompts: Параметры фильтрации: поиск='{search_query}', категория='{category_filter}', тег='{tag_filter}', язык='{lang_filter}', избранное={show_favorites}")
 
@@ -407,11 +423,20 @@ class MainWindow(QMainWindow):
                 if show_favorites and not getattr(prompt, 'is_favorite', False):
                     matches = False
 
+                # Фильтр по локальным
+                if show_local_only and not getattr(prompt, 'is_local', True):
+                    matches = False
+
                 # Фильтр по поисковому запросу
                 if search_query:
+                    content_text = ""
+                    if isinstance(prompt.content, dict):
+                        content_text = prompt.content.get('ru', '') + " " + prompt.content.get('en', '')
+                    else:
+                        content_text = str(prompt.content)
+
                     if not (search_query in prompt.title.lower() or
-                            search_query in prompt.content.get('ru', '').lower() or
-                            search_query in prompt.content.get('en', '').lower()):
+                            search_query in content_text.lower()):
                         matches = False
 
                 # Фильтр по категории
@@ -425,10 +450,14 @@ class MainWindow(QMainWindow):
 
                 # Фильтр по языку
                 if lang_filter != "Все":
-                    if lang_filter == "RU" and not prompt.content.get('ru'):
-                        matches = False
-                    elif lang_filter == "EN" and not prompt.content.get('en'):
-                        matches = False
+                    if isinstance(prompt.content, dict):
+                        if lang_filter == "RU" and not prompt.content.get('ru'):
+                            matches = False
+                        elif lang_filter == "EN" and not prompt.content.get('en'):
+                            matches = False
+                    else:
+                        # Если content - строка, то считаем что подходит для любого языка
+                        pass
 
                 if matches:
                     filtered_prompts.append(prompt)

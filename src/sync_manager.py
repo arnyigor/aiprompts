@@ -11,7 +11,7 @@ from typing import Dict, Any, Tuple, Callable
 
 from llm_settings import Settings
 from models import Prompt
-from src.storage import LocalStorage
+from storage import LocalStorage
 
 # Прямая, постоянная ссылка на скачивание архива.
 # Этот URL не использует API и не тратит лимиты.

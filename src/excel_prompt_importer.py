@@ -7,7 +7,7 @@ import re
 
 import pandas as pd
 
-from src.prompt_manager import PromptManager
+from prompt_manager import PromptManager
 
 
 class ExcelPromptImporter:

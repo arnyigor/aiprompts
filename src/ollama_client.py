@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Union, Tuple
 
 import requests
 
-from .interfaces import (
+from interfaces import (
     ProviderClient,
     LLMConnectionError, LLMRequestError, LLMResponseError, LLMTimeoutError
 )

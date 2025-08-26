@@ -1,10 +1,10 @@
 import logging
 import re
 import time
-from typing import Dict, Any, Generator, Optional
+from typing import Dict, Any, Generator, Optional, Union
 
-from src.interfaces import ILLMClient, LLMClientError
-from src.llm_client import LLMClient
+from interfaces import ILLMClient, LLMClientError
+from llm_client import LLMClient
 
 log = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ class AdapterLLMClient(ILLMClient):
 
     # Эти методы должны быть внутри вашего класса Adapter
     def _handle_stream_response(self, response_generator: Generator) -> tuple[
-        str, dict, float | None, float]:
+        str, dict, Union[float, None], float]:
         """Обрабатывает потоковый ответ, собирая текст, "мышление" и метаданные."""
         log.info("Начало получения потокового ответа...")
         print(">>> LLM Stream: ", end="", flush=True)
@@ -75,7 +75,7 @@ class AdapterLLMClient(ILLMClient):
         server_metadata = {}
 
         # Переменные для таймингов
-        ttft_time: float | None = None
+        ttft_time: Union[float, None] = None
         first_chunk = True
 
         for chunk_dict in response_generator:
@@ -136,7 +136,7 @@ class AdapterLLMClient(ILLMClient):
         return final_response_str, server_metadata, ttft_time, end_time
 
     def _build_final_metrics(self, server_metadata: dict, prompt_token_count: int, final_response_str: str,
-                             start_time: float, ttft_time: float | None, end_time: float) -> dict:
+                             start_time: float, ttft_time: Union[float, None], end_time: float) -> dict:
         """Собирает итоговые метрики, комбинируя серверные данные и клиентские замеры."""
         # Начинаем с того, что дал сервер
         final_metrics = server_metadata.copy()

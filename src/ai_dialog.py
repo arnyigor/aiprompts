@@ -15,10 +15,10 @@ from PyQt6.QtWidgets import (
 
 # Используем ваш рабочий блок импортов
 try:
-    from src.llm_client import LLMClient
-    from src.adapter import AdapterLLMClient
-    from src.client_factory import LLMClientFactory
-    from src.interfaces import LLMConnectionError
+    from llm_client import LLMClient
+    from adapter import AdapterLLMClient
+    from client_factory import LLMClientFactory
+    from interfaces import LLMConnectionError
 
     YOUR_CLIENT_AVAILABLE = True
 except ImportError as e:

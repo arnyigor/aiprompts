@@ -1,9 +1,9 @@
 import logging
 from typing import Dict, Any
 
-from src.interfaces import ProviderClient
-from src.ollama_client import OllamaClient
-from src.openai_client import OpenAICompatibleClient
+from interfaces import ProviderClient
+from ollama_client import OllamaClient
+from openai_client import OpenAICompatibleClient
 
 logger = logging.getLogger(__name__)
 

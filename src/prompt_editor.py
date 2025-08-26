@@ -1,6 +1,7 @@
 import logging
 import re
 import sys
+import requests
 from typing import List
 from PyQt6.QtCore import QMimeData
 from PyQt6.QtCore import Qt
@@ -27,7 +28,7 @@ from model_dialog import ModelConfigDialog
 from models import Variable, PromptVariant
 from prompt_manager import PromptManager
 from llm_settings import Settings
-from src.ai_dialog import AIDialog
+from ai_dialog import AIDialog
 
 
 class MarkdownTextEdit(QTextEdit):
@@ -395,6 +396,15 @@ class PromptEditor(QDialog):
         # Добавляем кнопки
         buttons_layout = QHBoxLayout()
         buttons_layout.addWidget(self.save_btn)
+
+        # Кнопка отправки на GitHub (только для локальных промптов)
+        self.submit_github_btn = QPushButton("📤 Отправить на GitHub")
+        self.submit_github_btn.clicked.connect(self.submit_to_github)
+        self.submit_github_btn.setToolTip("Отправить локальный промпт на GitHub для создания Pull Request")
+        # Изначально скрываем кнопку, она будет показана только для локальных промптов
+        self.submit_github_btn.hide()
+        buttons_layout.addWidget(self.submit_github_btn)
+
         cancel_btn = QPushButton("Отмена")
         cancel_btn.clicked.connect(self.reject)
         buttons_layout.addWidget(cancel_btn)
@@ -404,6 +414,10 @@ class PromptEditor(QDialog):
 
         # Подключаем обновление JSON при изменении любого поля
         self.setup_json_update_triggers()
+
+        # Подключаем обновление видимости кнопки GitHub
+        self.update_github_button_visibility()
+        self.is_local_checkbox.stateChanged.connect(self.update_github_button_visibility)
 
     def create_metadata_tab(self):
         """Вкладка с метаданными"""
@@ -1675,3 +1689,196 @@ class PromptEditor(QDialog):
         current = self.variables_list.currentItem()
         if current:
             self.variables_list.takeItem(self.variables_list.row(current))
+
+    def submit_to_github(self):
+        """Отправка локального промпта на GitHub через API"""
+        try:
+            # Проверяем, что промпт локальный
+            if not self.is_local_checkbox.isChecked():
+                QMessageBox.warning(
+                    self,
+                    "Предупреждение",
+                    "Можно отправлять только локальные промпты. Снимите флаг 'Локальный промпт' для отправки."
+                )
+                return
+
+            # Проверяем валидность данных
+            if not self.validate_data():
+                return
+
+            # Диалог подтверждения перед отправкой
+            prompt_data = self.get_current_prompt_data()
+            title = prompt_data.get('title', 'Без названия')
+            category = prompt_data.get('category', 'general')
+
+            confirm_msg = f"Вы уверены, что хотите отправить промпт на GitHub?\n\n"
+            confirm_msg += f"Название: {title}\n"
+            confirm_msg += f"Категория: {category}\n"
+            confirm_msg += f"Статус: {prompt_data.get('status', 'draft')}\n\n"
+            confirm_msg += "Будет создан Pull Request для добавления этого промпта в репозиторий."
+
+            reply = QMessageBox.question(
+                self,
+                "Подтверждение отправки",
+                confirm_msg,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
+            )
+
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+
+            # Получаем данные промпта
+            prompt_data = self.get_current_prompt_data()
+
+            # Генерируем ID для нового промпта или используем существующий
+            if self.prompt_id:
+                prompt_data["id"] = self.prompt_id
+                prompt_data["original_category"] = self.category_selector.currentData()
+            else:
+                # Генерируем уникальный ID для нового промпта
+                import uuid
+                prompt_data["id"] = str(uuid.uuid4())
+
+            # URL API
+            api_url = "https://aipromptsapi.vercel.app/api/create-prompt-issue"
+
+            # Получаем API ключ из переменной окружения или секретов
+            import os
+            api_key = os.getenv("AIPROMPTS_API_KEY")
+
+            # Попробуем загрузить из .env файла, если переменная не найдена
+            if not api_key:
+                try:
+                    from dotenv import load_dotenv
+                    # Загружаем .env файл из текущей директории
+                    load_dotenv(dotenv_path=os.path.join(os.getcwd(), '.env'))
+                    api_key = os.getenv("AIPROMPTS_API_KEY")
+                    self.logger.info(f"Загружен API ключ из .env файла: {'***' + api_key[-4:] if api_key else 'не найден'}")
+                except ImportError:
+                    self.logger.warning("python-dotenv не установлен, продолжаем без него")
+                    pass
+                except Exception as e:
+                    self.logger.error(f"Ошибка при загрузке .env файла: {str(e)}")
+                    pass
+
+            # Логируем информацию о ключе для отладки
+            if api_key:
+                self.logger.info(f"API ключ найден, длина: {len(api_key)} символов")
+            else:
+                self.logger.error("API ключ не найден в переменных окружения")
+
+            # Fallback для разработки (если ключ не найден в env)
+            if not api_key:
+                # В продакшене это должно быть убрано или получено из секретов
+                api_key = "your_default_api_key_here"  # Заменить на реальный ключ или убрать
+
+            if not api_key or api_key == "your_default_api_key_here":
+                QMessageBox.warning(
+                    self,
+                    "Ошибка",
+                    "API ключ не найден. Установите переменную окружения AIPROMPTS_API_KEY или настройте секреты."
+                )
+                return
+
+            # Определяем origin - можно переопределить через переменную окружения
+            app_origin = os.getenv("AIPROMPTS_APP_ORIGIN", "app://com.arny.aiprompts")
+
+            # Заголовки для запроса
+            headers = {
+                "Content-Type": "application/json",
+                "X-API-Key": api_key,
+                "Origin": app_origin  # Origin для соответствия серверной проверке
+            }
+
+            # Логируем информацию перед отправкой
+            self.logger.info("Отправка промпта на GitHub...")
+            self.logger.info(f"API URL: {api_url}")
+            self.logger.info(f"Request headers: Content-Type, X-API-Key: ***{api_key[-4:] if api_key else 'None'}, Origin: {app_origin}")
+            self.logger.info(f"Prompt data keys: {list(prompt_data.keys())}")
+            self.logger.info(f"Prompt ID: {prompt_data.get('id', 'N/A')}")
+            self.logger.info(f"Prompt title: {prompt_data.get('title', 'N/A')}")
+            self.logger.info(f"Prompt category: {prompt_data.get('category', 'N/A')}")
+
+            # Отправляем POST запрос
+            try:
+                response = requests.post(api_url, json=prompt_data, headers=headers, timeout=30)
+                self.logger.info(f"Response status: {response.status_code}")
+                self.logger.info(f"Response headers: {dict(response.headers)}")
+            except requests.exceptions.RequestException as e:
+                self.logger.error(f"Request failed: {str(e)}")
+                raise
+
+            if response.status_code == 201:
+                # Успешный ответ
+                response_data = response.json()
+                pr_url = response_data.get("pullRequestUrl", "")
+                message = response_data.get("message", "Pull Request создан успешно!")
+
+                QMessageBox.information(
+                    self,
+                    "Успех",
+                    f"{message}\n\nСсылка на Pull Request:\n{pr_url}"
+                )
+                self.logger.info(f"Pull Request создан: {pr_url}")
+            else:
+                # Ошибка - подробная диагностика
+                error_msg = f"Ошибка при отправке: HTTP {response.status_code}"
+
+                # Специальная обработка для HTTP 401 (Unauthorized)
+                if response.status_code == 401:
+                    error_msg += "\n\nПроблема с аутентификацией:"
+                    error_msg += "\n• Проверьте правильность API ключа"
+                    error_msg += "\n• Убедитесь, что ключ не истек"
+                    error_msg += "\n• Проверьте переменную окружения AIPROMPTS_API_KEY"
+                    error_msg += f"\n• Текущий ключ: {'***' + api_key[-4:] if api_key else 'не найден'}"
+
+                    # Логируем дополнительную информацию для отладки
+                    self.logger.error(f"HTTP 401 - Unauthorized. API Key present: {bool(api_key)}")
+                    self.logger.error(f"Request headers: {headers}")
+                    self.logger.error(f"Request URL: {api_url}")
+
+                try:
+                    error_data = response.json()
+                    if "error" in error_data:
+                        error_msg += f"\n\nОшибка сервера: {error_data['error']}"
+                    if "details" in error_data:
+                        error_msg += f"\nДетали: {error_data['details']}"
+                    if "message" in error_data:
+                        error_msg += f"\nСообщение: {error_data['message']}"
+
+                    self.logger.error(f"Server error response: {error_data}")
+                except Exception as json_error:
+                    error_msg += f"\n\nНе удалось разобрать ответ сервера: {str(json_error)}"
+                    error_msg += f"\nСырой ответ: {response.text[:500]}..." if len(response.text) > 500 else f"\nСырой ответ: {response.text}"
+
+                    self.logger.error(f"Failed to parse error response: {str(json_error)}")
+                    self.logger.error(f"Raw response: {response.text}")
+
+                QMessageBox.critical(self, "Ошибка", error_msg)
+                self.logger.error(f"Ошибка отправки на GitHub: {error_msg}")
+
+        except requests.exceptions.RequestException as e:
+            QMessageBox.critical(
+                self,
+                "Ошибка сети",
+                f"Не удалось подключиться к API:\n{str(e)}"
+            )
+            self.logger.error(f"Network error: {str(e)}")
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Ошибка",
+                f"Неожиданная ошибка:\n{str(e)}"
+            )
+            self.logger.error(f"Unexpected error: {str(e)}", exc_info=True)
+
+    def update_github_button_visibility(self):
+        """Обновление видимости кнопки отправки на GitHub"""
+        is_local = self.is_local_checkbox.isChecked()
+        self.submit_github_btn.setVisible(is_local)
+
+        if is_local:
+            self.submit_github_btn.setToolTip("Отправить локальный промпт на GitHub для создания Pull Request")
+        else:
+            self.submit_github_btn.setToolTip("Кнопка доступна только для локальных промптов")

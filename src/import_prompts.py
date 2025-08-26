@@ -1,7 +1,7 @@
 import logging
 import sys
 
-from src.excel_prompt_importer import ExcelPromptImporter
+from excel_prompt_importer import ExcelPromptImporter
 
 
 def setup_logging():

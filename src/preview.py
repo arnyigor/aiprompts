@@ -9,7 +9,7 @@ from MarkdownPreviewDialog import MarkdownPreviewDialog
 from lmstudio_api import LMStudioInference
 from models import Prompt, Variable
 from prompt_editor import ExampleSelectionDialog
-from src.ai_dialog import AIDialog
+from ai_dialog import AIDialog
 
 
 class PromptPreview(QDialog):

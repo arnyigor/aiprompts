@@ -1,7 +1,7 @@
 # template_manager.py
 from typing import Dict, List
 
-from src.models import Prompt
+from models import Prompt
 
 
 class TemplateManager:

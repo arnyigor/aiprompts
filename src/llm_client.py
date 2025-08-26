@@ -2,7 +2,7 @@ from collections.abc import Iterable, Generator
 from typing import Any, Dict, List, Union
 import logging
 
-from src.interfaces import ProviderClient
+from interfaces import ProviderClient
 
 log = logging.getLogger(__name__)
 
