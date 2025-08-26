@@ -145,6 +145,9 @@ jobs:
           # 5. Запускаем сборку AppImage с linuxdeploy (без FUSE)
           ./linuxdeploy.AppImage --appdir AppDir --output appimage --executable AppDir/usr/bin/"${{ env.APP_NAME }}"
 
+          # 6. Переименовываем файл в ожидаемое имя
+          mv PromptManager-x86_64.AppImage "${{ env.ASSET_NAME }}"
+
       - name: Archive built artifact (Windows)
         if: matrix.os == 'windows-latest'
         run: Compress-Archive -Path dist/${{ env.APP_NAME }}.exe -DestinationPath ${{ env.ASSET_NAME }}.zip
