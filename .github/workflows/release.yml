@@ -1,14 +1,3 @@
-# ==============================================================================
-# GitHub Workflow: Сборка и публикация релиза ПРИЛОЖЕНИЯ
-# ==============================================================================
-# Этот воркфлоу отвечает за сборку исполняемых файлов для Windows,
-# macOS и Linux (.AppImage).
-#
-# --- ТРИГГЕРЫ ЗАПУСКА ---
-# 1. АВТОМАТИЧЕСКИ: при пуше нового тега в репозиторий (например, v1.2.3).
-# 2. ВРУЧНУЮ: через вкладку "Actions" в репозитории GitHub.
-# ==============================================================================
-
 name: Create App Release
 
 on:
@@ -26,7 +15,6 @@ permissions:
   contents: write
 
 jobs:
-  # --- ЗАДАЧА 1: Создать релиз на GitHub (без изменений) ---
   create_release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
@@ -42,8 +30,8 @@ jobs:
           else
             TAG_NAME="${{ github.event.inputs.tag }}"
           fi
-          echo "Используемый тег: $TAG_NAME"
           echo "name=$TAG_NAME" >> $GITHUB_OUTPUT
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -56,30 +44,32 @@ jobs:
           draft: false
           prerelease: ${{ contains(steps.get_tag.outputs.name, '-') }}
 
-  # --- ЗАДАЧА 2: Сборка бинарных файлов для всех ОС ---
   build_assets:
     name: Build App for ${{ matrix.os }}
     needs: create_release
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, macos-latest, macos-13, ubuntu-latest]
+        os: [windows-latest, macos-14, ubuntu-22.04]
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      # НОВЫЙ ШАГ: Установка зависимостей для AppImage в Linux
+      # Linux prerequisites for AppImage
       - name: Install AppImage prerequisites (Linux only)
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y fuse3
+          # libfuse2: нужен многим AppImage рантаймам
+          sudo apt-get install -y libfuse2 fuse3
+          # удобные утилиты диагностики (необязательно)
+          sudo apt-get install -y patchelf
 
       - name: Install Python dependencies
         run: |
@@ -87,79 +77,85 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
+      # Unified names
       - name: Set Asset Names (Windows)
         if: matrix.os == 'windows-latest'
+        shell: pwsh
         run: |
           echo "ASSET_NAME=PromptManager-${{ needs.create_release.outputs.tag_name }}-windows-x64" >> $env:GITHUB_ENV
           echo "APP_NAME=PromptManager" >> $env:GITHUB_ENV
-        shell: pwsh
 
       - name: Set Asset Names (macOS)
-        if: matrix.os == 'macos-latest'
+        if: matrix.os == 'macos-14'
+        shell: bash
         run: |
           echo "ASSET_NAME=PromptManager-${{ needs.create_release.outputs.tag_name }}-macos-$(uname -m)" >> $GITHUB_ENV
           echo "APP_NAME=PromptManager" >> $GITHUB_ENV
-        shell: bash
 
-      # НОВЫЙ ШАГ: Установка имён для Linux
       - name: Set Asset Names (Linux)
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-22.04'
+        shell: bash
         run: |
           echo "ASSET_NAME=PromptManager-${{ needs.create_release.outputs.tag_name }}-linux-x86_64.AppImage" >> $GITHUB_ENV
           echo "APP_NAME=PromptManager" >> $GITHUB_ENV
-        shell: bash
 
-      # ИЗМЕНЕНО: Сборка разделена для разных ОС
+      # Build binaries
       - name: Build with PyInstaller (Windows/macOS)
-        if: matrix.os == 'windows-latest' || matrix.os == 'macos-latest'
+        if: matrix.os == 'windows-latest' || matrix.os == 'macos-14'
         run: pyinstaller --name "${{ env.APP_NAME }}" --onefile --windowed --paths ./src src/main.py
 
       - name: Build with PyInstaller (Linux)
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-22.04'
         run: pyinstaller --name "${{ env.APP_NAME }}" --onefile --noconfirm --windowed --paths ./src src/main.py
 
-      # НОВЫЙ ШАГ: Создание AppImage из сборки PyInstaller
+      # Package to AppImage on Linux without requiring FUSE at runtime on the runner
       - name: Build AppImage (Linux only)
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-22.04'
+        shell: bash
         run: |
-          # 1. Скачиваем linuxdeploy для сборки AppImage без FUSE
+          # 1) Скачать linuxdeploy AppImage
           wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage -O linuxdeploy.AppImage
           chmod +x linuxdeploy.AppImage
 
-          # 2. Создаем структуру AppDir
+          # 2) Подготовить AppDir
           mkdir -p AppDir/usr/bin
           cp dist/${{ env.APP_NAME }} AppDir/usr/bin/
           chmod +x AppDir/usr/bin/"${{ env.APP_NAME }}"
 
-          # 3. Создаем .desktop файл для меню приложений
-          echo "[Desktop Entry]
+          # 3) Desktop-файл
+          cat > AppDir/${{ env.APP_NAME }}.desktop << 'EOF'
+          [Desktop Entry]
           Name=${{ env.APP_NAME }}
           Exec=${{ env.APP_NAME }}
           Icon=icon
           Type=Application
-          Categories=Utility;" > AppDir/${{ env.APP_NAME }}.desktop
+          Categories=Utility;
+          EOF
 
-          # 4. Копируем иконку
+          # 4) Иконка
           cp assets/icon.png AppDir/icon.png
 
-          # 5. Запускаем сборку AppImage с linuxdeploy (без FUSE)
-          ./linuxdeploy.AppImage --appdir AppDir --output appimage --executable AppDir/usr/bin/"${{ env.APP_NAME }}"
+          # 5) Сборка AppImage (fallback без FUSE)
+          APPIMAGE_EXTRACT_AND_RUN=1 ./linuxdeploy.AppImage --appdir AppDir --output appimage --executable AppDir/usr/bin/"${{ env.APP_NAME }}"
 
-          # 6. Переименовываем файл в ожидаемое имя
-          mv PromptManager-x86_64.AppImage "${{ env.ASSET_NAME }}"
+          # 6) Переименовать итоговый файл в ожидаемое имя
+          mv ./*x86_64.AppImage "${{ env.ASSET_NAME }}"
 
+          # 7) Минимальная проверка исполняемости
+          APPIMAGE_EXTRACT_AND_RUN=1 ./${{ env.ASSET_NAME }} --appimage-version || true
+
+      # Archive and upload
       - name: Archive built artifact (Windows)
         if: matrix.os == 'windows-latest'
-        run: Compress-Archive -Path dist/${{ env.APP_NAME }}.exe -DestinationPath ${{ env.ASSET_NAME }}.zip
         shell: pwsh
+        run: Compress-Archive -Path dist/${{ env.APP_NAME }}.exe -DestinationPath ${{ env.ASSET_NAME }}.zip
 
       - name: Archive built artifact (macOS)
-        if: matrix.os == 'macos-latest'
+        if: matrix.os == 'macos-14'
         run: zip -r ${{ env.ASSET_NAME }}.zip dist/"${{ env.APP_NAME }}.app"
 
-      # ИЗМЕНЕНО: Загрузка разделена для разных ОС
       - name: Upload Release Asset (Windows/macOS)
-        if: matrix.os == 'windows-latest' || matrix.os == 'macos-latest'
+        if: matrix.os == 'windows-latest' || matrix.os == 'macos-14'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -170,7 +166,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: Upload Release Asset (Linux)
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-22.04'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
