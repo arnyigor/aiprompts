@@ -113,36 +113,39 @@ jobs:
         if: matrix.os == 'ubuntu-22.04'
         shell: bash
         run: |
-          # 1) Скачать linuxdeploy AppImage
+          # 1. Инструменты
           wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage -O linuxdeploy.AppImage
-          chmod +x linuxdeploy.AppImage
+          wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-python/releases/download/continuous/linuxdeploy-plugin-python-x86_64.AppImage -O plugin-python.AppImage
+          chmod +x linuxdeploy.AppImage plugin-python.AppImage
 
-          # 2) Подготовить AppDir
+          # 2. PyInstaller-бинарник
+          pyinstaller --name "${{ env.APP_NAME }}" \
+                      --onefile --windowed --clean \
+                      --add-data "assets:assets" \
+                      src/main.py
           mkdir -p AppDir/usr/bin
-          cp dist/${{ env.APP_NAME }} AppDir/usr/bin/
-          chmod +x AppDir/usr/bin/"${{ env.APP_NAME }}"
+          mv dist/${{ env.APP_NAME }} AppDir/usr/bin/
 
-          # 3) Desktop-файл
-          cat > AppDir/${{ env.APP_NAME }}.desktop << 'EOF'
+          # 3. Desktop-файл и иконка
+          mkdir -p AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps
+          cat > AppDir/usr/share/applications/${{ env.APP_NAME }}.desktop <<EOF
           [Desktop Entry]
-          Name=${{ env.APP_NAME }}
+          Name=Prompt Manager
           Exec=${{ env.APP_NAME }}
-          Icon=icon
+          Icon=promptmanager
           Type=Application
           Categories=Utility;
           EOF
+          cp assets/icon.png AppDir/usr/share/icons/hicolor/256x256/apps/promptmanager.png
 
-          # 4) Иконка
-          cp assets/icon.png AppDir/icon.png
+          # 4. Сборка AppImage (без FUSE в рантайме)
+          APPIMAGE_EXTRACT_AND_RUN=1 \
+            ./linuxdeploy.AppImage --appdir AppDir \
+                                   --plugin python \
+                                   --output appimage
 
-          # 5) Сборка AppImage (fallback без FUSE)
-          APPIMAGE_EXTRACT_AND_RUN=1 ./linuxdeploy.AppImage --appdir AppDir --output appimage --executable AppDir/usr/bin/"${{ env.APP_NAME }}"
-
-          # 6) Переименовать итоговый файл в ожидаемое имя
-          mv ./*x86_64.AppImage "${{ env.ASSET_NAME }}"
-
-          # 7) Минимальная проверка исполняемости
-          APPIMAGE_EXTRACT_AND_RUN=1 ./${{ env.ASSET_NAME }} --appimage-version || true
+          mv ./*PromptManager*.AppImage "${{ env.ASSET_NAME }}"
+          chmod +x "${{ env.ASSET_NAME }}"
 
       # Archive and upload
       - name: Archive built artifact (Windows)
