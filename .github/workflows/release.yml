@@ -113,39 +113,42 @@ jobs:
         if: matrix.os == 'ubuntu-22.04'
         shell: bash
         run: |
-          # 1. Инструменты
+          # 1) Скачать linuxdeploy (исправлены ссылки)
           wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage -O linuxdeploy.AppImage
-          wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-python/releases/download/continuous/linuxdeploy-plugin-python-x86_64.AppImage -O plugin-python.AppImage
-          chmod +x linuxdeploy.AppImage plugin-python.AppImage
+          chmod +x linuxdeploy.AppImage
 
-          # 2. PyInstaller-бинарник
-          pyinstaller --name "${{ env.APP_NAME }}" \
-                      --onefile --windowed --clean \
-                      --add-data "assets:assets" \
-                      src/main.py
+          # 2) Подготовить AppDir структуру (без повторной сборки PyInstaller)
           mkdir -p AppDir/usr/bin
-          mv dist/${{ env.APP_NAME }} AppDir/usr/bin/
+          cp dist/${{ env.APP_NAME }} AppDir/usr/bin/
+          chmod +x AppDir/usr/bin/"${{ env.APP_NAME }}"
 
-          # 3. Desktop-файл и иконка
-          mkdir -p AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps
-          cat > AppDir/usr/share/applications/${{ env.APP_NAME }}.desktop <<EOF
+          # 3) Desktop-файл в корень AppDir (упрощенный подход)
+          cat > AppDir/${{ env.APP_NAME }}.desktop << 'EOF'
           [Desktop Entry]
           Name=Prompt Manager
           Exec=${{ env.APP_NAME }}
-          Icon=promptmanager
+          Icon=icon
           Type=Application
           Categories=Utility;
           EOF
-          cp assets/icon.png AppDir/usr/share/icons/hicolor/256x256/apps/promptmanager.png
 
-          # 4. Сборка AppImage (без FUSE в рантайме)
-          APPIMAGE_EXTRACT_AND_RUN=1 \
-            ./linuxdeploy.AppImage --appdir AppDir \
-                                   --plugin python \
-                                   --output appimage
+          # 4) Иконка в корень AppDir
+          cp assets/icon.png AppDir/icon.png
 
-          mv ./*PromptManager*.AppImage "${{ env.ASSET_NAME }}"
+          # 5) Создание AppImage без дополнительных плагинов
+          APPIMAGE_EXTRACT_AND_RUN=1 ./linuxdeploy.AppImage \
+            --appdir AppDir \
+            --executable AppDir/usr/bin/"${{ env.APP_NAME }}" \
+            --desktop-file AppDir/"${{ env.APP_NAME }}".desktop \
+            --icon-file AppDir/icon.png \
+            --output appimage
+
+          # 6) Переименование и права доступа
+          mv ./*x86_64.AppImage "${{ env.ASSET_NAME }}"
           chmod +x "${{ env.ASSET_NAME }}"
+
+          # 7) Проверка создания файла
+          ls -la "${{ env.ASSET_NAME }}" || echo "AppImage не создан!"
 
       # Archive and upload
       - name: Archive built artifact (Windows)
