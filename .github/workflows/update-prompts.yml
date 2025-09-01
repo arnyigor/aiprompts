@@ -67,12 +67,12 @@ jobs:
       - name: Sync to Database with Full Diagnostics
         run: |
           echo "🔄 Starting sync with diagnostics at $(date)"
-          
+
           # Параметры
           CHUNK_SIZE=10  # Уменьшаем размер чанка
           MAX_RETRIES=2
           RETRY_DELAY=3
-          
+
           # Проверяем переменные окружения
           echo "🔍 Environment check:"
           if [ -z "${{ secrets.SYNC_WEBHOOK_URL }}" ]; then
@@ -83,114 +83,117 @@ jobs:
               # Показываем только домен для безопасности
               echo "   URL domain: $(echo '${{ secrets.SYNC_WEBHOOK_URL }}' | cut -d'/' -f1-3)"
           fi
-          
+
           if [ -z "${{ secrets.SYNC_API_KEY }}" ]; then
               echo "❌ SYNC_API_KEY is not set"
               exit 1
           else
-              echo "✅ SYNC_API_KEY is configured (length: ${#{{ secrets.SYNC_API_KEY }}})"
+              echo "✅ SYNC_API_KEY is configured"
+              # Получаем длину через переменную
+              API_KEY="${{ secrets.SYNC_API_KEY }}"
+              echo "   API Key length: ${#API_KEY} characters"
           fi
-          
+
           # Проверяем наличие файлов
           JSON_FILES=$(find prompts -name "*.json" | wc -l)
           if [ "$JSON_FILES" -eq 0 ]; then
               echo "⚠️ No JSON files found - skipping sync"
               exit 0
           fi
-          
+
           echo "📊 Found $JSON_FILES JSON files, processing in chunks of $CHUNK_SIZE"
-          
+
           # Создаем список файлов и разбиваем на чанки
           find prompts -name "*.json" > files_list.txt
           split -l $CHUNK_SIZE files_list.txt chunk_
-          
+
           # Обрабатываем только первый чанк для диагностики
           chunk_file="chunk_aa"
           if [ ! -f "$chunk_file" ]; then
               echo "❌ First chunk file not found"
               exit 1
           fi
-          
+
           echo "🔬 DIAGNOSTIC MODE: Processing only first chunk"
           echo "📦 Processing chunk: $chunk_file"
-          
+
           # Создаем JSON для чанка с детальной проверкой
           echo "📝 Reading files from chunk..."
           TEMP_FILE=$(mktemp)
           CHUNK_PROMPTS=()
-          
+
           while IFS= read -r file; do
               echo "   📄 Checking file: $file"
               if [ ! -f "$file" ]; then
                   echo "   ⚠️ File not found: $file"
                   continue
               fi
-          
+
               # Проверяем размер файла
               FILE_SIZE=$(stat -c%s "$file" 2>/dev/null)
               echo "   📏 File size: ${FILE_SIZE} bytes"
-          
+
               if ! jq empty "$file" 2>/dev/null; then
                   echo "   ❌ Invalid JSON: $file"
                   continue
               fi
-          
+
               CHUNK_PROMPTS+=("$file")
               echo "   ✅ Valid JSON: $file"
           done < "$chunk_file"
-          
+
           if [ ${#CHUNK_PROMPTS[@]} -eq 0 ]; then
               echo "❌ No valid files in chunk"
               exit 1
           fi
-          
+
           echo "📊 Processing ${#CHUNK_PROMPTS[@]} valid files"
-          
+
           # Объединяем файлы чанка
           printf '%s\n' "${CHUNK_PROMPTS[@]}" | xargs cat | jq -s '.' > "$TEMP_FILE"
-          
+
           if ! jq empty "$TEMP_FILE" 2>/dev/null; then
               echo "❌ Failed to create valid JSON for chunk"
               rm -f "$TEMP_FILE"
               exit 1
           fi
-          
+
           CHUNK_COUNT=$(jq 'length' "$TEMP_FILE")
           TEMP_SIZE=$(stat -c%s "$TEMP_FILE" 2>/dev/null)
           echo "✅ Chunk JSON created: $CHUNK_COUNT prompts, ${TEMP_SIZE} bytes"
-          
+
           # Создаем минимальный payload для тестирования
           PAYLOAD_FILE=$(mktemp)
           jq -n --argjson prompts "$(cat "$TEMP_FILE")" \
                 --arg source "github-action-diagnostic" \
                 --arg chunk "$chunk_file" \
                 '{prompts: $prompts, source: $source, chunk: $chunk}' > "$PAYLOAD_FILE"
-          
+
           PAYLOAD_SIZE=$(stat -c%s "$PAYLOAD_FILE" 2>/dev/null)
           echo "📦 Payload created: ${PAYLOAD_SIZE} bytes"
-          
+
           # Проверяем доступность API
           echo "🌐 Testing API connectivity..."
           PING_STATUS=$(curl -s -w "%{http_code}" -o /dev/null \
             --connect-timeout 10 \
             --max-time 15 \
             -X GET "${{ secrets.SYNC_WEBHOOK_URL }}" 2>/dev/null || echo "000")
-          
+
           echo "📡 API ping result: HTTP $PING_STATUS"
-          
+
           # Отправляем с максимальной диагностикой
           echo "🚀 Sending diagnostic request..."
           RESPONSE_FILE=$(mktemp)
           ERROR_FILE=$(mktemp)
-          
+
           echo "   🔧 cURL command details:"
           echo "   - Method: POST"
           echo "   - URL: [REDACTED]"
           echo "   - Content-Type: application/json"  
-          echo "   - API Key: [REDACTED] (${#{{ secrets.SYNC_API_KEY }}} chars)"
+          echo "   - API Key: [REDACTED] (${#API_KEY} chars)"
           echo "   - Payload size: ${PAYLOAD_SIZE} bytes"
           echo "   - Timeout: 30 seconds"
-          
+
           HTTP_STATUS=$(curl -v -s -w "%{http_code}" \
             -o "$RESPONSE_FILE" \
             -X POST "${{ secrets.SYNC_WEBHOOK_URL }}" \
@@ -201,10 +204,10 @@ jobs:
             --max-time 30 \
             --retry 0 \
             2>"$ERROR_FILE")
-          
+
           echo "📊 HTTP Status: '$HTTP_STATUS'"
           echo "📤 Request completed"
-          
+
           # Анализируем результат
           echo "🔍 Response analysis:"
           if [ -s "$RESPONSE_FILE" ]; then
@@ -216,17 +219,17 @@ jobs:
           else
               echo "   ⚠️ No response body received"
           fi
-          
+
           if [ -s "$ERROR_FILE" ]; then
               echo "   🐛 cURL debug info:"
               cat "$ERROR_FILE"
           else
               echo "   ℹ️ No cURL errors logged"
           fi
-          
+
           # Очистка файлов
           rm -f "$TEMP_FILE" "$PAYLOAD_FILE" "$RESPONSE_FILE" "$ERROR_FILE" files_list.txt chunk_*
-          
+
           # Финальная проверка статуса
           echo "🎯 Final status check:"
           if [ -z "$HTTP_STATUS" ]; then
@@ -253,5 +256,5 @@ jobs:
               echo "❌ UNKNOWN ERROR: Unexpected HTTP status '$HTTP_STATUS'"
               exit 1
           fi
-          
+
           echo "🟢 Diagnostic completed at $(date)"
