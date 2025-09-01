@@ -62,3 +62,52 @@ jobs:
           files: prompts.zip # Action найдет и перезапишет этот файл, если он уже существует
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ==============================================================================
+      # СИНХРОНИЗАЦИЯ С БАЗОЙ ДАННЫХ С ОБРАБОТКОЙ ОШИБОК
+      # ==============================================================================
+      # Назначение: Отправка всех промптов из папки prompts/ во внешнюю БД через API
+      # Требования: find, cat, jq, curl, доступ к секретам SYNC_WEBHOOK_URL и SYNC_API_KEY
+      # ==============================================================================
+      - name: Sync to Database with Error Handling
+        run: |
+          echo "🔄 Starting sync at $(date)"
+          
+          # 1. СБОР И ВАЛИДАЦИЯ ПРОМПТОВ
+          # --------------------------------------------------------------------------
+          # Объединяет все JSON-файлы из prompts/ в валидный массив
+          # При ошибке: логгирует проблему и завершает workflow
+          if ! PROMPTS_JSON=$(find prompts -name "*.json" -exec cat {} \; | jq -s '.' 2>/dev/null); then
+              echo "❌ ERROR: Invalid JSON format in prompt files"
+              exit 1
+          fi
+          
+          # 2. ОТПРАВКА ДАННЫХ НА API
+          # --------------------------------------------------------------------------
+          # Выполняет POST-запрос с аутентификацией через API ключ
+          # Анализирует HTTP статус для определения успешности операции
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "${{ secrets.SYNC_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -H "X-API-Key: ${{ secrets.SYNC_API_KEY }}" \
+            -d "{\"prompts\": $PROMPTS_JSON, \"source\": \"github-action\"}")
+          
+          # 3. ПРОВЕРКА РЕЗУЛЬТАТА
+          # --------------------------------------------------------------------------
+          # Успех: 2xx статусы (200, 201, etc.)
+          # Ошибка клиента: 4xx (неверный запрос, неавторизован)
+          # Ошибка сервера: 5xx (внутренняя ошибка API)
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+              echo "✅ Sync completed successfully (HTTP $HTTP_STATUS)"
+          elif [ "$HTTP_STATUS" -ge 400 ] && [ "$HTTP_STATUS" -lt 500 ]; then
+              echo "❌ CLIENT ERROR: Check API key or data format (HTTP $HTTP_STATUS)"
+              exit 1
+          elif [ "$HTTP_STATUS" -ge 500 ]; then
+              echo "❌ SERVER ERROR: External API is down (HTTP $HTTP_STATUS)"
+              exit 1
+          else
+              echo "❌ UNKNOWN ERROR: Unexpected HTTP status $HTTP_STATUS"
+              exit 1
+          fi
+          
+          echo "🟢 Sync completed at $(date)"
