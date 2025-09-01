@@ -64,55 +64,122 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # СИНХРОНИЗАЦИЯ С БАЗОЙ ДАННЫХ
-      - name: Sync to Database with Chunked Upload
+      - name: Sync to Database (Chunked)
         run: |
           echo "🔄 Starting chunked sync at $(date)"
 
-          # Размер чанка (количество файлов в одной порции)
-          CHUNK_SIZE=50
+          # Параметры
+          CHUNK_SIZE=25
+          MAX_RETRIES=3
+          RETRY_DELAY=5
 
-          # Получаем список всех JSON файлов
+          # Проверяем наличие файлов
+          JSON_FILES=$(find prompts -name "*.json" | wc -l)
+          if [ "$JSON_FILES" -eq 0 ]; then
+              echo "⚠️ No JSON files found - skipping sync"
+              exit 0
+          fi
+
+          echo "📊 Found $JSON_FILES JSON files, processing in chunks of $CHUNK_SIZE"
+
+          # Создаем список файлов и разбиваем на чанки
           find prompts -name "*.json" > files_list.txt
-
-          # Разбиваем на части и отправляем
           split -l $CHUNK_SIZE files_list.txt chunk_
 
-          for chunk_file in chunk_*; do
-              echo "📦 Processing chunk: $chunk_file"
+          # Счетчики
+          TOTAL_CHUNKS=$(ls chunk_* | wc -l)
+          CURRENT_CHUNK=0
 
-              # Создаем JSON для текущего чанка
+          for chunk_file in chunk_*; do
+              CURRENT_CHUNK=$((CURRENT_CHUNK + 1))
+              echo "📦 Processing chunk $CURRENT_CHUNK/$TOTAL_CHUNKS: $chunk_file"
+
+              # Создаем JSON для текущего чанка с проверкой
               TEMP_FILE=$(mktemp)
+              CHUNK_PROMPTS=()
+
               while IFS= read -r file; do
-                  cat "$file"
-              done < "$chunk_file" | jq -s '.' > "$TEMP_FILE"
+                  if [ -f "$file" ] && jq empty "$file" 2>/dev/null; then
+                      CHUNK_PROMPTS+=("$file")
+                  else
+                      echo "⚠️ Skipping invalid file: $file"
+                  fi
+              done < "$chunk_file"
+
+              if [ ${#CHUNK_PROMPTS[@]} -eq 0 ]; then
+                  echo "⚠️ No valid files in chunk $chunk_file"
+                  continue
+              fi
+
+              # Объединяем файлы чанка
+              printf '%s\n' "${CHUNK_PROMPTS[@]}" | xargs cat | jq -s '.' > "$TEMP_FILE"
+
+              if ! jq empty "$TEMP_FILE" 2>/dev/null; then
+                  echo "❌ Failed to create valid JSON for chunk $chunk_file"
+                  rm -f "$TEMP_FILE"
+                  continue
+              fi
+
+              CHUNK_COUNT=$(jq 'length' "$TEMP_FILE")
+              echo "   📄 Chunk contains $CHUNK_COUNT prompts"
 
               # Создаем payload
               PAYLOAD_FILE=$(mktemp)
-              echo "{\"prompts\": $(cat "$TEMP_FILE"), \"source\": \"github-action\", \"chunk\": \"$chunk_file\"}" > "$PAYLOAD_FILE"
+              jq -n --argjson prompts "$(cat "$TEMP_FILE")" \
+                    --arg source "github-action" \
+                    --arg chunk "$chunk_file" \
+                    --argjson chunk_info "{\"current\": $CURRENT_CHUNK, \"total\": $TOTAL_CHUNKS}" \
+                    '{prompts: $prompts, source: $source, chunk: $chunk, chunk_info: $chunk_info}' > "$PAYLOAD_FILE"
 
-              # Отправляем чанк
-              HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-                -X POST "${{ secrets.SYNC_WEBHOOK_URL }}" \
-                -H "Content-Type: application/json" \
-                -H "X-API-Key: ${{ secrets.SYNC_API_KEY }}" \
-                -d @"$PAYLOAD_FILE")
+              # Отправляем с повторами
+              for attempt in $(seq 1 $MAX_RETRIES); do
+                  echo "   🚀 Attempt $attempt/$MAX_RETRIES"
 
-              # Очищаем временные файлы
-              rm -f "$TEMP_FILE" "$PAYLOAD_FILE"
+                  RESPONSE_FILE=$(mktemp)
+                  HTTP_STATUS=$(curl -s -w "%{http_code}" -o "$RESPONSE_FILE" \
+                    -X POST "${{ secrets.SYNC_WEBHOOK_URL }}" \
+                    -H "Content-Type: application/json" \
+                    -H "X-API-Key: ${{ secrets.SYNC_API_KEY }}" \
+                    -d @"$PAYLOAD_FILE" \
+                    --max-time 30)
 
-              # Проверяем результат
-              if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
-                  echo "✅ Chunk $chunk_file synced successfully (HTTP $HTTP_STATUS)"
-              else
-                  echo "❌ Chunk $chunk_file failed (HTTP $HTTP_STATUS)"
+                  if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+                      echo "   ✅ Chunk $CURRENT_CHUNK synced successfully (HTTP $HTTP_STATUS)"
+                      rm -f "$RESPONSE_FILE"
+                      break
+                  else
+                      echo "   ❌ Attempt $attempt failed (HTTP $HTTP_STATUS)"
+                      if [ -s "$RESPONSE_FILE" ]; then
+                          echo "   📄 Error response:"
+                          head -c 500 "$RESPONSE_FILE"
+                      fi
+                      rm -f "$RESPONSE_FILE"
+
+                      if [ $attempt -lt $MAX_RETRIES ]; then
+                          echo "   ⏳ Retrying in $RETRY_DELAY seconds..."
+                          sleep $RETRY_DELAY
+                      fi
+                  fi
+              done
+
+              # Проверяем финальный результат
+              if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
+                  echo "❌ Chunk $chunk_file failed after $MAX_RETRIES attempts"
+                  rm -f "$TEMP_FILE" "$PAYLOAD_FILE"
                   exit 1
               fi
 
-              # Небольшая пауза между чанками
-              sleep 1
+              # Очистка
+              rm -f "$TEMP_FILE" "$PAYLOAD_FILE"
+
+              # Пауза между чанками
+              if [ $CURRENT_CHUNK -lt $TOTAL_CHUNKS ]; then
+                  sleep 2
+              fi
           done
 
-          # Очистка
+          # Финальная очистка
           rm -f files_list.txt chunk_*
 
-          echo "🟢 All chunks synced successfully at $(date)"
+          echo "🟢 All $TOTAL_CHUNKS chunks synced successfully at $(date)"
+      
