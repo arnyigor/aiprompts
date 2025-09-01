@@ -64,122 +64,194 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # СИНХРОНИЗАЦИЯ С БАЗОЙ ДАННЫХ
-      - name: Sync to Database (Chunked)
+      - name: Sync to Database with Full Diagnostics
         run: |
-          echo "🔄 Starting chunked sync at $(date)"
-
+          echo "🔄 Starting sync with diagnostics at $(date)"
+          
           # Параметры
-          CHUNK_SIZE=25
-          MAX_RETRIES=3
-          RETRY_DELAY=5
-
+          CHUNK_SIZE=10  # Уменьшаем размер чанка
+          MAX_RETRIES=2
+          RETRY_DELAY=3
+          
+          # Проверяем переменные окружения
+          echo "🔍 Environment check:"
+          if [ -z "${{ secrets.SYNC_WEBHOOK_URL }}" ]; then
+              echo "❌ SYNC_WEBHOOK_URL is not set"
+              exit 1
+          else
+              echo "✅ SYNC_WEBHOOK_URL is configured"
+              # Показываем только домен для безопасности
+              echo "   URL domain: $(echo '${{ secrets.SYNC_WEBHOOK_URL }}' | cut -d'/' -f1-3)"
+          fi
+          
+          if [ -z "${{ secrets.SYNC_API_KEY }}" ]; then
+              echo "❌ SYNC_API_KEY is not set"
+              exit 1
+          else
+              echo "✅ SYNC_API_KEY is configured (length: ${#{{ secrets.SYNC_API_KEY }}})"
+          fi
+          
           # Проверяем наличие файлов
           JSON_FILES=$(find prompts -name "*.json" | wc -l)
           if [ "$JSON_FILES" -eq 0 ]; then
               echo "⚠️ No JSON files found - skipping sync"
               exit 0
           fi
-
+          
           echo "📊 Found $JSON_FILES JSON files, processing in chunks of $CHUNK_SIZE"
-
+          
           # Создаем список файлов и разбиваем на чанки
           find prompts -name "*.json" > files_list.txt
           split -l $CHUNK_SIZE files_list.txt chunk_
-
-          # Счетчики
-          TOTAL_CHUNKS=$(ls chunk_* | wc -l)
-          CURRENT_CHUNK=0
-
-          for chunk_file in chunk_*; do
-              CURRENT_CHUNK=$((CURRENT_CHUNK + 1))
-              echo "📦 Processing chunk $CURRENT_CHUNK/$TOTAL_CHUNKS: $chunk_file"
-
-              # Создаем JSON для текущего чанка с проверкой
-              TEMP_FILE=$(mktemp)
-              CHUNK_PROMPTS=()
-
-              while IFS= read -r file; do
-                  if [ -f "$file" ] && jq empty "$file" 2>/dev/null; then
-                      CHUNK_PROMPTS+=("$file")
-                  else
-                      echo "⚠️ Skipping invalid file: $file"
-                  fi
-              done < "$chunk_file"
-
-              if [ ${#CHUNK_PROMPTS[@]} -eq 0 ]; then
-                  echo "⚠️ No valid files in chunk $chunk_file"
+          
+          # Обрабатываем только первый чанк для диагностики
+          chunk_file="chunk_aa"
+          if [ ! -f "$chunk_file" ]; then
+              echo "❌ First chunk file not found"
+              exit 1
+          fi
+          
+          echo "🔬 DIAGNOSTIC MODE: Processing only first chunk"
+          echo "📦 Processing chunk: $chunk_file"
+          
+          # Создаем JSON для чанка с детальной проверкой
+          echo "📝 Reading files from chunk..."
+          TEMP_FILE=$(mktemp)
+          CHUNK_PROMPTS=()
+          
+          while IFS= read -r file; do
+              echo "   📄 Checking file: $file"
+              if [ ! -f "$file" ]; then
+                  echo "   ⚠️ File not found: $file"
                   continue
               fi
-
-              # Объединяем файлы чанка
-              printf '%s\n' "${CHUNK_PROMPTS[@]}" | xargs cat | jq -s '.' > "$TEMP_FILE"
-
-              if ! jq empty "$TEMP_FILE" 2>/dev/null; then
-                  echo "❌ Failed to create valid JSON for chunk $chunk_file"
-                  rm -f "$TEMP_FILE"
+          
+              # Проверяем размер файла
+              FILE_SIZE=$(stat -c%s "$file" 2>/dev/null)
+              echo "   📏 File size: ${FILE_SIZE} bytes"
+          
+              if ! jq empty "$file" 2>/dev/null; then
+                  echo "   ❌ Invalid JSON: $file"
                   continue
               fi
-
-              CHUNK_COUNT=$(jq 'length' "$TEMP_FILE")
-              echo "   📄 Chunk contains $CHUNK_COUNT prompts"
-
-              # Создаем payload
-              PAYLOAD_FILE=$(mktemp)
-              jq -n --argjson prompts "$(cat "$TEMP_FILE")" \
-                    --arg source "github-action" \
-                    --arg chunk "$chunk_file" \
-                    --argjson chunk_info "{\"current\": $CURRENT_CHUNK, \"total\": $TOTAL_CHUNKS}" \
-                    '{prompts: $prompts, source: $source, chunk: $chunk, chunk_info: $chunk_info}' > "$PAYLOAD_FILE"
-
-              # Отправляем с повторами
-              for attempt in $(seq 1 $MAX_RETRIES); do
-                  echo "   🚀 Attempt $attempt/$MAX_RETRIES"
-
-                  RESPONSE_FILE=$(mktemp)
-                  HTTP_STATUS=$(curl -s -w "%{http_code}" -o "$RESPONSE_FILE" \
-                    -X POST "${{ secrets.SYNC_WEBHOOK_URL }}" \
-                    -H "Content-Type: application/json" \
-                    -H "X-API-Key: ${{ secrets.SYNC_API_KEY }}" \
-                    -d @"$PAYLOAD_FILE" \
-                    --max-time 30)
-
-                  if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
-                      echo "   ✅ Chunk $CURRENT_CHUNK synced successfully (HTTP $HTTP_STATUS)"
-                      rm -f "$RESPONSE_FILE"
-                      break
-                  else
-                      echo "   ❌ Attempt $attempt failed (HTTP $HTTP_STATUS)"
-                      if [ -s "$RESPONSE_FILE" ]; then
-                          echo "   📄 Error response:"
-                          head -c 500 "$RESPONSE_FILE"
-                      fi
-                      rm -f "$RESPONSE_FILE"
-
-                      if [ $attempt -lt $MAX_RETRIES ]; then
-                          echo "   ⏳ Retrying in $RETRY_DELAY seconds..."
-                          sleep $RETRY_DELAY
-                      fi
-                  fi
-              done
-
-              # Проверяем финальный результат
-              if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
-                  echo "❌ Chunk $chunk_file failed after $MAX_RETRIES attempts"
-                  rm -f "$TEMP_FILE" "$PAYLOAD_FILE"
-                  exit 1
-              fi
-
-              # Очистка
-              rm -f "$TEMP_FILE" "$PAYLOAD_FILE"
-
-              # Пауза между чанками
-              if [ $CURRENT_CHUNK -lt $TOTAL_CHUNKS ]; then
-                  sleep 2
-              fi
-          done
-
-          # Финальная очистка
-          rm -f files_list.txt chunk_*
-
-          echo "🟢 All $TOTAL_CHUNKS chunks synced successfully at $(date)"
-      
+          
+              CHUNK_PROMPTS+=("$file")
+              echo "   ✅ Valid JSON: $file"
+          done < "$chunk_file"
+          
+          if [ ${#CHUNK_PROMPTS[@]} -eq 0 ]; then
+              echo "❌ No valid files in chunk"
+              exit 1
+          fi
+          
+          echo "📊 Processing ${#CHUNK_PROMPTS[@]} valid files"
+          
+          # Объединяем файлы чанка
+          printf '%s\n' "${CHUNK_PROMPTS[@]}" | xargs cat | jq -s '.' > "$TEMP_FILE"
+          
+          if ! jq empty "$TEMP_FILE" 2>/dev/null; then
+              echo "❌ Failed to create valid JSON for chunk"
+              rm -f "$TEMP_FILE"
+              exit 1
+          fi
+          
+          CHUNK_COUNT=$(jq 'length' "$TEMP_FILE")
+          TEMP_SIZE=$(stat -c%s "$TEMP_FILE" 2>/dev/null)
+          echo "✅ Chunk JSON created: $CHUNK_COUNT prompts, ${TEMP_SIZE} bytes"
+          
+          # Создаем минимальный payload для тестирования
+          PAYLOAD_FILE=$(mktemp)
+          jq -n --argjson prompts "$(cat "$TEMP_FILE")" \
+                --arg source "github-action-diagnostic" \
+                --arg chunk "$chunk_file" \
+                '{prompts: $prompts, source: $source, chunk: $chunk}' > "$PAYLOAD_FILE"
+          
+          PAYLOAD_SIZE=$(stat -c%s "$PAYLOAD_FILE" 2>/dev/null)
+          echo "📦 Payload created: ${PAYLOAD_SIZE} bytes"
+          
+          # Проверяем доступность API
+          echo "🌐 Testing API connectivity..."
+          PING_STATUS=$(curl -s -w "%{http_code}" -o /dev/null \
+            --connect-timeout 10 \
+            --max-time 15 \
+            -X GET "${{ secrets.SYNC_WEBHOOK_URL }}" 2>/dev/null || echo "000")
+          
+          echo "📡 API ping result: HTTP $PING_STATUS"
+          
+          # Отправляем с максимальной диагностикой
+          echo "🚀 Sending diagnostic request..."
+          RESPONSE_FILE=$(mktemp)
+          ERROR_FILE=$(mktemp)
+          
+          echo "   🔧 cURL command details:"
+          echo "   - Method: POST"
+          echo "   - URL: [REDACTED]"
+          echo "   - Content-Type: application/json"  
+          echo "   - API Key: [REDACTED] (${#{{ secrets.SYNC_API_KEY }}} chars)"
+          echo "   - Payload size: ${PAYLOAD_SIZE} bytes"
+          echo "   - Timeout: 30 seconds"
+          
+          HTTP_STATUS=$(curl -v -s -w "%{http_code}" \
+            -o "$RESPONSE_FILE" \
+            -X POST "${{ secrets.SYNC_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -H "X-API-Key: ${{ secrets.SYNC_API_KEY }}" \
+            -d @"$PAYLOAD_FILE" \
+            --connect-timeout 10 \
+            --max-time 30 \
+            --retry 0 \
+            2>"$ERROR_FILE")
+          
+          echo "📊 HTTP Status: '$HTTP_STATUS'"
+          echo "📤 Request completed"
+          
+          # Анализируем результат
+          echo "🔍 Response analysis:"
+          if [ -s "$RESPONSE_FILE" ]; then
+              RESPONSE_SIZE=$(stat -c%s "$RESPONSE_FILE" 2>/dev/null)
+              echo "   📄 Response size: ${RESPONSE_SIZE} bytes"
+              echo "   📄 Response content (first 500 chars):"
+              head -c 500 "$RESPONSE_FILE"
+              echo ""
+          else
+              echo "   ⚠️ No response body received"
+          fi
+          
+          if [ -s "$ERROR_FILE" ]; then
+              echo "   🐛 cURL debug info:"
+              cat "$ERROR_FILE"
+          else
+              echo "   ℹ️ No cURL errors logged"
+          fi
+          
+          # Очистка файлов
+          rm -f "$TEMP_FILE" "$PAYLOAD_FILE" "$RESPONSE_FILE" "$ERROR_FILE" files_list.txt chunk_*
+          
+          # Финальная проверка статуса
+          echo "🎯 Final status check:"
+          if [ -z "$HTTP_STATUS" ]; then
+              echo "❌ CRITICAL: HTTP_STATUS is empty - network/connection issue"
+              exit 1
+          elif [ "$HTTP_STATUS" = "000" ]; then
+              echo "❌ CRITICAL: Could not connect to server - check URL and network"
+              exit 1
+          elif [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+              echo "✅ SUCCESS: HTTP $HTTP_STATUS - API is working correctly"
+              echo "🎉 Diagnostic completed successfully"
+          elif [ "$HTTP_STATUS" -ge 400 ] && [ "$HTTP_STATUS" -lt 500 ]; then
+              echo "❌ CLIENT ERROR: HTTP $HTTP_STATUS"
+              echo "   Possible causes:"
+              echo "   - Invalid API key"
+              echo "   - Wrong request format"
+              echo "   - Missing required headers"
+              exit 1
+          elif [ "$HTTP_STATUS" -ge 500 ]; then
+              echo "❌ SERVER ERROR: HTTP $HTTP_STATUS"
+              echo "   Your API server is experiencing issues"
+              exit 1
+          else
+              echo "❌ UNKNOWN ERROR: Unexpected HTTP status '$HTTP_STATUS'"
+              exit 1
+          fi
+          
+          echo "🟢 Diagnostic completed at $(date)"
