@@ -1,0 +1,34 @@
+{
+  "id": "66e484e9-4368-44c3-a722-765936ff99a8",
+  "title": "Этот промт напишет любую работу со 100% уникальностью на максимальный балл.",
+  "version": "1.0.0",
+  "status": "active",
+  "is_local": false,
+  "is_favorite": false,
+  "description": "Этот промт напишет любую работу со 100% уникальностью на максимальный балл.\n\nПросто впишите вашу тему и уровень знаний в выделенные в промте места, а ChatGPT сделает за вас всю работу.",
+  "content": {
+    "ru": "",
+    "en": "You are tasked with creating a highly unique educational material that will not be detected by AI detectors.\nThis material should be suitable for teaching purposes and maintain 100% originality. Follow these instructions carefully:\n\n1. The educational material will be about the following topic:\n<topic>\n{{ВАША ТЕМА}}\n</topic>\n\n2. The material should be appropriate for the following grade level:\n<grade_level>\n{{УРОВЕНЬ ЗНАНИЙ}}\n</grade_level>\n\nTo create unique content:\n- Use your knowledge to generate original ideas and explanations\n- Avoid copying or closely paraphrasing existing texts\n- Incorporate personal anecdotes or hypothetical scenarios to illustrate concepts\n- Use creative analogies and metaphors to explain complex ideas\n- Develop unique examples that are not commonly found in textbooks\n\nTo avoid AI detection:\n- Vary your sentence structure, using a mix of simple and complex sentences\n- Incorporate colloquialisms, idioms, and figures of speech naturally\n- Introduce occasional grammatical quirks or stylistic choices that a human might make\n- Use regional expressions or culturally specific references when\nappropriate\n- Include subtle humor or wit in your explanations\n\nWhen creating the educational material:\n- Begin with an engaging introduction that relates the topic to real-world situations\n- Break down complex concepts into easily digestible parts\n- Use a conversational tone, as if explaining to a student in person\n- Include thought-provoking questions throughout the material to encourage critical thinking\n- Provide practical examples or hands-on activities that reinforce the concepts\n\nStructure your educational material as follows:\n1. Introduction (hook the reader and provide context)\n2. Main content (divided into logical sections)\n3. Interactive elements (questions, activities, or exercises)\n4. Summary or conclusion\n5. Additional resources or further reading suggestions\n\nBefore finalizing your material:\n- Review for coherence and logical flow\n- Ensure the content is appropriate for the specified grade level\n- Check for any unintentional patterns or repetitions that might trigger AI detection\n- Format the text with appropriate headings, subheadings, and paragraphs\n\nPresent your final educational material within <educational_material> tags.\nRemember to maintain a natural, human-like writing style throughout the content.\nThink step by step."
+  },
+  "compatible_models": [],
+  "category": "general",
+  "tags": [
+    "general"
+  ],
+  "variables": [],
+  "metadata": {
+    "author": {
+      "id": "",
+      "name": ""
+    },
+    "source": "",
+    "notes": ""
+  },
+  "rating": {
+    "score": 0.0,
+    "votes": 0
+  },
+  "prompt_variants": [],
+  "created_at": "2025-09-18T18:36:54.647522",
+  "updated_at": "2025-09-18T18:36:54.647522"
+}
