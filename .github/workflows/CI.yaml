@@ -39,7 +39,11 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-konan-
 
-    - name: Change to KMP directory and run tests
+    - name: Make gradlew executable
+      working-directory: ./aiprompts-kmp
+      run: chmod +x ./gradlew
+
+    - name: Run tests
       working-directory: ./aiprompts-kmp
       run: ./gradlew check --continue
 
@@ -70,11 +74,15 @@ jobs:
       with:
         gradle-home-cache-cleanup: true
 
+    - name: Make gradlew executable
+      working-directory: ./aiprompts-kmp
+      run: chmod +x ./gradlew
+
     - name: Build Android Debug
       working-directory: ./aiprompts-kmp
       run: ./gradlew :androidApp:assembleDebug
 
-    - name: Build Android Release (develop test)
+    - name: Build Android Release
       if: github.ref == 'refs/heads/develop'
       working-directory: ./aiprompts-kmp
       run: ./gradlew :androidApp:assembleRelease
