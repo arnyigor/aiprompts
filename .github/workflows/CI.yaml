@@ -35,11 +35,12 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.konan
-        key: ${{ runner.os }}-konan-${{ hashFiles('gradle/libs.versions.toml') }}
+        key: ${{ runner.os }}-konan-${{ hashFiles('aiprompts-kmp/gradle/libs.versions.toml') }}
         restore-keys: |
           ${{ runner.os }}-konan-
 
-    - name: Run tests
+    - name: Change to KMP directory and run tests
+      working-directory: ./aiprompts-kmp
       run: ./gradlew check --continue
 
     - name: Generate test report
@@ -47,7 +48,7 @@ jobs:
       if: success() || failure()
       with:
         name: Test Results
-        path: '**/build/test-results/**/*.xml'
+        path: 'aiprompts-kmp/**/build/test-results/**/*.xml'
         reporter: java-junit
 
   build-android:
@@ -70,10 +71,12 @@ jobs:
         gradle-home-cache-cleanup: true
 
     - name: Build Android Debug
+      working-directory: ./aiprompts-kmp
       run: ./gradlew :androidApp:assembleDebug
 
     - name: Build Android Release (develop test)
       if: github.ref == 'refs/heads/develop'
+      working-directory: ./aiprompts-kmp
       run: ./gradlew :androidApp:assembleRelease
 
     - name: Upload Android artifacts
@@ -81,7 +84,7 @@ jobs:
       with:
         name: android-apks-${{ github.sha }}
         path: |
-          androidApp/build/outputs/apk/**/*.apk
+          aiprompts-kmp/androidApp/build/outputs/apk/**/*.apk
         retention-days: 30
 
   build-windows:
@@ -107,15 +110,17 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.konan
-        key: ${{ runner.os }}-konan-${{ hashFiles('gradle/libs.versions.toml') }}
+        key: ${{ runner.os }}-konan-${{ hashFiles('aiprompts-kmp/gradle/libs.versions.toml') }}
         restore-keys: |
           ${{ runner.os }}-konan-
 
     - name: Build Desktop App
+      working-directory: ./aiprompts-kmp
       run: ./gradlew :desktopApp:packageUberJarForCurrentOS
 
     - name: Create Windows Installer (master only)
       if: github.ref == 'refs/heads/master'
+      working-directory: ./aiprompts-kmp
       run: ./gradlew :desktopApp:packageMsi
 
     - name: Upload Desktop artifacts
@@ -123,7 +128,7 @@ jobs:
       with:
         name: windows-desktop-${{ github.sha }}
         path: |
-          desktopApp/build/compose/binaries/**
-          desktopApp/build/compose/jars/**
+          aiprompts-kmp/desktopApp/build/compose/binaries/**
+          aiprompts-kmp/desktopApp/build/compose/jars/**
         retention-days: 30
         
