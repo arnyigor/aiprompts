@@ -1,0 +1,32 @@
+{
+    "id": "4e49c5e0-35f5-4823-872b-1708ebd0ba2b",
+    "source_id": "138572997",
+    "title": "\"UPAR\": ВДОХНОВЛЕННАЯ КАНТИАНСКИМ УЧЕНИЕМ СТРУКТУРА ДЛЯ РАСШИРЕНИЯ ВОЗМОЖНОСТЕЙ LLM",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "<div align=\"right\"> <b><font style=\"font-size:9px;color:gray;\">Авторство </font></b> <i><sup>Under review as a conference paper at ICLR 2024</sup> <font style=\"font-size:9px;color:gray;\"><sup>Hejia Geng, Boxun Xu &amp; Peng Li Department of Electrical &amp; Computer Engineering, University of Califo",
+    "content": {
+        "ru": "<div align=\"right\">\n <b><font style=\"font-size:9px;color:gray;\">Авторство </font></b>\n \n<i><sup>Under review as a conference paper at ICLR 2024</sup> \n<font style=\"font-size:9px;color:gray;\"><sup>Hejia Geng, Boxun Xu &amp; Peng Li\n\n    Department of Electrical &amp; Computer Engineering, \n\n    University of California, Santa Barbara\n\n    Santa Barbara, CA 93106, USA\n\n    {hejia, boxunxu, lip}@ucsb.edu</sup></font></i>\n</div>\n\n\nБольшие языковые модели (LLM) продемонстрировали впечатляющие возможности вывода,\n\n\nи многочисленные исследования были посвящены улучшению этой способности с помощью подсказок.\n\n\nНесмотря на эти усилия, единая эпистемологическая основа до сих пор явно отсутствует.\n\n\nЧерпая вдохновение из априорной философии Канта, мы предлагаем структуру подсказок UPAR,\n\n\nразработанную для имитации структуры человеческого познания в рамках LLM.\n\n\n\n\nСтруктура UPAR разделена на четыре фазы: «Понимание», «Планирование», «Действие» и «Размышление»,\n\n\nчто позволяет извлекать структурированную информацию из сложных контекстов, предварительно планировать решения,\n\n\nвыполнять действия по плану и проводить саморефлексию.\n\n\nЭта структура значительно повышает объяснимость и точность вывода LLM,\n\n\nсоздавая понятную и контролируемую человеком траекторию вывода.\n\n\nКроме того, наша работа предлагает эпистемологическую основу для существующих методов подсказок,\n\n\nчто позволяет возможность систематической интеграции этих методов."
+    },
+    "category": "business",
+    "tags": [
+        "business",
+        "work",
+        "professional",
+        "finance",
+        "career",
+        "productivity",
+        "translation"
+    ],
+    "variables": [],
+    "metadata": {
+        "author": {
+            "name": "4pda User"
+        },
+        "source": "https://4pda.to/forum/index.php?showtopic=1109539&view=findpost&p=138572997",
+        "notes": "Импортировано из поста 138572997"
+    },
+    "prompt_variants": [],
+    "created_at": "2026-03-13T05:19:14.379",
+    "updated_at": "2026-03-13T05:19:14.379"
+}

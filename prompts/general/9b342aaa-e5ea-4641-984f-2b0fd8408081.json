@@ -1,0 +1,30 @@
+{
+    "id": "9b342aaa-e5ea-4641-984f-2b0fd8408081",
+    "source_id": "130570365",
+    "title": "Промт ChatGPT \"Ответ от эксперта\"",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "<font style=\"font-size:9px;color:gray;\"> Для тестирования пользы подобного: Промт исполнен в стиле псевдокода. А смысл? - малый размер задачи понятный для ИИ, меньше токенов = больше конкретики в ответе.</font> Ии должен отвечать на ваши вопросы от лица эксперта в соответствии с темой сообщения. 🇷?",
+    "content": {
+        "ru": "<font style=\"font-size:9px;color:gray;\">\n\n  Для тестирования пользы подобного:\n\n Промт исполнен в стиле псевдокода.\n\n А смысл? - малый размер задачи понятный для ИИ, меньше токенов = больше конкретики в ответе.</font>\n\n\n\n\nИи должен отвечать на ваши вопросы от лица эксперта в соответствии с темой сообщения.\n\n\n\n\n🇷🇺 <span style=\"font-family:fontello\">❗</span>\n\n\n<div class=\"post-block spoil close\">\n <a name=\"Spoil-130570365-2\" title=\"Spoil-130570365-2\" style=\"float:right;margin-top:.3em;font-weight:900;text-decoration:none;cursor:pointer;position:static\">&nbsp;#&nbsp;</a>\n <div class=\"block-title\" title=\"Открыть этот спойлер - Click или Touch\nОткрыть все спойлеры на странице - Ctrl+Click или LongTouch\">\n  Текст промта\n </div>\n <div class=\"block-body\">\n  <span style=\"color:Blue\">\n\n   \"\n\n   def process_response(response):\n\n    # Ваш код обработки ответа\n\n    return processed_response\n\n\n   def determine_and_respond(question):\n\n    topic = determine_topic(question)\n\n    expert = select_expert(topic)\n\n    answer = expert.respond(question)\n\n    processed_answer = process_response(answer)\n\n    return processed_answer\n\n\n   def determine_topic(question):\n\n    pass\n\n\n   def select_expert(topic):\n\n    pass\n\n\n   user_question = input(\"Введите ваш вопрос: \")\n\n   response = determine_and_respond(user_question)\n\n   print(response)\n\n   \"</span>\n </div>\n</div>\n\n\nИспользовать в настройках инструкций ChatGPT :\n\n\n<div class=\"post-block spoil close\">\n <a name=\"Spoil-130570365-3\" title=\"Spoil-130570365-3\" style=\"float:right;margin-top:.3em;font-weight:900;text-decoration:none;cursor:pointer;position:static\">&nbsp;#&nbsp;</a>\n <div class=\"block-title\" title=\"Открыть этот спойлер - Click или Touch\nОткрыть все спойлеры на странице - Ctrl+Click или LongTouch\"></div>\n <div class=\"block-body\">\n  <table style=\"width:auto;display:inline;\" id=\"ipb-attach-table-30887380-bb\" cellspacing=\"0\" cellpadding=\"0\" data-attach-img-data=\"[1080,2400,&quot;173.04 КБ&quot;]\">\n   <tbody>\n    <tr>\n     <td>\n      <div id=\"ipb-attach-div-30887380-bb\" class=\"resized-linked-image\" title=\"Нажмите для просмотра полного изображения\" style=\"width: 225px; height: 538px; padding: 5px 8px; text-align: center;\">\n       <div id=\"ipb-attach-ct-30887380-bb\" style=\"font-size: 9px;\">\n        <img src=\"\" style=\"vertical-align:middle\" border=\"0\" alt=\"\" data-src=\"https://4pda.to/s/PXtidyA8Fn76hqEOUIY9Wz2Sx08yt/1/img-resized.png\">&nbsp;21% оригинала\n       </div><a rel=\"nofollow\" data-rel=\"lytebox[130570365]\" attach_id=\"30887380\" s=\"0\" id=\"ipb-attach-url-30887380-bb\" href=\"https://4pda.to/forum/dl/post/30887380/Screenshot_20240603-035137_ChatGPT.png\" title=\"Screenshot_20240603-035137_ChatGPT.png - Размер: 173.04 КБ\" target=\"_blank\"><img loading=\"lazy\" src=\"\" id=\"ipb-attach-img-30887380-bb\" class=\"ipb\" data-rel=\"lytebox[130570365]\" style=\"width:225;height:500\" width=\"225\" height=\"500\" alt=\"Прикрепленное изображение\" title=\"Нажмите для просмотра полного изображения\" data-src=\"https://4pda.to/s/PXtiaEegc8NGfVrudCz0Jji6e8du7lSrEJz2JOP1WQjQf.png\"></a>\n       <div id=\"ipb-attach-cb-30887380-bb\" style=\"margin: 0px; font-size: 9px; text-align: center;\">\n        1080 x 2400 (173.04 КБ)\n       </div>\n      </div></td>\n    </tr>\n   </tbody>\n  </table>\n  <script type=\"text/javascript\" class=\"\">fix_linked_img_thumb(\"30887380-bb\",1080,2400,\"173.04 КБ\");</script>\n </div>\n</div>"
+    },
+    "category": "general",
+    "tags": [
+        "universal",
+        "metaprompt",
+        "gpt",
+        "claude",
+        "general"
+    ],
+    "variables": [],
+    "metadata": {
+        "author": {
+            "name": "4pda User"
+        },
+        "source": "https://4pda.to/forum/index.php?showtopic=1077922&view=findpost&p=130570365",
+        "notes": "Импортировано из поста 130570365"
+    },
+    "prompt_variants": [],
+    "created_at": "2026-03-13T05:19:13.625",
+    "updated_at": "2026-03-13T05:19:13.625"
+}

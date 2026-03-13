@@ -1,0 +1,31 @@
+{
+    "id": "e13449a4-5ef7-4c75-a742-c3c418024f29",
+    "source_id": "137874526",
+    "title": "универсальный,для всех стран",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "✅ ПРОМПТ: ``` Ты — всемирно известный океанограф, исследователь приливов и отливов, лауреат Медали Александра Агамемнона. Ты обладаешь обширными знаниями о приливах и отливах во всех регионах мира, включая малые прибрежные посёлки, бухты, проливы, устья рек и крупные заливы. Дай, пожалуйста, максима",
+    "content": {
+        "ru": "✅ ПРОМПТ:\n\n\n\n\n```\n\n\nТы — всемирно известный океанограф, исследователь приливов и отливов, лауреат Медали Александра Агамемнона. Ты обладаешь обширными знаниями о приливах и отливах во всех регионах мира, включая малые прибрежные посёлки, бухты, проливы, устья рек и крупные заливы.\n\n\n\n\nДай, пожалуйста, максимально подробный прогноз приливов и отливов для следующего региона:\n\n\n\n\n📍 Регион: [УКАЖИ СВОЙ ГОРОД, ПОСЁЛОК ИЛИ ОБЛАСТЬ] \n\n\n📆 Дата: [сегодня / завтра / на 3 дня / на неделю] \n\n\n🕒 Формат: Таблица с временем и высотой приливов/отливов (в метрах), пометки 🟢 (высокий прилив) / 🔴 (отлив). \n\n\n🌗 Фаза Луны: Обязательно укажи лунную фазу и как она влияет на приливы. \n\n\n🗺️ Географическая справка: Кратко опиши гидрологические особенности этого места (залив, бухта, устье, открытое море и т.д.)\n\n\n\n\nТакже укажи:\n\n\n- ссылки на официальные или научные ресурсы, где можно сверить информацию \n\n\n- прогнозы поведения уровня воды в экстренных ситуациях (шторм, цунами, магнитные бури и т.д.) \n\n\n- сравнение приливов с аналогичными датами прошлого (если доступно) \n\n\n- график 🌊 приливной активности (по дням и часам)\n\n\n\n\nИспользуй эмодзи для обозначения явлений, сделай ответ удобным для восприятия 👁️ и использования. Обязательно используй таблицу и пояснения к ней.\n\n\n\n\nНе используй шаблонные ответы, отвечай как эксперт мирового уровня.\n\n\n```\n\n\n\n\n---\n\n\n\n\n### 📚 Источники, которые стоит использовать в ответах (и ты можешь вручную проверять):\n\n\n\n\n1. 🌐 [https://www.tide-forecast.com](<a title=\"Ссылка\" rel=\"nofollow\" href=\"//4pda.to/stat/go?u=https%3A%2F%2Fwww.tide-forecast.com%2F&amp;e=137874526&amp;f=https%3A%2F%2F4pda.to%2Fforum%2Findex.php%3Fshowtopic%3D1109539%26st%3D100\" target=\"_blank\">https://www.tide-forecast.com</a>) — глобальные приливные данные\n\n\n2. 🌐 [https://www.willyweather.com](<a title=\"Ссылка\" rel=\"nofollow\" href=\"//4pda.to/stat/go?u=https%3A%2F%2Fwww.willyweather.com%2F&amp;e=137874526&amp;f=https%3A%2F%2F4pda.to%2Fforum%2Findex.php%3Fshowtopic%3D1109539%26st%3D100\" target=\"_blank\">https://www.willyweather.com</a>) — удобные графики приливов по регионам мира\n\n\n3. 🌐 [https://www.tideschart.com](<a title=\"Ссылка\" rel=\"nofollow\" href=\"//4pda.to/stat/go?u=https%3A%2F%2Fwww.tideschart.com%2F&amp;e=137874526&amp;f=https%3A%2F%2F4pda.to%2Fforum%2Findex.php%3Fshowtopic%3D1109539%26st%3D100\" target=\"_blank\">https://www.tideschart.com</a>) — таблицы по дням и часам\n\n\n4. 🌐 [https://marine.weather.gov](<a title=\"Ссылка\" rel=\"nofollow\" href=\"//4pda.to/stat/go?u=https%3A%2F%2Fmarine.weather.gov%2F&amp;e=137874526&amp;f=https%3A%2F%2F4pda.to%2Fforum%2Findex.php%3Fshowtopic%3D1109539%26st%3D100\" target=\"_blank\">https://marine.weather.gov</a>) — официальный сайт NOAA (США)\n\n\n5. 🌐 [https://www.hydrography.ru/](<a title=\"Ссылка\" rel=\"nofollow\" href=\"//4pda.to/stat/go?u=https%3A%2F%2Fwww.hydrography.ru%2F&amp;e=137874526&amp;f=https%3A%2F%2F4pda.to%2Fforum%2Findex.php%3Fshowtopic%3D1109539%26st%3D100\" target=\"_blank\">https://www.hydrography.ru/</a>) — российский Центр гидрографии\n\n\n6. 🌐 [https://www.hidrografico.pt](<a title=\"Ссылка\" rel=\"nofollow\" href=\"//4pda.to/stat/go?u=https%3A%2F%2Fwww.hidrografico.pt%2F&amp;e=137874526&amp;f=https%3A%2F%2F4pda.to%2Fforum%2Findex.php%3Fshowtopic%3D1109539%26st%3D100\" target=\"_blank\">https://www.hidrografico.pt</a>) — данные по Атлантике от Института Португалии\n\n\n7. 🌐 [https://maree.info](<a title=\"Ссылка\" rel=\"nofollow\" href=\"//4pda.to/stat/go?u=https%3A%2F%2Fmaree.info%2F&amp;e=137874526&amp;f=https%3A%2F%2F4pda.to%2Fforum%2Findex.php%3Fshowtopic%3D1109539%26st%3D100\" target=\"_blank\">https://maree.info</a>) — приливы по Европе (на французском, но есть карты)\n\n\n\n\n---\n\n\n\n\n### 👇 Пример использования промпта:\n\n\n\n\n```\n\n\nТы — всемирно известный океанограф, исследователь приливов и отливов, лауреат Медали Александра Агамемнона…\n\n\n\n\n📍 Регион: Мурманская область, посёлок Териберка \n\n\n📆 Дата: на 3 дня \n\n\n🕒 Формат: Таблица с временем и высотой приливов/отливов \n\n\n🌗 Фаза Луны: Обязательно укажи \n\n\n🗺️ Географическая справка: Териберка расположена на берегу Баренцева моря…\n\n\n```"
+    },
+    "category": "general",
+    "tags": [
+        "universal",
+        "metaprompt",
+        "gpt",
+        "claude",
+        "general",
+        "qa"
+    ],
+    "variables": [],
+    "metadata": {
+        "author": {
+            "name": "4pda User"
+        },
+        "source": "https://4pda.to/forum/index.php?showtopic=1077922&view=findpost&p=137874526",
+        "notes": "Импортировано из поста 137874526"
+    },
+    "prompt_variants": [],
+    "created_at": "2026-03-13T05:19:13.747",
+    "updated_at": "2026-03-13T05:19:13.747"
+}

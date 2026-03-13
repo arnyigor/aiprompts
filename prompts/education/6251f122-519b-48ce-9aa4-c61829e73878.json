@@ -1,0 +1,31 @@
+{
+    "id": "6251f122-519b-48ce-9aa4-c61829e73878",
+    "source_id": "130860137",
+    "title": "Учитесь чему угодно! - Искусственный интеллект для студентов.",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Промт основан на подсказке бота в Coze. Использование промта предполагает использование модели GPT4o.",
+    "content": {
+        "ru": "Промт основан на подсказке бота в Coze. Использование промта предполагает использование модели GPT4o."
+    },
+    "category": "education",
+    "tags": [
+        "education",
+        "learning",
+        "language",
+        "study",
+        "tutor",
+        "gpt"
+    ],
+    "variables": [],
+    "metadata": {
+        "author": {
+            "name": "4pda User"
+        },
+        "source": "https://4pda.to/forum/index.php?showtopic=1077922&view=findpost&p=130860137",
+        "notes": "Импортировано из поста 130860137"
+    },
+    "prompt_variants": [],
+    "created_at": "2026-03-13T05:19:14.130",
+    "updated_at": "2026-03-13T05:19:14.130"
+}
