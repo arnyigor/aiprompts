@@ -1,0 +1,31 @@
+{
+    "id": "6152b123-6665-4189-b34f-eb34dedffadc",
+    "source_id": "130744895",
+    "title": "Психолингвистический анализ текста для определения личностных характеристик автора.",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "В окне сообщения пишите запрос подобно этому: <div class=\"post-block quote\"> <div class=\"block-title\"></div> <div class=\"block-body\"> <i>Проанализируй текст и составь максимально полный психолингвистический портрет автора текста.</i> </div> </div> и вставляете скопированный текст который хотите проа",
+    "content": {
+        "ru": "В окне сообщения пишите запрос подобно этому:\n\n\n\n\n<div class=\"post-block quote\">\n <div class=\"block-title\"></div>\n <div class=\"block-body\">\n  <i>Проанализируй текст и составь максимально полный психолингвистический портрет автора текста.</i>\n </div>\n</div>\n\n\nи вставляете скопированный текст который хотите проанализировать, либо прикрепляете файл (книгу, документ, текстовый файл).\n\n\n\n\n<div align=\"center\">\n <table style=\"width:auto;display:inline;\" id=\"ipb-attach-table-30948828-bb\" cellspacing=\"0\" cellpadding=\"0\" data-attach-img-data=\"[1080,709,&quot;267.37 КБ&quot;]\">\n  <tbody>\n   <tr>\n    <td>\n     <div id=\"ipb-attach-div-30948828-bb\" class=\"resized-linked-image\" title=\"Нажмите для просмотра полного изображения\" style=\"width: 500px; height: 366px; padding: 5px 8px; text-align: center;\">\n      <div id=\"ipb-attach-ct-30948828-bb\" style=\"font-size: 9px;\">\n       <img src=\"\" style=\"vertical-align:middle\" border=\"0\" alt=\"\" data-src=\"https://4pda.to/s/PXtidyA8Fn76hqEOUIY9Wz2Sx08yt/1/img-resized.png\">&nbsp;46% оригинала\n      </div><a rel=\"nofollow\" data-rel=\"lytebox[130744895]\" attach_id=\"30948828\" s=\"0\" id=\"ipb-attach-url-30948828-bb\" href=\"https://4pda.to/forum/dl/post/30948828/Screenshot_20240613-125536_ChatGPT.png\" title=\"Screenshot_20240613-125536_ChatGPT.png - Размер: 267.37 КБ\" target=\"_blank\"><img loading=\"lazy\" src=\"\" id=\"ipb-attach-img-30948828-bb\" class=\"ipb\" data-rel=\"lytebox[130744895]\" style=\"width:500;height:328\" width=\"500\" height=\"328\" alt=\"Прикрепленное изображение\" title=\"Нажмите для просмотра полного изображения\" data-src=\"https://4pda.to/s/PXtiisW4ZMioSEz1g6z0aCTKg63LbIElBDr0JufPyCA6z2.png\"></a>\n      <div id=\"ipb-attach-cb-30948828-bb\" style=\"margin: 0px; font-size: 9px; text-align: center;\">\n       1080 x 709 (267.37 КБ)\n      </div>\n     </div></td>\n   </tr>\n  </tbody>\n </table>\n <script type=\"text/javascript\" class=\"\">fix_linked_img_thumb(\"30948828-bb\",1080,709,\"267.37 КБ\");</script>\n</div>\n\n\n\n\n\n<span style=\"font-family:fontello\">❗</span>\n\n\n<div class=\"post-block spoil close\">\n <a name=\"Spoil-130744895-2\" title=\"Spoil-130744895-2\" style=\"float:right;margin-top:.3em;font-weight:900;text-decoration:none;cursor:pointer;position:static\">&nbsp;#&nbsp;</a>\n <div class=\"block-title\" title=\"Открыть этот спойлер - Click или Touch\nОткрыть все спойлеры на странице - Ctrl+Click или LongTouch\">\n  Текст промта\n </div>\n <div class=\"block-body\">\n  <span style=\"color:RoyalBlue\">\n\n\n   \"\n\n   #Задачи:\n\n   Психолингвистический анализ текста для определения личностных характеристик автора.\n\n\n   # Шаги:\n\n   1. [Демографический профиль]:\n\n    - Определить возраст и пол автора.\n\n    - Определить место рождения и проживания.\n\n    - Оцените образовательный уровень автора.\n\n    - Проанализируйте возможные этнические и культурные особенности.\n\n\n   2. [Личностные особенности]:\n\n    - Исследуйте мотивацию и характер автора.\n\n    - Выявите наличие возможных патологий.\n\n    - Определите эмоционально-смысловую доминанту текста.\n\n\n   # Методы:\n\n   - [Лексический анализ]:\n\n    - Изучите лексическое разнообразие текста (отношение различных слов к общему количеству слов).\n\n    - Проанализируйте использование специфической лексики (профессиональной, сленговой, устаревшей).\n\n    - Определите частотность и парадигматическую замену слов.\n\n\n   - [Синтаксический анализ]:\n\n    - Оцените структуру предложений, сложность синтаксиса и использование союзов.\n\n    - Проанализируйте связность текста и наличие \"перерывов постепенности\".\n\n\n   - [Эмоционально-смысловой анализ]:\n\n    - Определите типы эмоционально-смысловых доминант.\n\n    - Изучите метафоры и сравнения, выявляющие вектор мышления автора.\n\n\n   # Вопросы для анализа:\n\n   1. Для чего написан текст и для кого он ориентирован?\n\n   2. Что автор хочет сказать?\n\n   3. Насколько цельным или завершённым является текст?\n\n   4. Какие элементы текста могут указывать на ложность или достоверность информации?\n\n\n   # Заключение:\n\n   На основе проведённого анализа, представьте детальный психолингвистический портрет автора текста.\n\n   \"\n\n</span>\n </div>\n</div>"
+    },
+    "category": "technology",
+    "tags": [
+        "specialized",
+        "niche",
+        "expert",
+        "specific",
+        "technology",
+        "gpt"
+    ],
+    "variables": [],
+    "metadata": {
+        "author": {
+            "name": "4pda User"
+        },
+        "source": "https://4pda.to/forum/index.php?showtopic=1077922&view=findpost&p=130744895",
+        "notes": "Импортировано из поста 130744895"
+    },
+    "prompt_variants": [],
+    "created_at": "2026-03-13T05:19:14.543",
+    "updated_at": "2026-03-13T05:19:14.543"
+}

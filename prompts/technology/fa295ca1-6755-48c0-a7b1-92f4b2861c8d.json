@@ -1,0 +1,31 @@
+{
+    "id": "fa295ca1-6755-48c0-a7b1-92f4b2861c8d",
+    "source_id": "137866238",
+    "title": "погодный промпт",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "--- ### 🎯 **Промпт (итоговая версия):** &gt; Составь подробную **ежедневную сводку погоды** для города **Ростов-на-Дону** на основе следующих данных: &gt; &gt; **1. Погода на сегодня** &gt; Извлеки информацию с сайта: &gt; 👉 (<a title=\"Ссылка\" rel=\"nofollow\" href=\"//4pda.to/stat/go?u=https%3A%2F%2",
+    "content": {
+        "ru": "---\n\n\n\n\n### 🎯 **Промпт (итоговая версия):**\n\n\n\n\n&gt; Составь подробную **ежедневную сводку погоды** для города **Ростов-на-Дону** на основе следующих данных:\n\n\n&gt;\n\n\n&gt; **1. Погода на сегодня**\n\n\n&gt; Извлеки информацию с сайта:\n\n\n&gt; 👉 [https://voshod-solnca.ru/weather/ростов-на-дону](<a title=\"Ссылка\" rel=\"nofollow\" href=\"//4pda.to/stat/go?u=https%3A%2F%2Fvoshod-solnca.ru%2Fweather%2F%25D1%2580%25D0%25BE%25D1%2581%25D1%2582%25D0%25BE%25D0%25B2-%25D0%25BD%25D0%25B0-%25D0%25B4%25D0%25BE%25D0%25BD%25D1%2583&amp;e=137866238&amp;f=https%3A%2F%2F4pda.to%2Fforum%2Findex.php%3Fshowtopic%3D1109539%26st%3D80\" target=\"_blank\">https://voshod-solnca.ru/weather/ростов-на-дону</a>)\n\n\n&gt; Укажи:\n\n\n&gt;\n\n\n&gt; * Температуру воздуха по времени суток (утро / день / вечер / ночь)\n\n\n&gt; * Облачность, осадки, ветер (направление и скорость)\n\n\n&gt; * **Атмосферное давление** (в мм рт. ст.), желательно по времени суток\n\n\n&gt; * Влажность воздуха\n\n\n&gt; * УФ-индекс, если указан\n\n\n&gt; * Рекомендации по одежде и активности на основе температуры и ветра\n\n\n&gt;\n\n\n&gt; **2. Фаза Луны и лунный день**\n\n\n&gt; Используй источник:\n\n\n&gt; 👉 [https://mirkosmosa.ru/lunar-calendar/phase-moon/phase-moon-today](<a title=\"Ссылка\" rel=\"nofollow\" href=\"//4pda.to/stat/go?u=https%3A%2F%2Fmirkosmosa.ru%2Flunar-calendar%2Fphase-moon%2Fphase-moon-today&amp;e=137866238&amp;f=https%3A%2F%2F4pda.to%2Fforum%2Findex.php%3Fshowtopic%3D1109539%26st%3D80\" target=\"_blank\">https://mirkosmosa.ru/…-moon/phase-moon-today</a>)\n\n\n&gt; Укажи:\n\n\n&gt;\n\n\n&gt; * Фазу Луны (растущая, убывающая и т.д.)\n\n\n&gt; * Текущий лунный день\n\n\n&gt; * Астрономические события (если есть)\n\n\n&gt; * Влияние Луны на самочувствие, настроение и активность\n\n\n&gt;\n\n\n&gt; **3. Геомагнитная активность**\n\n\n&gt; Используй источник:\n\n\n&gt; 👉 [https://voshod-solnca.ru/geomagnetic-activity/ростов-на-дону](<a title=\"Ссылка\" rel=\"nofollow\" href=\"//4pda.to/stat/go?u=https%3A%2F%2Fvoshod-solnca.ru%2Fgeomagnetic-activity%2F%25D1%2580%25D0%25BE%25D1%2581%25D1%2582%25D0%25BE%25D0%25B2-%25D0%25BD%25D0%25B0-%25D0%25B4%25D0%25BE%25D0%25BD%25D1%2583&amp;e=137866238&amp;f=https%3A%2F%2F4pda.to%2Fforum%2Findex.php%3Fshowtopic%3D1109539%26st%3D80\" target=\"_blank\">https://voshod-solnca.…ctivity/ростов-на-дону</a>)\n\n\n&gt; Укажи:\n\n\n&gt;\n\n\n&gt; * Уровень К-индекса (в баллах)\n\n\n&gt; * Прогноз магнитных бурь (если есть)\n\n\n&gt; * Возможное влияние на метеочувствительных людей и технику\n\n\n&gt;\n\n\n&gt; **4. Солнечная активность**\n\n\n&gt; Используй источник:\n\n\n&gt; 👉 [https://xras.ru/sun\\_flares.html](<a title=\"Ссылка\" rel=\"nofollow\" href=\"//4pda.to/stat/go?u=https%3A%2F%2Fxras.ru%2Fsun_flares.html&amp;e=137866238&amp;f=https%3A%2F%2F4pda.to%2Fforum%2Findex.php%3Fshowtopic%3D1109539%26st%3D80\" target=\"_blank\">https://xras.ru/sun_flares.html</a>)\n\n\n&gt; Укажи:\n\n\n&gt;\n\n\n&gt; * Наличие солнечных вспышек\n\n\n&gt; * Класс вспышек (C, M, X)\n\n\n&gt; * Потенциальное влияние на связь, электронику и здоровье\n\n\n&gt;\n\n\n&gt; **5. Структура ответа:**\n\n\n&gt; Раздели сводку на тематические блоки:\n\n\n&gt;\n\n\n&gt; * Погодные условия\n\n\n&gt; * Атмосферное давление\n\n\n&gt; * Луна и биоритмы\n\n\n&gt; * Геомагнитная активность\n\n\n&gt; * Солнечная активность\n\n\n&gt; * Общие рекомендации на день\n\n\n&gt;\n\n\n&gt; **Дополнительно:**\n\n\n&gt;\n\n\n&gt; * Обязательно укажи **дату прогноза**\n\n\n&gt; * Пиши кратко, чётко, на **русском языке**, как если бы это была утренняя сводка для жителей города\n\n\n&gt; * Не используй сложные научные термины — говори понятно для обычного человека\n\n\n\n\n---"
+    },
+    "category": "technology",
+    "tags": [
+        "specialized",
+        "niche",
+        "expert",
+        "specific",
+        "technology",
+        "translation"
+    ],
+    "variables": [],
+    "metadata": {
+        "author": {
+            "name": "4pda User"
+        },
+        "source": "https://4pda.to/forum/index.php?showtopic=1077922&view=findpost&p=137866238",
+        "notes": "Импортировано из поста 137866238"
+    },
+    "prompt_variants": [],
+    "created_at": "2026-03-13T05:19:14.613",
+    "updated_at": "2026-03-13T05:19:14.613"
+}
