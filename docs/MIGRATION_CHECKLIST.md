@@ -16,7 +16,7 @@
   - [x] Desktop реальные Room migrations 1→3, сохранение private/favorite при tombstones.
   - [x] Android 4→8 ранее проверен на Android 11; последние unit/lint/APK и instrumentation compile прошли.
   - [ ] Проверить Android схемы 1–3: экспортированных схем нет.
-  - [ ] Повторить connected instrumentation после текущих изменений: устройство сейчас отсутствует.
+  - [x] Повторить instrumentation: 7 тестов прошли на Android 12 Emulator, включая миграции и мобильный UI.
 - [x] 8. Отделить личные Desktop файлы/JSON-экспорт от каталога, защитить редактирование; добавить явную подготовку кандидатов candidate/stage.
 - [x] 9. Schema, validator, воспроизводимый ZIP/manifest/checksums и один catalog publisher; 932 записи проверены.
 - [ ] 10. Архивирование legacy.
@@ -36,3 +36,7 @@
 Остаётся два рабочих репозитория: приложения в `aipromptmaster`, публичный каталог в `aiprompts`. UI пока раздельные; Android multi-backstack/свайпы сохранены. Последующее объединение адаптивного UI не входит в этот этап очистки.
 
 Архив: `G:/Android/ProjectArchives/2026-10-01-AiPrompts`. Исходные bundles и ZIP: `C:/Users/ArnyPC/.codex/backups/aiprompts-unification-20260930-215834`.
+
+- [x] Android: улучшение промпта, потоковый предпросмотр, отмена и отдельное сохранение; кнопка применения доступна при открытой клавиатуре.
+- [x] Android/Desktop: удобное управление OpenRouter и OpenAI-совместимыми профилями, отдельные ключи/модели, проверка соединения и поиск.
+- [x] Локальная проверка: Android 37 unit tests + 7 instrumentation; Desktop 151 passed / 6 skipped, APK и portable собраны.
