@@ -8,7 +8,8 @@
 - [x] 4. Перенести KMP Desktop в aipromptmaster с Git-history, portable и runtime-проверкой.
 - [ ] 5. CI/release.
   - [x] Android/Desktop jobs, проверки common contract, release по точному тегу, локальная проверка YAML.
-  - [ ] Remote CI и signed release; локальная сборка не подтверждает опубликованный workflow.
+  - [x] Remote CI Android/Desktop и catalog прошли в draft PR #2 и #29.
+  - [ ] Signed release.
 - [x] 6. Выделить общий KMP PromptJson, вложенные DTO, storage/manifest и подключить адаптеры обоих клиентов.
 - [ ] 7. Миграции и импорт каталога.
   - [x] Mutex, транзакции, legacy upsert, валидированный manifest с checksum, безопасные явные tombstones.
@@ -26,7 +27,10 @@
 - [ ] 12. Финальная проверка.
   - [x] Android unit/contract/lint/APK, Desktop offline regression suite/Room/portable, реальные 932 JSON в обоих roots.
   - [x] Изолированный Desktop runtime: 932 prompts и 932 wire documents, рабочая пользовательская БД не затронута.
-  - [ ] Подтвердить remote CI; signed publication и installer — отдельные release-проверки.
+  - [x] Подтверждён remote CI; signed publication и installer — отдельные release-проверки.
+
+- [x] Дополнение: перенести улучшение промпта из Python в Desktop (RU/EN, модель, параметры, потоковый предпросмотр, отмена, явное применение к личному черновику). Шесть автономных тестов; исходники Python сохранены.
+- [ ] Проверить новое окно визуально и выполнить запрос к выбранному провайдеру. Детали — `aipromptmaster/docs/UNIFICATION_STATUS.ru.md`.
 
 Остаётся два рабочих репозитория: приложения в `aipromptmaster`, публичный каталог в `aiprompts`. UI пока раздельные; Android multi-backstack/свайпы сохранены. Последующее объединение адаптивного UI не входит в этот этап очистки.
 
