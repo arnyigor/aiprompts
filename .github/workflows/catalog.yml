@@ -55,3 +55,15 @@ jobs:
             dist/prompts.zip
             dist/catalog-manifest.json
             dist/checksums.sha256
+      - name: Publish immutable snapshot for this commit
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: catalog-${{ github.sha }}
+          target_commitish: ${{ github.sha }}
+          name: Prompt catalog ${{ github.sha }}
+          body: Immutable snapshot of the validated catalog at this commit. latest-prompts stays the moving pointer.
+          make_latest: false
+          files: |
+            dist/prompts.zip
+            dist/catalog-manifest.json
+            dist/checksums.sha256
