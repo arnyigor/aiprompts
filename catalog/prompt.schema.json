@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Public prompt",
+  "type": "object",
+  "required": ["id", "title", "content", "category"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$", "minLength": 1},
+    "title": {"type": "string", "pattern": "\\S"},
+    "category": {"type": "string", "pattern": "^[a-z0-9_-]+$"},
+    "content": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string"}},
+    "is_local": {"const": false},
+    "is_favorite": {"const": false},
+    "tags": {"type": "array", "items": {"type": "string"}},
+    "compatible_models": {"type": "array", "items": {"type": "string"}},
+    "variables": {"type": "array", "items": {"$ref": "#/$defs/variable"}},
+    "prompt_variants": {"type": "array", "items": {"$ref": "#/$defs/variant"}},
+    "metadata": {"type": ["object", "null"]},
+    "rating": {"type": ["object", "null"]}
+  },
+  "$defs": {
+    "variable": {
+      "type": "object", "required": ["name"],
+      "properties": {
+        "name": {"type": "string", "pattern": "\\S"},
+        "type": {"type": "string"}, "description": {"type": ["string", "null"]},
+        "default_value": {"type": ["string", "null"]},
+        "examples": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "variant": {
+      "type": "object", "required": ["variant_id", "content"],
+      "properties": {
+        "variant_id": {
+          "type": "object", "required": ["id", "type", "priority"],
+          "properties": {"id": {"type": "string"}, "type": {"type": "string"}, "priority": {"type": "integer"}}
+        },
+        "content": {"type": "object", "additionalProperties": {"type": "string"}}
+      }
+    }
+  }
+}
